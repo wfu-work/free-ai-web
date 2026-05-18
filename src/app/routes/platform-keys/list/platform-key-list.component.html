@@ -79,52 +79,12 @@
   </nz-card>
 </section>
 
-<nz-modal
-  [nzTitle]="formMode === 'create' ? '创建平台密钥' : '编辑平台密钥'"
+<app-platform-key-edit
   [nzVisible]="formVisible"
-  [nzOkLoading]="saving"
-  nzOkText="保存"
-  nzCancelText="取消"
-  (nzOnOk)="save()"
-  (nzOnCancel)="closeForm()"
->
-  <ng-container *nzModalContent>
-    <form nz-form [formGroup]="form" class="key-form">
-      <nz-form-item>
-        <nz-form-label nzRequired nzFor="name">密钥名称</nz-form-label>
-        <nz-form-control nzErrorTip="请输入密钥名称">
-          <input id="name" nz-input formControlName="name" placeholder="例如 内部服务调用" />
-        </nz-form-control>
-      </nz-form-item>
-
-      <nz-form-item>
-        <nz-form-label nzFor="rateLimitPerMinute">每分钟限速</nz-form-label>
-        <nz-form-control nzExtra="0 表示不限速。">
-          <nz-input-number
-            id="rateLimitPerMinute"
-            formControlName="rateLimitPerMinute"
-            [nzMin]="0"
-            [nzStep]="1"
-          />
-        </nz-form-control>
-      </nz-form-item>
-
-      <nz-form-item>
-        <nz-form-label nzFor="allowedModels">允许模型</nz-form-label>
-        <nz-form-control nzExtra='留空表示允许全部模型；建议填写 JSON 数组，例如 ["gpt-4.1-mini"]。'>
-          <textarea id="allowedModels" nz-input formControlName="allowedModels" rows="3"></textarea>
-        </nz-form-control>
-      </nz-form-item>
-
-      <nz-form-item>
-        <nz-form-label nzFor="remark">备注</nz-form-label>
-        <nz-form-control>
-          <textarea id="remark" nz-input formControlName="remark" rows="2"></textarea>
-        </nz-form-control>
-      </nz-form-item>
-    </form>
-  </ng-container>
-</nz-modal>
+  [platformKey]="editing"
+  (saved)="handleSaved($event)"
+  (closed)="closeForm()"
+/>
 
 <nz-modal
   nzTitle="平台密钥已创建"

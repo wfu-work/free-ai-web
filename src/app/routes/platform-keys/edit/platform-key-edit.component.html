@@ -1,0 +1,38 @@
+<nz-modal
+  [nzTitle]="formMode === 'create' ? '创建平台密钥' : '编辑平台密钥'"
+  [nzVisible]="visible"
+  [nzOkLoading]="saving"
+  nzOkText="保存"
+  nzCancelText="取消"
+  (nzOnOk)="save()"
+  (nzOnCancel)="close()"
+>
+  <ng-container *nzModalContent>
+    <form nz-form [formGroup]="form" class="key-form">
+      <se-container col="2" nzLayout="vertical">
+        <se label="密钥名称" required error="请输入密钥名称">
+          <input id="name" nz-input formControlName="name" placeholder="例如 内部服务调用" />
+        </se>
+
+        <se label="每分钟限速">
+          <nz-input-number
+            id="rateLimitPerMinute"
+            formControlName="rateLimitPerMinute"
+            [nzMin]="0"
+            [nzStep]="1"
+          />
+          <div class="field-extra">0 表示不限速。</div>
+        </se>
+
+        <se class="span-2" label="允许模型">
+          <textarea id="allowedModels" nz-input formControlName="allowedModels" rows="3"></textarea>
+          <div class="field-extra">留空表示允许全部模型；建议填写 JSON 数组，例如 ["gpt-4.1-mini"]。</div>
+        </se>
+
+        <se class="span-2" label="备注">
+          <textarea id="remark" nz-input formControlName="remark" rows="2"></textarea>
+        </se>
+      </se-container>
+    </form>
+  </ng-container>
+</nz-modal>

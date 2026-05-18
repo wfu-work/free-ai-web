@@ -5,51 +5,35 @@ import {
   OnInit,
   inject,
 } from '@angular/core';
-import { FormBuilder, Validators } from '@angular/forms';
 import { STColumn, STColumnTag } from '@delon/abc/st';
 import { SHARED_IMPORTS, TitleLabelComponent } from '@shared';
 import { NzMessageService } from 'ng-zorro-antd/message';
 import { NzModalService } from 'ng-zorro-antd/modal';
 import { finalize } from 'rxjs';
 
-import {
-  CreatePlatformKeyResult,
-  PlatformKey,
-  PlatformKeyPayload,
-} from '../platform-key.model';
+import { PlatformKeyEditComponent } from '../edit/platform-key-edit.component';
+import { CreatePlatformKeyResult, PlatformKey } from '../platform-key.model';
 import { PlatformKeysService } from '../platform-keys.service';
-
-type PlatformKeyFormMode = 'create' | 'edit';
 
 @Component({
   selector: 'app-platform-key-list',
   templateUrl: './platform-key-list.component.html',
   styleUrls: ['./platform-key-list.component.less'],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [SHARED_IMPORTS, TitleLabelComponent],
+  imports: [SHARED_IMPORTS, TitleLabelComponent, PlatformKeyEditComponent],
 })
 export class PlatformKeyListComponent implements OnInit {
   private readonly platformKeysService = inject(PlatformKeysService);
   private readonly message = inject(NzMessageService);
   private readonly modal = inject(NzModalService);
   private readonly cdr = inject(ChangeDetectorRef);
-  private readonly fb = inject(FormBuilder);
 
   protected items: PlatformKey[] = [];
   protected loading = false;
   protected formVisible = false;
-  protected saving = false;
-  protected formMode: PlatformKeyFormMode = 'create';
   protected editing: PlatformKey | null = null;
   protected secretVisible = false;
   protected secretView: CreatePlatformKeyResult | null = null;
-
-  protected readonly form = this.fb.nonNullable.group({
-    name: ['', [Validators.required]],
-    allowedModels: [''],
-    rateLimitPerMinute: [0],
-    remark: [''],
-  });
 
   protected readonly enabledTag: STColumnTag = {
     true: { text: '启用', color: 'green' },
@@ -86,74 +70,26 @@ export class PlatformKeyListComponent implements OnInit {
   }
 
   protected openCreate(): void {
-    this.formMode = 'create';
     this.editing = null;
-    this.form.reset({ name: '', allowedModels: '', rateLimitPerMinute: 0, remark: '' });
     this.formVisible = true;
   }
 
   protected openEdit(item: PlatformKey): void {
-    this.formMode = 'edit';
     this.editing = item;
-    this.form.reset({
-      name: item.name ?? '',
-      allowedModels: item.allowedModels ?? '',
-      rateLimitPerMinute: item.rateLimitPerMinute ?? 0,
-      remark: item.remark ?? '',
-    });
     this.formVisible = true;
+  }
+
+  protected handleSaved(result: CreatePlatformKeyResult | null): void {
+    this.formVisible = false;
+    if (result) {
+      this.secretView = result;
+      this.secretVisible = true;
+    }
+    this.load();
   }
 
   protected closeForm(): void {
     this.formVisible = false;
-    this.saving = false;
-  }
-
-  protected save(): void {
-    Object.values(this.form.controls).forEach((control) => {
-      control.markAsDirty();
-      control.updateValueAndValidity();
-    });
-    if (this.form.invalid) return;
-
-    const value = this.form.getRawValue();
-    const payload: PlatformKeyPayload = {
-      ...value,
-      rateLimitPerMinute: Math.max(Number(value.rateLimitPerMinute || 0), 0),
-    };
-    this.saving = true;
-    if (this.formMode === 'create') {
-      this.platformKeysService
-        .create(payload)
-        .pipe(
-          finalize(() => {
-            this.saving = false;
-            this.cdr.markForCheck();
-          }),
-        )
-        .subscribe((result) => {
-          this.formVisible = false;
-          this.secretView = result;
-          this.secretVisible = true;
-          this.message.success('密钥已创建');
-          this.load();
-        });
-      return;
-    }
-
-    this.platformKeysService
-      .update(this.editing!.guid, payload)
-      .pipe(
-        finalize(() => {
-          this.saving = false;
-          this.cdr.markForCheck();
-        }),
-      )
-      .subscribe(() => {
-        this.formVisible = false;
-        this.message.success('密钥已更新');
-        this.load();
-      });
   }
 
   protected setEnabled(item: PlatformKey, enabled: boolean): void {

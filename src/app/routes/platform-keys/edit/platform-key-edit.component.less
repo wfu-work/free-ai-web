@@ -1,0 +1,33 @@
+:host {
+  display: contents;
+}
+
+.key-form {
+  display: grid;
+  gap: 2px;
+}
+
+.key-form ::ng-deep se-container {
+  display: block;
+}
+
+.key-form nz-input-number {
+  width: 100%;
+}
+
+.field-extra {
+  margin-top: 6px;
+  color: #697789;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.span-2 {
+  grid-column: span 2;
+}
+
+@media (max-width: 767px) {
+  .span-2 {
+    grid-column: span 1;
+  }
+}
