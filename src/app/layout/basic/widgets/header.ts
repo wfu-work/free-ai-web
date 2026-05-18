@@ -56,7 +56,7 @@ import { ThemeColorComponent } from './theme-color';
         min-height: 68px;
         padding: 10px 18px;
         border: 1px solid transparent;
-        border-radius: 22px;
+        border-radius: 8px;
         background: transparent;
         box-shadow: none;
         backdrop-filter: none;

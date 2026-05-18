@@ -1,10 +1,4 @@
 <form nz-form [formGroup]="form" (ngSubmit)="submit()" role="form">
-  <nz-alert
-    nzType="info"
-    nzShowIcon
-    nzMessage="优先使用后端真实登录接口进入控制台；如果本地后端未提供登录能力，前端会回退到本地会话模式。"
-    class="mb-lg"
-  />
   <nz-tabs [nzAnimated]="false" class="tabs" (nzSelectChange)="switch($event)">
     <nz-tab [nzTitle]="'管理员账号'">
       @if (error) {
@@ -85,7 +79,7 @@
       <label nz-checkbox formControlName="remember">保持登录状态</label>
     </nz-col>
     <nz-col [nzSpan]="12" class="text-right">
-      <span class="forgot">真实登录优先</span>
+      <span class="forgot">注册账号</span>
     </nz-col>
   </nz-form-item>
   <nz-form-item>

@@ -11,11 +11,11 @@ import { NzIconModule } from 'ng-zorro-antd/icon';
     <div class="container">
       <div class="wrap">
         <div class="top">
-          <div class="head">
+          <div class="header">
             <logo class="logo" />
             <span class="title">FreeAi</span>
           </div>
-          <div class="desc">边缘设备远程接入控制台</div>
+          <div class="desc">本地 AI 代理管理台</div>
         </div>
         <router-outlet />
         <global-footer [links]="links">

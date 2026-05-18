@@ -139,7 +139,7 @@ export class UserLoginComponent implements OnDestroy {
           )
           .subscribe({
             next: (r: LoginResponse) =>
-              this.afterLogin(r, this.form.value.username || 'local-admin', encryptedPassword),
+              this.afterLogin(r, this.form.value.username || 'admin', encryptedPassword),
             error: (e) => {
               this.error = e?.msg || '登录失败，请检查账号或密码';
               this.cdr.detectChanges();
@@ -148,10 +148,6 @@ export class UserLoginComponent implements OnDestroy {
       },
       error: (e) => {
         this.loading = false;
-        if (e?.status === 404 || e?.status === 0) {
-          this.enterLocalConsole(this.form.value.username || 'local-admin');
-          return;
-        }
         this.messageService.error(e?.error?.msg || e?.msg || '登录安全校验异常，请稍后重试');
         this.cdr.detectChanges();
       },
@@ -223,7 +219,7 @@ export class UserLoginComponent implements OnDestroy {
   }
 
   private loginWithEmail(): void {
-    this.enterLocalConsole(this.form.value.email || 'local-admin');
+    this.enterLocalConsole(this.form.value.email || 'admin');
   }
 
   ngOnDestroy(): void {

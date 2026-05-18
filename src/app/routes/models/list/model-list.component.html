@@ -28,6 +28,7 @@
       [columns]="columns"
       [loading]="loading"
       [page]="{ front: true, showSize: true, pageSizes: [10, 20, 50], showQuickJumper: true }"
+      [scroll]="{ x: '1200px' }"
     >
       <ng-template st-row="publicRender" let-item>
         <div class="model-name">{{ item.publicModel || '-' }}</div>

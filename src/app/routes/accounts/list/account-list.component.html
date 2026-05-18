@@ -97,14 +97,14 @@
   <ng-container *nzModalContent>
     <form nz-form [formGroup]="testForm" class="account-form">
       <nz-form-item>
-        <nz-form-label nzFor="testModel">模型</nz-form-label>
-        <nz-form-control nzExtra="留空只检查 Secret 解密和账号基础状态；填写模型会优先按模型映射测试，未配置映射时会直接按账号支持的上游模型测试。">
+        <nz-form-label nzFor="testModel" nzLabelAlign="right" [nzSm]="4" [nzXs]="24">模型</nz-form-label>
+        <nz-form-control [nzSm]="20" [nzXs]="24" nzExtra="留空只检查 Secret 解密和账号基础状态；填写模型会优先按模型映射测试，未配置映射时会直接按账号支持的上游模型测试。">
           <input id="testModel" nz-input formControlName="model" placeholder="例如 gpt-5.5" />
         </nz-form-control>
       </nz-form-item>
       <nz-form-item>
-        <nz-form-label nzFor="testPrompt">Prompt</nz-form-label>
-        <nz-form-control>
+        <nz-form-label nzFor="testPrompt" nzLabelAlign="right" [nzSm]="4" [nzXs]="24">Prompt</nz-form-label>
+        <nz-form-control [nzSm]="20" [nzXs]="24">
           <input id="testPrompt" nz-input formControlName="prompt" placeholder="ping" />
         </nz-form-control>
       </nz-form-item>
