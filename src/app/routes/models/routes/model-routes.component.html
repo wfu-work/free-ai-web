@@ -1,0 +1,71 @@
+<section class="route-page">
+  <div class="d-flex justify-content-between header-row">
+    <title-label
+      title="路由状态"
+      description="查看 weighted round-robin 的路由键、游标和最近命中账号，定位请求切换与账号池分布。"
+    />
+    <div class="header-actions">
+      <button nz-button (click)="load()">
+        <i nz-icon nzType="reload"></i>
+        刷新
+      </button>
+    </div>
+  </div>
+
+  <div class="metric-grid">
+    <article class="metric-card">
+      <span>路由键总数</span>
+      <strong>{{ routeCount }}</strong>
+    </article>
+    <article class="metric-card metric-success">
+      <span>已关联账号</span>
+      <strong>{{ linkedCount }}</strong>
+    </article>
+    <article class="metric-card metric-warning">
+      <span>久未更新</span>
+      <strong>{{ staleCount }}</strong>
+    </article>
+    <article class="metric-card">
+      <span>最近更新时间</span>
+      <strong>{{ latestUpdateLabel }}</strong>
+    </article>
+  </div>
+
+  <nz-alert
+    nzType="info"
+    nzShowIcon
+    nzMessage="路由状态由后端轮询逻辑自动维护；最近命中账号用于帮助判断某个 publicModel 当前落到了哪一组上游账号。"
+  />
+
+  <nz-card class="route-card" [nzBordered]="false">
+    <st
+      [data]="items"
+      [columns]="columns"
+      [loading]="loading"
+      [page]="{ front: true, showSize: true, pageSizes: [10, 20, 50], showQuickJumper: true }"
+    >
+      <ng-template st-row="routeKeyRender" let-item>
+        <div class="route-key">{{ item.routeKey || '-' }}</div>
+        <button
+          type="button"
+          class="copy-text"
+          nz-tooltip
+          nzTooltipTitle="复制 routeKey"
+          (click)="copy(item.routeKey, 'routeKey')"
+        >
+          {{ item.guid }}
+        </button>
+      </ng-template>
+
+      <ng-template st-row="accountRender" let-item>
+        <div class="account-name">{{ accountName(item.lastAccountGuid) }}</div>
+        <span class="muted">{{ accountProvider(item.lastAccountGuid) }}</span>
+      </ng-template>
+
+      <ng-template st-row="updatedRender" let-item>
+        <div>{{ formatTime(item.updatedAtUnix) }}</div>
+        <span class="muted">{{ item.lastAccountGuid || '无最近账号' }}</span>
+      </ng-template>
+    </st>
+  </nz-card>
+</section>

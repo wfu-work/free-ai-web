@@ -1,0 +1,49 @@
+:host {
+  display: block;
+}
+
+:host ::ng-deep {
+  .line-chart {
+    position: relative;
+    width: 100%;
+    min-height: 160px;
+  }
+
+  .line-chart-body {
+    position: relative;
+    width: 100%;
+  }
+
+  .line-chart-canvas {
+    width: 100%;
+    min-height: 160px;
+  }
+
+  .line-chart-empty-state .line-chart-canvas {
+    pointer-events: none;
+    opacity: 0;
+  }
+
+  .line-chart-empty {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 160px;
+    padding: 16px;
+  }
+
+  .line-chart-empty .ant-empty {
+    margin: 0;
+  }
+
+  .line-chart .ant-spin-nested-loading,
+  .line-chart .ant-spin-container {
+    height: 100%;
+  }
+
+  .ant-empty-description {
+    color: #a8b7af;
+  }
+}

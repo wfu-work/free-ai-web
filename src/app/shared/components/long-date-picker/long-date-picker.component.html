@@ -1,0 +1,14 @@
+<div>
+  <nz-date-picker
+    [nzSize]="size"
+    #datePicker
+    [(ngModel)]="date"
+    [nzFormat]="'yyyy-MM-dd HH:mm:ss'"
+    [nzShowTime]="{ nzHideDisabledOptions: false, nzDefaultOpenValue: timeDefaultValue }"
+    nzShowNow
+    nzShowToday
+    nzPlaceHolder="请选择时间"
+    (nzOnOpenChange)="handleChange($event)"
+    style="width: 100%"
+  />
+</div>

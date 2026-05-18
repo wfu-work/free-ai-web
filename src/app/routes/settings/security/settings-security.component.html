@@ -1,0 +1,69 @@
+<section class="settings-page">
+  <div class="d-flex justify-content-between header-row">
+    <title-label
+      title="安全设置"
+      description="查看主密钥加载状态、平台密钥安全边界、上游 Secret 加密存储和管理 API 鉴权约束。"
+    />
+    <div class="header-actions">
+      <button nz-button (click)="load()">
+        <i nz-icon nzType="reload"></i>
+        刷新
+      </button>
+    </div>
+  </div>
+
+  <nz-spin [nzSpinning]="loading">
+    <div class="metric-grid">
+      <article class="metric-card" [class]="statusTone">
+        <span>主密钥状态</span>
+        <strong>{{ statusLabel }}</strong>
+      </article>
+      <article class="metric-card">
+        <span>主密钥文件</span>
+        <strong>{{ masterKey?.path || '-' }}</strong>
+      </article>
+      <article class="metric-card">
+        <span>密钥大小</span>
+        <strong>{{ formatBytes(masterKey?.size) }}</strong>
+      </article>
+      <article class="metric-card">
+        <span>更新时间</span>
+        <strong>{{ formatTime(masterKey?.updatedAt) }}</strong>
+      </article>
+    </div>
+
+    <div class="content-grid">
+      <nz-card class="panel-card" [nzBordered]="false">
+        <div class="panel-title">主密钥状态</div>
+        <div class="detail-grid">
+          <div>
+            <span>文件路径</span>
+            <strong>{{ masterKey?.path || '-' }}</strong>
+          </div>
+          <div>
+            <span>文件存在</span>
+            <strong>{{ masterKey?.exists ? '是' : '否' }}</strong>
+          </div>
+          <div>
+            <span>加载成功</span>
+            <strong>{{ masterKey?.loaded ? '是' : '否' }}</strong>
+          </div>
+          <div>
+            <span>错误信息</span>
+            <strong class="danger-text">{{ masterKey?.error || '无' }}</strong>
+          </div>
+        </div>
+      </nz-card>
+
+      <nz-card class="panel-card" [nzBordered]="false">
+        <div class="panel-title">安全边界说明</div>
+        <ul class="note-list">
+          <li>上游账号 Secret 只在后端落库时加密保存，前端只能看到 `secretHint`，不会回显原始值。</li>
+          <li>平台密钥用于业务侧访问 `/v1/*` 代理接口，和后台管理接口的登录鉴权是两条边界。</li>
+          <li>主密钥文件异常时，新增账号、刷新账号和解密已有 Secret 都会受影响，应优先修复。</li>
+          <li>建议把主密钥文件放在持久化目录，并限制为当前服务用户可读写。</li>
+        </ul>
+      </nz-card>
+    </div>
+  </nz-spin>
+</section>

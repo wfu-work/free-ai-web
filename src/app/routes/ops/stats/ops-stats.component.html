@@ -1,0 +1,68 @@
+<section class="ops-page">
+  <div class="d-flex justify-content-between header-row">
+    <title-label
+      title="统计分析"
+      description="聚合请求日志的成功率、失败率和平均延迟，快速判断当前代理质量与稳定性。"
+    />
+    <div class="header-actions">
+      <button nz-button (click)="load()">
+        <i nz-icon nzType="reload"></i>
+        刷新
+      </button>
+    </div>
+  </div>
+
+  <nz-spin [nzSpinning]="loading">
+    <div class="metric-grid">
+      <article class="metric-card">
+        <span>请求总量</span>
+        <strong>{{ stats.total || 0 }}</strong>
+      </article>
+      <article class="metric-card metric-success">
+        <span>成功请求</span>
+        <strong>{{ stats.success || 0 }}</strong>
+      </article>
+      <article class="metric-card metric-danger">
+        <span>失败请求</span>
+        <strong>{{ stats.failures || 0 }}</strong>
+      </article>
+      <article class="metric-card">
+        <span>平均延迟</span>
+        <strong>{{ formatMs(stats.avgLatencyMs) }}</strong>
+      </article>
+    </div>
+
+    <div class="content-grid">
+      <nz-card class="panel-card" [nzBordered]="false">
+        <div class="panel-title">成功率概览</div>
+        <div class="summary-grid">
+          <div>
+            <span>成功率</span>
+            <strong class="success-text">{{ successRate }}</strong>
+          </div>
+          <div>
+            <span>失败率</span>
+            <strong class="danger-text">{{ failureRate }}</strong>
+          </div>
+          <div>
+            <span>成功请求</span>
+            <strong>{{ stats.success || 0 }}</strong>
+          </div>
+          <div>
+            <span>失败请求</span>
+            <strong>{{ stats.failures || 0 }}</strong>
+          </div>
+        </div>
+      </nz-card>
+
+      <nz-card class="panel-card" [nzBordered]="false">
+        <div class="panel-title">解读建议</div>
+        <ul class="note-list">
+          <li>成功率长期低于 95% 时，优先检查账号状态、模型映射和平台密钥是否异常。</li>
+          <li>平均延迟偏高时，结合请求日志查看具体 Provider、模型和切换原因。</li>
+          <li>失败量突然升高时，建议联动账号健康页和请求日志页一起排查。</li>
+        </ul>
+      </nz-card>
+    </div>
+  </nz-spin>
+</section>

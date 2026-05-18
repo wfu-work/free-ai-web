@@ -1,0 +1,49 @@
+<div class="upload-cover">
+  <nz-upload
+    class="upload-card"
+    nzName="cover"
+    [nzShowUploadList]="false"
+    [nzCustomRequest]="customRequest"
+    (nzChange)="handleChange($event)"
+  >
+    @if (!url) {
+      <div class="upload-card__placeholder">
+        <div class="upload-card__icon-wrap">
+          <span
+            nz-icon
+            class="upload-card__icon"
+            [nzType]="loading ? 'loading' : 'cloud-upload'"
+          ></span>
+        </div>
+        <div class="upload-card__title">点击或拖拽上传照片</div>
+        <div class="upload-card__hint">支持 JPG、PNG、GIF 等格式 (最大 5MB)</div>
+      </div>
+    }
+    @if (url) {
+      <div class="upload-card__preview">
+        <img [src]="url" alt="上传图片" />
+        <div class="upload-card__mask">
+          <button
+            nz-button
+            nzType="primary"
+            nzShape="round"
+            (click)="preview(); $event.stopPropagation()"
+          >
+            <span nz-icon nzType="eye"></span>
+            预览
+          </button>
+          <button
+            nz-button
+            nzDanger
+            nzShape="round"
+            (click)="remove(); $event.stopPropagation()"
+            [disabled]="!url"
+          >
+            <span nz-icon nzType="delete"></span>
+            删除
+          </button>
+        </div>
+      </div>
+    }
+  </nz-upload>
+</div>

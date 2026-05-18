@@ -1,0 +1,150 @@
+<section class="model-edit-page">
+  <div class="d-flex justify-content-between header-row">
+    <title-label [title]="pageTitle" [description]="pageDescription" [showBack]="true" />
+    <div class="header-actions">
+      <button nz-button (click)="goList()">取消</button>
+      <button nz-button nzType="primary" [nzLoading]="saving" (click)="save()">保存映射</button>
+    </div>
+  </div>
+
+  <nz-spin [nzSpinning]="loading">
+    <div class="metric-grid">
+      <article class="metric-card">
+        <span>当前 Provider</span>
+        <strong>{{ providerLabel }}</strong>
+      </article>
+      <article class="metric-card">
+        <span>账号组</span>
+        <strong>{{ groupLabel }}</strong>
+      </article>
+      <article class="metric-card">
+        <span>流式能力</span>
+        <strong>{{ streamLabel }}</strong>
+      </article>
+      <article class="metric-card">
+        <span>请求超时</span>
+        <strong>{{ timeoutLabel }}</strong>
+      </article>
+    </div>
+
+    <div class="content-grid">
+      <nz-card class="form-card" [nzBordered]="false">
+        <form nz-form [formGroup]="form" class="model-form" (ngSubmit)="save()">
+          <section class="form-section">
+            <div class="section-title">模型定义</div>
+            <se-container col="2" nzLayout="vertical">
+              <se label="对外模型" required error="请输入对外模型名">
+                <input id="publicModel" nz-input formControlName="publicModel" placeholder="gpt-4.1-mini" />
+              </se>
+
+              <se label="上游模型" required error="请输入上游模型名">
+                <input id="upstreamModel" nz-input formControlName="upstreamModel" placeholder="gpt-4.1-mini" />
+              </se>
+
+              <se class="span-2" label="模型别名">
+                <textarea
+                  id="aliases"
+                  nz-input
+                  formControlName="aliases"
+                  rows="3"
+                  placeholder='可填 JSON 数组或逗号分隔，例如 ["gpt-4o-mini","mini"]'
+                ></textarea>
+                <div class="field-extra">别名会作为相同映射的额外入口，适合兼容历史 model 名称。</div>
+              </se>
+            </se-container>
+          </section>
+
+          <section class="form-section">
+            <div class="section-title">路由绑定</div>
+            <se-container col="2" nzLayout="vertical">
+              <se label="Provider" required error="请选择 Provider">
+                <nz-select id="provider" formControlName="provider" nzShowSearch nzPlaceHolder="请选择 Provider">
+                  @for (provider of providerOptions; track provider) {
+                    <nz-option [nzValue]="provider.value" [nzLabel]="provider.label" />
+                  }
+                </nz-select>
+              </se>
+
+              <se label="账号组">
+                <nz-select
+                  id="accountGroup"
+                  formControlName="accountGroup"
+                  nzShowSearch
+                  nzPlaceHolder="请选择账号组"
+                >
+                  @for (group of accountGroupOptions; track group) {
+                    <nz-option [nzValue]="group" [nzLabel]="group" />
+                  }
+                </nz-select>
+              </se>
+
+              <se label="超时秒数">
+                <nz-input-number id="timeoutSec" formControlName="timeoutSec" [nzMin]="1" [nzStep]="1" />
+              </se>
+
+              <se label="流式响应">
+                <label nz-checkbox formControlName="stream">允许流式响应</label>
+              </se>
+            </se-container>
+          </section>
+        </form>
+      </nz-card>
+
+      <nz-card class="side-card" [nzBordered]="false">
+        <div class="aside-intro">
+          <strong>路由提示</strong>
+          <p>模型映射会按 Provider 和账号组落到对应账号池，保存后新的 publicModel 会立即参与代理路由。</p>
+        </div>
+
+        <div class="quick-grid">
+          <div class="quick-item">
+            <span>匹配账号数</span>
+            <strong>{{ relatedAccountCount }}</strong>
+          </div>
+          <div class="quick-item">
+            <span>目标账号组</span>
+            <strong>{{ groupLabel }}</strong>
+          </div>
+          <div class="quick-item">
+            <span>Provider</span>
+            <strong>{{ providerLabel }}</strong>
+          </div>
+          <div class="quick-item">
+            <span>流式设置</span>
+            <strong>{{ streamLabel }}</strong>
+          </div>
+        </div>
+
+        <div class="section-title">填写建议</div>
+        <ul class="note-list">
+          <li>对外模型建议与业务侧实际传入的 `model` 完全一致，避免多余兼容逻辑。</li>
+          <li>如果某个 Provider 下有多组账号池，请明确指定账号组，避免请求落到错误的上游账户。</li>
+          <li>超时秒数应与上游模型响应时长匹配，长上下文或推理模型通常需要更高超时。</li>
+          <li>流式能力关闭后，请确认客户端不会再以 SSE/stream 模式调用这个模型。</li>
+        </ul>
+
+        @if (formMode === 'edit' && model) {
+          <div class="section-title section-title-spaced">当前映射概览</div>
+          <div class="detail-grid">
+            <div>
+              <span>映射 GUID</span>
+              <strong>{{ model.guid }}</strong>
+            </div>
+            <div>
+              <span>启用状态</span>
+              <strong>{{ model.enabled ? '已启用' : '已停用' }}</strong>
+            </div>
+            <div>
+              <span>对外模型</span>
+              <strong>{{ model.publicModel || '-' }}</strong>
+            </div>
+            <div>
+              <span>上游模型</span>
+              <strong>{{ model.upstreamModel || '-' }}</strong>
+            </div>
+          </div>
+        }
+      </nz-card>
+    </div>
+  </nz-spin>
+</section>

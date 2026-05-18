@@ -1,0 +1,60 @@
+@import '@delon/theme/index';
+
+:host ::ng-deep {
+  .dashboard-page {
+    display: block;
+    min-width: 0;
+  }
+
+  .dashboard-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+  }
+
+  .dashboard-panels {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 22px;
+    margin-top: 26px;
+  }
+
+  .dashboard-widgets {
+    display: grid;
+    grid-template-columns: minmax(0, 2fr) minmax(320px, 0.98fr);
+    gap: 22px;
+    margin-top: 22px;
+  }
+}
+
+@media (max-width: 1199px) {
+  .dashboard-panels {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  :host ::ng-deep {
+    .dashboard-header {
+      display: grid;
+    }
+
+    .dashboard-widgets {
+      grid-template-columns: 1fr;
+    }
+  }
+}
+
+@media (max-width: 767px) {
+  .dashboard-panels {
+    grid-template-columns: 1fr;
+    gap: 16px;
+    margin-top: 20px;
+  }
+
+  :host ::ng-deep {
+    .dashboard-widgets {
+      gap: 16px;
+      margin-top: 16px;
+    }
+  }
+}

@@ -1,0 +1,12 @@
+<div class="line-chart" [class.line-chart-empty-state]="!hasData">
+  <nz-spin [nzSpinning]="loading">
+    <div class="line-chart-body">
+      <div class="line-chart-canvas" [style.height.px]="height" #chartRef></div>
+      @if (!hasData) {
+        <div class="line-chart-empty">
+          <nz-empty [nzNotFoundContent]="emptyText" />
+        </div>
+      }
+    </div>
+  </nz-spin>
+</div>

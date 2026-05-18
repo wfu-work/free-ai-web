@@ -1,0 +1,158 @@
+:host {
+  display: block;
+}
+
+.account-page {
+  display: grid;
+  gap: 18px;
+  min-width: 0;
+}
+
+.header-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.header-actions {
+  display: flex;
+  flex: 0 0 auto;
+  gap: 10px;
+}
+
+.account-card {
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid rgb(var(--nm-primary-rgb) / 10%);
+  border-radius: 8px;
+  background: #fff;
+}
+
+.account-card ::ng-deep {
+  .ant-card-body,
+  st,
+  .st,
+  .ant-table-wrapper,
+  .ant-table,
+  .ant-table-container {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .ant-table {
+    table-layout: fixed;
+  }
+
+  .ant-table-thead > tr > th,
+  .ant-table-tbody > tr > td {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
+
+.account-name,
+.provider-line {
+  color: #1d2b3f;
+  font-weight: 700;
+}
+
+.copy-text {
+  display: block;
+  max-width: 100%;
+  margin-top: 4px;
+  padding: 0;
+  overflow: hidden;
+  border: 0;
+  color: #697789;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 12px;
+  line-height: 1.5;
+  text-align: left;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  background: transparent;
+  cursor: pointer;
+}
+
+.copy-text:hover {
+  color: var(--nm-primary);
+}
+
+.muted {
+  color: #7b8794;
+  font-size: 12px;
+}
+
+.row-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 6px;
+}
+
+.row-actions button {
+  padding-inline: 0;
+}
+
+.danger-link {
+  color: #c24141;
+}
+
+.account-form {
+  display: grid;
+  gap: 2px;
+}
+
+.test-result {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 12px;
+  padding: 14px;
+  border: 1px solid #ffd8d8;
+  border-radius: 8px;
+  background: #fff7f7;
+}
+
+.test-result-ok {
+  border-color: #ccebdc;
+  background: #f4fbf7;
+}
+
+.test-result span,
+.test-result strong {
+  display: block;
+}
+
+.test-result span {
+  color: #697789;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.test-result strong {
+  margin-top: 4px;
+  color: #213149;
+  font-size: 14px;
+  font-weight: 800;
+}
+
+@media (max-width: 767px) {
+  .header-row,
+  .test-result {
+    grid-template-columns: 1fr;
+  }
+
+  .header-row {
+    display: grid;
+  }
+
+  .header-actions {
+    width: 100%;
+  }
+
+  .header-actions button {
+    flex: 1;
+  }
+}

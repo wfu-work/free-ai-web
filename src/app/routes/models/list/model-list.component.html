@@ -1,0 +1,78 @@
+<section class="model-page">
+  <div class="d-flex justify-content-between header-row">
+    <title-label
+      title="模型映射"
+      description="配置 publicModel 到上游模型、Provider、账号组和请求超时的路由关系。"
+    />
+    <div class="header-actions">
+      <button nz-button (click)="load()">
+        <i nz-icon nzType="reload"></i>
+        刷新
+      </button>
+      <button nz-button nzType="primary" (click)="openCreate()">
+        <i nz-icon nzType="plus"></i>
+        新增映射
+      </button>
+    </div>
+  </div>
+
+  <nz-alert
+    nzType="info"
+    nzShowIcon
+    nzMessage="publicModel 是业务客户端请求中的 model；aliases 可作为同一映射的额外入口。"
+  />
+
+  <nz-card class="model-card" [nzBordered]="false">
+    <st
+      [data]="items"
+      [columns]="columns"
+      [loading]="loading"
+      [page]="{ front: true, showSize: true, pageSizes: [10, 20, 50], showQuickJumper: true }"
+    >
+      <ng-template st-row="publicRender" let-item>
+        <div class="model-name">{{ item.publicModel || '-' }}</div>
+        <button
+          type="button"
+          class="copy-text"
+          nz-tooltip
+          nzTooltipTitle="复制 publicModel"
+          (click)="copy(item.publicModel, 'publicModel')"
+        >
+          {{ formatAliases(item.aliases) }}
+        </button>
+      </ng-template>
+
+      <ng-template st-row="upstreamRender" let-item>
+        <div>{{ item.upstreamModel || '-' }}</div>
+        <span class="muted">{{ item.guid }}</span>
+      </ng-template>
+
+      <ng-template st-row="providerRender" let-item>
+        <div class="provider-line">{{ item.provider || '-' }}</div>
+        <span class="muted">{{ item.accountGroup || '默认账号组' }}</span>
+      </ng-template>
+
+      <ng-template st-row="timeoutRender" let-item>
+        {{ item.timeoutSec || 120 }}s
+      </ng-template>
+
+      <ng-template st-row="actionRender" let-item>
+        <div class="row-actions">
+          <button nz-button nzType="link" nzSize="small" (click)="openEdit(item)">编辑</button>
+          @if (item.enabled) {
+            <button nz-button nzType="link" nzSize="small" (click)="setEnabled(item, false)">
+              禁用
+            </button>
+          } @else {
+            <button nz-button nzType="link" nzSize="small" (click)="setEnabled(item, true)">
+              启用
+            </button>
+          }
+          <button nz-button nzType="link" nzSize="small" class="danger-link" (click)="delete(item)">
+            删除
+          </button>
+        </div>
+      </ng-template>
+    </st>
+  </nz-card>
+</section>

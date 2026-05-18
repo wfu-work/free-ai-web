@@ -1,0 +1,252 @@
+<section class="account-edit-page">
+  <div class="d-flex justify-content-between header-row">
+    <title-label [title]="pageTitle" [description]="pageDescription" [showBack]="true" />
+    <div class="header-actions">
+      <button nz-button (click)="goList()">取消</button>
+      <button nz-button nzType="primary" [nzLoading]="saving" (click)="save()">保存账号</button>
+    </div>
+  </div>
+
+  <nz-spin [nzSpinning]="loading">
+    <div class="metric-grid">
+      <article class="metric-card">
+        <span>当前状态</span>
+        <strong>{{ statusLabel }}</strong>
+      </article>
+      <article class="metric-card">
+        <span>启用状态</span>
+        <strong>{{ enabledLabel }}</strong>
+      </article>
+      <article class="metric-card">
+        <span>Secret 提示</span>
+        <strong>{{ secretHint }}</strong>
+      </article>
+      <article class="metric-card">
+        <span>最近使用</span>
+        <strong>{{ formatTime(account?.lastUsedAt) }}</strong>
+      </article>
+    </div>
+
+    <div class="content-grid mt-lg">
+      <nz-card class="form-card" [nzBordered]="false">
+        <form nz-form [formGroup]="form" class="account-form" (ngSubmit)="save()">
+          <section class="form-section">
+            <div class="section-title">基本信息</div>
+            <se-container col="2" nzLayout="vertical">
+              <se label="账号名称" required error="请输入账号名称">
+                <input id="name" nz-input formControlName="name" placeholder="例如 OpenAI 主账号" />
+              </se>
+
+              <se label="Provider" required error="请输入 Provider">
+                <nz-select id="provider" formControlName="provider" nzShowSearch nzPlaceHolder="请选择 Provider">
+                  @for (provider of providerOptions; track provider) {
+                    <nz-option [nzValue]="provider.value" [nzLabel]="provider.label" />
+                  }
+                </nz-select>
+              </se>
+
+              @if (isCustomProvider) {
+                <se label="API 请求地址" required error="请输入 API 请求地址">
+                  <input
+                    id="apiBaseUrl"
+                    nz-input
+                    formControlName="apiBaseUrl"
+                    placeholder="https://api.example.com/v1"
+                  />
+                </se>
+
+                <se label="供应商名称" required error="请输入供应商名称">
+                  <input
+                    id="supplierName"
+                    nz-input
+                    formControlName="supplierName"
+                    placeholder="例如：Acme AI"
+                  />
+                </se>
+
+                <se label="官网链接" required error="请输入官网链接">
+                  <input
+                    id="officialUrl"
+                    nz-input
+                    formControlName="officialUrl"
+                    placeholder="https://example.com"
+                  />
+                </se>
+              }
+
+              <se label="账号组">
+                <nz-select
+                  id="accountGroup"
+                  formControlName="accountGroup"
+                  nzShowSearch
+                  nzPlaceHolder="请选择账号组"
+                >
+                  @for (group of accountGroupOptions; track group) {
+                    <nz-option [nzValue]="group" [nzLabel]="group" />
+                  }
+                </nz-select>
+              </se>
+
+              <se label="邮箱或备注名">
+                <input id="email" nz-input formControlName="email" placeholder="可填写邮箱、租户或用途" />
+              </se>
+
+              <se label="账号类型">
+                <nz-select
+                  id="accountType"
+                  formControlName="accountType"
+                  nzShowSearch
+                  nzPlaceHolder="请选择账号类型"
+                >
+                  @for (type of accountTypeOptions; track type) {
+                    <nz-option [nzValue]="type.value" [nzLabel]="type.label" />
+                  }
+                </nz-select>
+              </se>
+            </se-container>
+          </section>
+
+          <section class="form-section">
+            <div class="section-title">认证与模型</div>
+            <se-container col="2" nzLayout="vertical">
+              <se label="认证类型" required>
+                <nz-select id="authType" formControlName="authType">
+                  <nz-option nzValue="bearer_token" nzLabel="Bearer Token" />
+                  <nz-option nzValue="api_key" nzLabel="API Key" />
+                </nz-select>
+              </se>
+
+              <se
+                label="Secret"
+                [required]="formMode === 'create'"
+                [error]="formMode === 'create' ? '新增账号时 Secret 必填' : ''"
+              >
+                <input id="secret" nz-input type="password" formControlName="secret" autocomplete="off" />
+                <div class="field-extra">
+                  {{ formMode === 'edit' ? '留空表示保留当前 Secret。' : 'Secret 只会写入后端加密存储。' }}
+                </div>
+              </se>
+
+              <se class="span-2" label="支持模型">
+                <div class="model-picker">
+                  <nz-select
+                    id="supportedModels"
+                    formControlName="supportedModels"
+                    nzShowSearch
+                    nzAllowClear
+                    nzPlaceHolder="请选择支持模型"
+                  >
+                    @for (model of modelOptions; track model) {
+                      <nz-option [nzValue]="model" [nzLabel]="model" />
+                    }
+                  </nz-select>
+                  <button
+                    nz-button
+                    type="button"
+                    nzShape="circle"
+                    nz-tooltip
+                    nzTooltipTitle="从 API 请求地址获取模型列表"
+                    [nzLoading]="fetchingModels"
+                    (click)="fetchModels()"
+                  >
+                    <i nz-icon nzType="cloud-upload"></i>
+                  </button>
+                </div>
+                <div class="field-extra">留空表示不限制；点击右侧图标可从上游 API 拉取模型列表。</div>
+              </se>
+            </se-container>
+          </section>
+
+          <section class="form-section">
+            <div class="section-title">调度与备注</div>
+            <se-container col="2" nzLayout="vertical">
+              <se label="优先级">
+                <nz-input-number id="priority" formControlName="priority" [nzMin]="0" [nzStep]="1" />
+              </se>
+
+              <se label="权重">
+                <nz-input-number id="weight" formControlName="weight" [nzMin]="1" [nzStep]="1" />
+              </se>
+
+              <se label="订阅过期时间">
+                <nz-input-number
+                  id="subscriptionExpiredAt"
+                  formControlName="subscriptionExpiredAt"
+                  [nzMin]="0"
+                  [nzStep]="1000"
+                />
+                <div class="field-extra">毫秒时间戳；留空或 0 表示不设置。</div>
+              </se>
+
+              <se label="备注">
+                <textarea
+                  id="remark"
+                  nz-input
+                  formControlName="remark"
+                  rows="3"
+                  placeholder="记录用途、限制或运营备注"
+                ></textarea>
+              </se>
+            </se-container>
+          </section>
+        </form>
+      </nz-card>
+
+      <nz-card class="side-card" [nzBordered]="false">
+        <div class="aside-intro">
+          <strong>填写建议</strong>
+          <p>先确认 Provider 与认证方式，再补充模型限制、调度优先级和运营备注，联调时会更顺手。</p>
+        </div>
+
+        <div class="quick-grid">
+          <div class="quick-item">
+            <span>Provider</span>
+            <strong>{{ providerLabel }}</strong>
+          </div>
+          <div class="quick-item">
+            <span>模型限制</span>
+            <strong>{{ modelsLabel }}</strong>
+          </div>
+          <div class="quick-item">
+            <span>调度参数</span>
+            <strong>{{ scheduleLabel }}</strong>
+          </div>
+          <div class="quick-item">
+            <span>账号类型</span>
+            <strong>{{ accountTypeLabel }}</strong>
+          </div>
+        </div>
+
+        <div class="section-title">填写建议</div>
+        <ul class="note-list">
+          <li>Provider 建议与后端路由配置保持一致，例如 `openai`、`claude` 等。</li>
+          <li>支持模型可留空表示不限制；如果填了列表，请确保模型映射中的 public model 能匹配到这里。</li>
+          <li>权重越高越容易被选中，优先级用于做更粗粒度的先后顺序控制。</li>
+          <li>编辑账号时如果不打算更换 Secret，直接留空即可，后端会保留原值。</li>
+        </ul>
+
+        @if (formMode === 'edit' && account) {
+          <div class="section-title section-title-spaced">当前账号概览</div>
+          <div class="detail-grid">
+            <div>
+              <span>账号 GUID</span>
+              <strong>{{ account.guid }}</strong>
+            </div>
+            <div>
+              <span>失败次数</span>
+              <strong>{{ account.failureCount || 0 }}</strong>
+            </div>
+            <div>
+              <span>刷新时间</span>
+              <strong>{{ formatTime(account.lastRefreshedAt) }}</strong>
+            </div>
+            <div>
+              <span>订阅过期</span>
+              <strong>{{ formatTime(account.subscriptionExpiredAt) }}</strong>
+            </div>
+          </div>
+        }
+      </nz-card>
+    </div>
+  </nz-spin>
+</section>

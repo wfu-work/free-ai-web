@@ -1,0 +1,142 @@
+<section class="account-page">
+  <div class="d-flex justify-content-between header-row">
+    <title-label
+      title="账号列表"
+      description="维护上游 AI 账号、Token、Provider、账号组、权重和可用状态。"
+    />
+    <div class="header-actions">
+      <button nz-button (click)="load()">
+        <i nz-icon nzType="reload"></i>
+        刷新
+      </button>
+      <button nz-button nzType="primary" (click)="openCreate()">
+        <i nz-icon nzType="plus"></i>
+        新增账号
+      </button>
+    </div>
+  </div>
+
+  <nz-alert
+    nzType="info"
+    nzShowIcon
+    nzMessage="上游 Secret 只写入后端加密存储，列表和详情只展示 secretHint。"
+  />
+
+  <nz-card class="account-card" [nzBordered]="false">
+    <st
+      [data]="items"
+      [columns]="columns"
+      [loading]="loading"
+      [page]="{ front: true, showSize: true, pageSizes: [10, 20, 50], showQuickJumper: true }"
+    >
+      <ng-template st-row="nameRender" let-item>
+        <div class="account-name">{{ item.name || '-' }}</div>
+        <button
+          type="button"
+          class="copy-text"
+          nz-tooltip
+          nzTooltipTitle="复制账号 GUID"
+          (click)="copy(item.guid, '账号 GUID')"
+        >
+          {{ item.guid }}
+        </button>
+      </ng-template>
+
+      <ng-template st-row="providerRender" let-item>
+        <div class="provider-line">{{ item.provider || '-' }}</div>
+        <span class="muted">{{ item.accountGroup || '默认账号组' }}</span>
+      </ng-template>
+
+      <ng-template st-row="weightRender" let-item>
+        <div>{{ item.weight || 1 }}</div>
+        <span class="muted">优先级 {{ item.priority || 0 }}</span>
+      </ng-template>
+
+      <ng-template st-row="lastUsedRender" let-item>
+        <div>{{ formatTime(item.lastUsedAt) }}</div>
+        <span class="muted">刷新 {{ formatTime(item.lastRefreshedAt) }}</span>
+      </ng-template>
+
+      <ng-template st-row="secretRender" let-item>
+        <div>{{ item.secretHint || '-' }}</div>
+        <span class="muted">{{ modelCount(item.supportedModels) }}</span>
+      </ng-template>
+
+      <ng-template st-row="actionRender" let-item>
+        <div class="row-actions">
+          <button nz-button nzType="link" nzSize="small" (click)="openEdit(item)">编辑</button>
+          <button nz-button nzType="link" nzSize="small" (click)="openTest(item)">测试</button>
+          <button nz-button nzType="link" nzSize="small" (click)="refresh(item)">刷新</button>
+          @if (item.enabled) {
+            <button nz-button nzType="link" nzSize="small" (click)="setEnabled(item, false)">
+              禁用
+            </button>
+          } @else {
+            <button nz-button nzType="link" nzSize="small" (click)="setEnabled(item, true)">
+              启用
+            </button>
+          }
+          <button nz-button nzType="link" nzSize="small" class="danger-link" (click)="delete(item)">
+            删除
+          </button>
+        </div>
+      </ng-template>
+    </st>
+  </nz-card>
+</section>
+
+<nz-modal
+  [nzTitle]="testTarget ? '测试账号：' + testTarget.name : '测试账号'"
+  [nzVisible]="testVisible"
+  [nzOkLoading]="testing"
+  nzOkText="开始测试"
+  nzCancelText="关闭"
+  (nzOnOk)="runTest()"
+  (nzOnCancel)="closeTest()"
+>
+  <ng-container *nzModalContent>
+    <form nz-form [formGroup]="testForm" class="account-form">
+      <nz-form-item>
+        <nz-form-label nzFor="testModel">模型</nz-form-label>
+        <nz-form-control nzExtra="留空只检查 Secret 解密和账号基础状态；填写模型会优先按模型映射测试，未配置映射时会直接按账号支持的上游模型测试。">
+          <input id="testModel" nz-input formControlName="model" placeholder="例如 gpt-5.5" />
+        </nz-form-control>
+      </nz-form-item>
+      <nz-form-item>
+        <nz-form-label nzFor="testPrompt">Prompt</nz-form-label>
+        <nz-form-control>
+          <input id="testPrompt" nz-input formControlName="prompt" placeholder="ping" />
+        </nz-form-control>
+      </nz-form-item>
+    </form>
+
+    @if (testResult) {
+      <div class="test-result" [class.test-result-ok]="testResult.ok">
+        <div>
+          <span>结果</span>
+          <strong>{{ testResult.ok ? '通过' : '未通过' }}</strong>
+        </div>
+        <div>
+          <span>Provider</span>
+          <strong>{{ testResult.provider || '-' }}</strong>
+        </div>
+        <div>
+          <span>状态</span>
+          <strong>{{ testResult.status || '-' }}</strong>
+        </div>
+        <div>
+          <span>延迟</span>
+          <strong>{{ testResult.latencyMs ?? '-' }} ms</strong>
+        </div>
+        <div>
+          <span>上游状态</span>
+          <strong>{{ testResult.upstreamStatusCode ?? '-' }}</strong>
+        </div>
+        <div>
+          <span>错误类型</span>
+          <strong>{{ testResult.upstreamErrorType || '-' }}</strong>
+        </div>
+      </div>
+    }
+  </ng-container>
+</nz-modal>

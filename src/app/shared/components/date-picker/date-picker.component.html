@@ -1,0 +1,20 @@
+<div>
+  <nz-range-picker
+    [nzSize]="size"
+    #datePicker
+    nzShowTime
+    nzFormat="yyyy-MM-dd HH:mm:ss"
+    [(ngModel)]="date"
+    [nzRenderExtraFooter]="footerRender"
+    style="width: 100%; background: #f3f7f4"
+    (ngModelChange)="dateChange.emit($event)"
+  >
+    <ng-template #footerRender>
+      <nz-radio-group [(ngModel)]="dateType" (ngModelChange)="dateTypeChange($event)">
+        @for (item of dateTypes; track item) {
+          <label nz-radio [nzValue]="item.value">{{ item.name }}</label>
+        }
+      </nz-radio-group>
+    </ng-template>
+  </nz-range-picker>
+</div>

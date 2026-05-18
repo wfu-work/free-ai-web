@@ -1,0 +1,58 @@
+<div class="upload-list">
+  <div class="upload-list__grid">
+    @for (file of fileList; track file.uid || file.url || file.response) {
+      <div class="upload-list__card">
+        <img [src]="file.url || file.response" [alt]="file.name || '上传图片'" />
+        <div class="upload-list__mask">
+          <button
+            nz-button
+            nzType="primary"
+            nzShape="round"
+            (click)="openPreview(file); $event.stopPropagation()"
+          >
+            <span nz-icon nzType="eye"></span>
+            预览
+          </button>
+          <button nz-button nzDanger nzShape="round" (click)="removeFile(file, $event)">
+            <span nz-icon nzType="delete"></span>
+            删除
+          </button>
+        </div>
+      </div>
+    }
+
+    @if (fileList.length < max) {
+      <nz-upload
+        class="upload-list__control"
+        nzListType="picture-card"
+        [(nzFileList)]="fileList"
+        [nzShowButton]="true"
+        [nzShowUploadList]="false"
+        [nzPreview]="handlePreview"
+        [nzCustomRequest]="customRequest"
+        (nzChange)="handleChange($event)"
+        [nzRemove]="customRemove"
+      >
+        <div class="upload-list__trigger">
+          <div class="upload-list__trigger-icon">
+            <span nz-icon nzType="cloud-upload"></span>
+          </div>
+          <div class="upload-list__trigger-title">点击或拖拽上传照片</div>
+          <div class="upload-list__trigger-hint">支持 JPG、PNG、GIF 等格式</div>
+          <div class="upload-list__trigger-hint">(单张最大 5MB)</div>
+        </div>
+      </nz-upload>
+    }
+  </div>
+
+  <nz-modal
+    [nzVisible]="previewVisible"
+    [nzContent]="modalContent"
+    [nzFooter]="null"
+    (nzOnCancel)="previewVisible = false"
+  >
+    <ng-template #modalContent>
+      <img [src]="previewImage || 'assets/logo.svg'" [style]="{ width: '100%' }" />
+    </ng-template>
+  </nz-modal>
+</div>

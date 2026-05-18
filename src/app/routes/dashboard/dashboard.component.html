@@ -1,0 +1,54 @@
+<section class="dashboard-page">
+  <div class="dashboard-header">
+    <title-label
+      title="工作台"
+      description="实时掌握 FreeAiGo 服务状态、账号池健康、模型路由、平台密钥与代理请求质量。"
+    />
+    <button nz-button (click)="load()">
+      <i nz-icon nzType="reload"></i>
+      刷新
+    </button>
+  </div>
+
+  <nz-spin [nzSpinning]="loading">
+    <div class="dashboard-panels">
+      <app-panel
+        icon="database"
+        title="账号总数"
+        [value]="totalAccountsLabel"
+        [trend]="metrics.ok ? '服务正常' : '服务异常'"
+        [trendType]="metrics.ok ? 'up' : 'down'"
+      />
+      <app-panel
+        icon="team"
+        title="可用账号"
+        [value]="availableAccountsLabel"
+        [trend]="successRate"
+        trendType="neutral"
+      />
+      <app-panel
+        icon="api"
+        title="启用模型"
+        [value]="enabledModelsLabel"
+        [trend]="routeStates.length + ' 个路由键'"
+        trendType="neutral"
+      />
+      <app-panel
+        icon="key"
+        title="启用密钥"
+        [value]="enabledKeysLabel"
+        [trend]="avgLatencyLabel"
+        trendType="neutral"
+      />
+    </div>
+
+    <div class="dashboard-widgets">
+      <dashboard-traffic-trend [bars]="trendBars" [badge]="'最近 1 小时 · ' + successRate" />
+      <dashboard-active-rules
+        [rules]="pendingRules"
+        link="/ops/metrics"
+        linkLabel="查看运行指标"
+      />
+    </div>
+  </nz-spin>
+</section>

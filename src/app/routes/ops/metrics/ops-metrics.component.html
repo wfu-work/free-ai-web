@@ -1,0 +1,93 @@
+<section class="ops-page">
+  <div class="d-flex justify-content-between header-row">
+    <title-label
+      title="运行指标"
+      description="查看 FreeAiGo 服务状态、账号池可用率、已启用模型和平台密钥数量，以及主密钥加载情况。"
+    />
+    <div class="header-actions">
+      <button nz-button (click)="load()">
+        <i nz-icon nzType="reload"></i>
+        刷新
+      </button>
+    </div>
+  </div>
+
+  <nz-spin [nzSpinning]="loading">
+    <div class="metric-grid">
+      <article class="metric-card" [class]="serviceStatusTone">
+        <span>服务状态</span>
+        <strong>{{ serviceStatusLabel }}</strong>
+        <small>{{ metrics.name || 'FreeAiGo' }}</small>
+      </article>
+      <article class="metric-card">
+        <span>账号可用率</span>
+        <strong>{{ accountAvailability }}</strong>
+        <small>可用账号 / 总账号</small>
+      </article>
+      <article class="metric-card metric-success">
+        <span>启用模型</span>
+        <strong>{{ metrics.enabledModels || 0 }}</strong>
+        <small>参与代理路由的模型映射</small>
+      </article>
+      <article class="metric-card" [class]="masterKeyTone">
+        <span>主密钥状态</span>
+        <strong>{{ masterKeyStatusLabel }}</strong>
+        <small>{{ masterKey?.path || '-' }}</small>
+      </article>
+    </div>
+
+    <div class="content-grid">
+      <nz-card class="panel-card" [nzBordered]="false">
+        <div class="panel-title">账号池概览</div>
+        <div class="detail-grid">
+          <div>
+            <span>账号总数</span>
+            <strong>{{ metrics.accounts || 0 }}</strong>
+          </div>
+          <div>
+            <span>可用账号</span>
+            <strong>{{ metrics.availableAccounts || 0 }}</strong>
+          </div>
+          <div>
+            <span>启用平台密钥</span>
+            <strong>{{ metrics.enabledKeys || 0 }}</strong>
+          </div>
+          <div>
+            <span>启用模型</span>
+            <strong>{{ metrics.enabledModels || 0 }}</strong>
+          </div>
+        </div>
+      </nz-card>
+
+      <nz-card class="panel-card" [nzBordered]="false">
+        <div class="panel-title">主密钥状态</div>
+        <div class="detail-grid">
+          <div>
+            <span>文件路径</span>
+            <strong>{{ masterKey?.path || '-' }}</strong>
+          </div>
+          <div>
+            <span>文件存在</span>
+            <strong>{{ masterKey?.exists ? '是' : '否' }}</strong>
+          </div>
+          <div>
+            <span>加载成功</span>
+            <strong>{{ masterKey?.loaded ? '是' : '否' }}</strong>
+          </div>
+          <div>
+            <span>文件大小</span>
+            <strong>{{ formatBytes(masterKey?.size) }}</strong>
+          </div>
+          <div>
+            <span>更新时间</span>
+            <strong>{{ formatTime(masterKey?.updatedAt) }}</strong>
+          </div>
+          <div>
+            <span>错误信息</span>
+            <strong class="error-text">{{ masterKey?.error || '无' }}</strong>
+          </div>
+        </div>
+      </nz-card>
+    </div>
+  </nz-spin>
+</section>

@@ -1,0 +1,94 @@
+<section class="settings-page">
+  <div class="d-flex justify-content-between header-row">
+    <title-label
+      title="数据保留"
+      description="管理请求日志保留策略和手动清理入口，避免本地 SQLite 日志无限增长。"
+    />
+    <div class="header-actions">
+      <button nz-button (click)="load()">
+        <i nz-icon nzType="reload"></i>
+        刷新
+      </button>
+    </div>
+  </div>
+
+  <nz-spin [nzSpinning]="loading">
+    <div class="metric-grid">
+      <article class="metric-card metric-success">
+        <span>默认保留</span>
+        <strong>{{ defaultRetentionLabel }}</strong>
+      </article>
+      <article class="metric-card">
+        <span>日志总数</span>
+        <strong>{{ stats.total || 0 }}</strong>
+      </article>
+      <article class="metric-card metric-warning">
+        <span>最近样本</span>
+        <strong>{{ sampleSize }}</strong>
+      </article>
+      <article class="metric-card">
+        <span>最近一次操作</span>
+        <strong>{{ lastAction }}</strong>
+      </article>
+    </div>
+
+    <div class="content-grid">
+      <nz-card class="panel-card" [nzBordered]="false">
+        <div class="panel-title">清理工具</div>
+        <form nz-form [formGroup]="retentionForm" class="retention-form">
+          <nz-form-item>
+            <nz-form-label nzFor="retentionDays">保留天数</nz-form-label>
+            <nz-form-control nzExtra="默认与后端 cleanup-log-retention-days 保持 30 天。">
+              <nz-input-number
+                id="retentionDays"
+                formControlName="retentionDays"
+                [nzMin]="1"
+                [nzStep]="1"
+              />
+            </nz-form-control>
+          </nz-form-item>
+
+          <button nz-button nzType="primary" type="button" (click)="clearByRetention()">
+            清理保留期外日志
+          </button>
+
+          <nz-form-item>
+            <nz-form-label nzFor="before">Before 时间戳</nz-form-label>
+            <nz-form-control nzExtra="毫秒时间戳，用于按指定时间点前的数据做一次性清理。">
+              <nz-input-number id="before" formControlName="before" [nzMin]="0" [nzStep]="1000" />
+            </nz-form-control>
+          </nz-form-item>
+
+          <button nz-button type="button" (click)="clearBefore()">按时间戳清理</button>
+        </form>
+      </nz-card>
+
+      <nz-card class="panel-card" [nzBordered]="false">
+        <div class="panel-title">日志范围</div>
+        <div class="detail-grid">
+          <div>
+            <span>样本最早时间</span>
+            <strong>{{ oldestLogTime }}</strong>
+          </div>
+          <div>
+            <span>样本最新时间</span>
+            <strong>{{ latestLogTime }}</strong>
+          </div>
+          <div>
+            <span>成功请求</span>
+            <strong>{{ stats.success || 0 }}</strong>
+          </div>
+          <div>
+            <span>失败请求</span>
+            <strong class="danger-text">{{ stats.failures || 0 }}</strong>
+          </div>
+        </div>
+        <ul class="note-list">
+          <li>当前页面展示的是最近抓取的样本范围，适合快速判断日志是否持续增长。</li>
+          <li>实际清理会直接作用于后端数据库，不受当前样本数量限制。</li>
+          <li>如果需要长期留痕，建议先导出或转储后再执行批量清理。</li>
+        </ul>
+      </nz-card>
+    </div>
+  </nz-spin>
+</section>

@@ -1,0 +1,26 @@
+<nz-layout>
+  <nz-sider
+    class="app-sider"
+    nzCollapsible
+    [nzCollapsed]="isCollapsed"
+    [nzTrigger]="null"
+    nzTheme="light"
+    nzWidth="220px"
+    [nzCollapsedWidth]="80"
+  >
+    <basic-menus
+      [isCollapsed]="isCollapsed"
+      [spin]="spin"
+      (loadResourcesChange)="setLoadResources($event)"
+      (logout)="logout()"
+    />
+  </nz-sider>
+  <nz-layout [ngClass]="isCollapsed ? 'content-close' : 'content'">
+    <basic-header [isCollapsed]="isCollapsed" (collapsClick)="nzCollapsedChange()" />
+    <nz-content>
+      <div class="inner-content-no">
+        <router-outlet />
+      </div>
+    </nz-content>
+  </nz-layout>
+</nz-layout>

@@ -1,0 +1,158 @@
+<section class="groups-page">
+  <div class="d-flex justify-content-between header-row">
+    <title-label
+      title="账号分组"
+      description="按账号组查看 Provider 覆盖、账号池可用性和模型映射关系，方便维护路由分层。"
+    />
+    <div class="header-actions">
+      <button nz-button (click)="load()">
+        <i nz-icon nzType="reload"></i>
+        刷新
+      </button>
+      <button nz-button nzType="primary" (click)="openCreate()">
+        <i nz-icon nzType="plus"></i>
+        新增分组
+      </button>
+    </div>
+  </div>
+
+  <div class="metric-grid">
+    <article class="metric-card">
+      <span>分组总数</span>
+      <strong>{{ totalGroups }}</strong>
+    </article>
+    <article class="metric-card metric-success">
+      <span>已接入分组</span>
+      <strong>{{ activeGroups }}</strong>
+    </article>
+    <article class="metric-card metric-danger">
+      <span>待补账号</span>
+      <strong>{{ pendingAccountGroups }}</strong>
+    </article>
+    <article class="metric-card metric-warning">
+      <span>待补模型</span>
+      <strong>{{ pendingModelGroups }}</strong>
+    </article>
+  </div>
+
+  <nz-alert
+    nzType="info"
+    nzShowIcon
+    nzMessage="账号分组由后台保存维护；表格会同时聚合已有账号和模型映射，帮助判断每个分组是否已经具备完整路由能力。"
+  />
+
+  <nz-card class="groups-card" [nzBordered]="false">
+    <st
+      [data]="items"
+      [columns]="columns"
+      [loading]="loading"
+      [page]="{ front: true, showSize: true, pageSizes: [10, 20, 50], showQuickJumper: true }"
+    >
+      <ng-template st-row="groupRender" let-item>
+        <div class="group-name">{{ item.name }}</div>
+        <span class="muted">{{ item.description || item.remark || '未填写说明' }}</span>
+      </ng-template>
+
+      <ng-template st-row="providerRender" let-item>
+        <div class="chip-list">
+          @for (provider of item.providers; track provider) {
+            <span class="chip">{{ provider }}</span>
+          }
+          @if (!item.providers.length) {
+            <span class="muted">未配置</span>
+          }
+        </div>
+      </ng-template>
+
+      <ng-template st-row="accountRender" let-item>
+        <div class="stat-line">{{ item.accountCount }} 个账号</div>
+        <span class="muted">可用 {{ item.availableCount }} · 启用 {{ item.enabledCount }}</span>
+      </ng-template>
+
+      <ng-template st-row="modelRender" let-item>
+        <div class="stat-line">{{ modelSummary(item) }}</div>
+        <div class="chip-list compact">
+          @for (model of item.publicModels.slice(0, 3); track model) {
+            <span class="chip chip-soft">{{ model }}</span>
+          }
+          @if (item.publicModels.length > 3) {
+            <span class="muted">+{{ item.publicModels.length - 3 }}</span>
+          }
+          @if (!item.publicModels.length) {
+            <span class="muted">暂无已启用映射</span>
+          }
+        </div>
+      </ng-template>
+
+      <ng-template st-row="typeRender" let-item>
+        <div class="chip-list">
+          @for (type of item.accountTypes; track type) {
+            <span class="chip chip-soft">{{ type }}</span>
+          }
+          @if (!item.accountTypes.length) {
+            <span class="muted">未设置</span>
+          }
+        </div>
+      </ng-template>
+
+      <ng-template st-row="statusRender" let-item>
+        <span class="status-pill" [class]="groupTone(item)">{{ groupStatus(item) }}</span>
+      </ng-template>
+
+      <ng-template st-row="actionRender" let-item>
+        <div class="action-row">
+          @if (item.guid) {
+            <button nz-button nzType="link" (click)="openEdit(item)">编辑</button>
+          }
+          <button nz-button nzType="link" (click)="createAccount(item.name)">新增账号</button>
+          <button nz-button nzType="link" (click)="createModel(item.name)">新增模型</button>
+          @if (item.guid) {
+            <button nz-button nzType="link" class="danger-link" (click)="delete(item)">删除</button>
+          }
+        </div>
+      </ng-template>
+    </st>
+  </nz-card>
+</section>
+
+<nz-modal
+  [nzTitle]="editing ? '编辑账号分组' : '新增账号分组'"
+  [nzVisible]="formVisible"
+  [nzOkLoading]="saving"
+  nzOkText="保存"
+  nzCancelText="取消"
+  (nzOnOk)="save()"
+  (nzOnCancel)="closeForm()"
+>
+  <ng-container *nzModalContent>
+    <form nz-form [formGroup]="form" class="group-form">
+      <se-container col="2" nzLayout="vertical">
+        <se label="分组名称" required error="请输入分组名称">
+          <input id="name" nz-input formControlName="name" placeholder="default" />
+        </se>
+
+        <se label="排序">
+          <nz-input-number id="sort" formControlName="sort" [nzMin]="0" [nzStep]="1" />
+        </se>
+
+        <se class="span-2" label="分组说明">
+          <textarea
+            id="description"
+            nz-input
+            formControlName="description"
+            rows="3"
+            placeholder="描述这个分组适用的供应商、场景或路由策略"
+          ></textarea>
+        </se>
+
+        <se label="启用状态">
+          <label nz-checkbox formControlName="enabled">允许选择该分组</label>
+        </se>
+
+        <se label="备注">
+          <input id="remark" nz-input formControlName="remark" placeholder="运营备注" />
+        </se>
+      </se-container>
+    </form>
+  </ng-container>
+</nz-modal>

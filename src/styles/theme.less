@@ -1,0 +1,86 @@
+// You can directly set the default theme
+// - `default` Default theme
+// - `dark` Import the official dark less style file
+// - `compact` Import the official compact less style file
+// - `variable` Import the official compact less style file
+@import '@delon/theme/theme-default.less';
+
+@masonry-enabled: false;
+
+@brand-blue: #3448f4;
+@brand-blue-hover: #4f7dff;
+@brand-blue-active: #2434c9;
+@brand-blue-soft: #eef3ff;
+@brand-blue-deep: #18246f;
+@brand-surface: #f6f8ff;
+@brand-card: #ffffff;
+@brand-border: #dce5ff;
+@brand-text: #172033;
+@brand-text-secondary: #64708a;
+
+@primary-color: @brand-blue;
+@primary-color-hover: @brand-blue-hover;
+@primary-color-active: @brand-blue-active;
+@primary-color-outline: fade(@brand-blue, 18%);
+@primary-color-focus: fade(@brand-blue, 22%);
+
+@background-color: @brand-surface;
+@body-background: @brand-surface;
+@layout-body-background: @brand-surface;
+@component-background: @brand-card;
+@popover-background: @brand-card;
+
+@border-color-base: @brand-border;
+@border-color-split: fade(@brand-blue-deep, 10%);
+@item-hover-bg: @brand-blue-soft;
+@item-active-bg: fade(@brand-blue, 14%);
+@select-item-selected-bg: fade(@brand-blue, 12%);
+@checkbox-check-color: #fff;
+@radio-dot-color: @brand-blue;
+@switch-color: @brand-blue;
+
+@heading-color: @brand-text;
+@text-color: @brand-text;
+@text-color-secondary: @brand-text-secondary;
+@label-color: @brand-text;
+@disabled-color: #a8b7af;
+
+@layout-header-background: @brand-card;
+@layout-sider-background-light: #fcfffd;
+@layout-trigger-background-light: #fcfffd;
+@layout-trigger-color-light: @brand-text;
+
+@alain-default-header-bg: @brand-card;
+@alain-default-aside-bg: #f9fbff;
+@alain-default-aside-wd: 220px;
+@alain-default-aside-nav-padding-top-bottom: 14px;
+@alain-default-aside-nav-text-hover-color: @brand-blue;
+@alain-default-aside-nav-selected-text-color: @brand-blue;
+
+@footer-toolbar-bg: @brand-card;
+@mentions-dropdown-bg: @brand-card;
+@descriptions-bg: #f9fbff;
+@message-notice-content-bg: @brand-card;
+
+@page-header-bg: @brand-card;
+@page-header-title-sub-color: @brand-text-secondary;
+@page-header-back-color: @brand-text;
+
+@tooltip-bg: fade(@brand-blue-hover, 90%);
+@tooltip-color: #f6f8ff;
+
+@table-header-bg: #f5f7ff;
+@table-expanded-row-bg: #fbfcff;
+@table-selected-row-bg: fade(@brand-blue, 10%);
+@table-row-hover-bg: #f5f7ff;
+@table-row-selected-hover-bg: fade(@brand-blue, 14%);
+
+@input-bg: #f4f7ff;
+@input-placeholder-color: #9ba7bd;
+@input-hover-border-color: fade(@brand-blue, 30%);
+@input-number-handler-active-bg: @brand-blue-soft;
+
+@enable-all-colors: true;
+@router-animation-enabled: true;
+@nz-table-rep-column-name-text-align: center;
+@nz-table-rep-column-name-padding-right: 0;

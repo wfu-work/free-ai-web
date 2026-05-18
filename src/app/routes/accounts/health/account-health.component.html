@@ -1,0 +1,83 @@
+<section class="health-page">
+  <div class="d-flex justify-content-between header-row">
+    <title-label
+      title="账号健康"
+      description="集中查看账号状态、失败次数、冷却时间、订阅过期时间和额度窗口，辅助判断代理池是否可用。"
+    />
+    <div class="header-actions">
+      <button nz-button (click)="load()">
+        <i nz-icon nzType="reload"></i>
+        刷新
+      </button>
+    </div>
+  </div>
+
+  <div class="metric-grid">
+    <article class="metric-card metric-success">
+      <span>健康账号</span>
+      <strong>{{ healthyCount }}</strong>
+    </article>
+    <article class="metric-card metric-warning">
+      <span>限流账号</span>
+      <strong>{{ limitedCount }}</strong>
+    </article>
+    <article class="metric-card metric-warning">
+      <span>冷却账号</span>
+      <strong>{{ cooldownCount }}</strong>
+    </article>
+    <article class="metric-card metric-danger">
+      <span>异常账号</span>
+      <strong>{{ abnormalCount }}</strong>
+    </article>
+  </div>
+
+  <nz-alert
+    nzType="info"
+    nzShowIcon
+    nzMessage="额度窗口来自 quota 数据；当账号状态异常时，优先结合失败次数、冷却时间和剩余额度一起判断。"
+  />
+
+  <nz-card class="health-card" [nzBordered]="false">
+    <st
+      [data]="items"
+      [columns]="columns"
+      [loading]="loading"
+      [page]="{ front: true, showSize: true, pageSizes: [10, 20, 50], showQuickJumper: true }"
+    >
+      <ng-template st-row="nameRender" let-item>
+        <div class="account-name">{{ item.name || '-' }}</div>
+        <span class="muted">{{ item.guid }}</span>
+      </ng-template>
+
+      <ng-template st-row="providerRender" let-item>
+        <div class="provider-line">{{ item.provider || '-' }}</div>
+        <span class="muted">{{ item.accountGroup || '默认账号组' }}</span>
+      </ng-template>
+
+      <ng-template st-row="quotaRender" let-item>
+        <div class="quota-title">{{ quotaSummary(item.quotas) }}</div>
+        <div class="quota-list">
+          @for (quota of item.quotas || []; track quota.guid) {
+            <span class="quota-chip" [class]="quotaTone(quota)">
+              {{ quota.windowType || 'window' }} · {{ quotaPercent(quota) }} ·
+              {{ formatTokens(quota.remainingTokens) }}/{{ formatTokens(quota.totalTokens) }}
+            </span>
+          }
+          @if (!item.quotas?.length) {
+            <span class="muted">无额度窗口</span>
+          }
+        </div>
+      </ng-template>
+
+      <ng-template st-row="cooldownRender" let-item>
+        <div>{{ formatTime(item.cooldownUntil) }}</div>
+        <span class="muted">过期 {{ formatTime(item.subscriptionExpiredAt) }}</span>
+      </ng-template>
+
+      <ng-template st-row="activityRender" let-item>
+        <div>{{ formatTime(item.lastUsedAt) }}</div>
+        <span class="muted">失败 {{ item.failureCount || 0 }} 次</span>
+      </ng-template>
+    </st>
+  </nz-card>
+</section>

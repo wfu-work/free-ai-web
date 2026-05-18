@@ -1,0 +1,76 @@
+<section class="cons-logs">
+  @if (showToolbar) {
+    <div class="cons-logs-toolbar">
+      <nz-segmented
+        [nzOptions]="statusOptions"
+        [ngModel]="selectedStatus"
+        (ngModelChange)="onStatusChange($event)"
+      />
+
+      <label class="cons-logs-search">
+        <nz-icon nzType="search" />
+        <input nz-input [(ngModel)]="keyword" placeholder="关键词过滤" />
+      </label>
+
+      @if (showActions) {
+        <div class="cons-logs-actions">
+          <button nz-button type="button" class="cons-logs-action" (click)="clearLogs.emit()">
+            <nz-icon nzType="delete" />
+            清除日志
+          </button>
+          <button
+            nz-button
+            type="button"
+            class="cons-logs-action cons-logs-action-primary"
+            (click)="exportLogs.emit()"
+          >
+            <nz-icon nzType="export" />
+            导出日志
+          </button>
+        </div>
+      }
+    </div>
+  }
+
+  <div class="cons-logs-window">
+    <header class="cons-logs-titlebar">
+      <div class="cons-logs-dots" aria-hidden="true">
+        <span class="dot is-red"></span>
+        <span class="dot is-yellow"></span>
+        <span class="dot is-green"></span>
+      </div>
+      <div class="cons-logs-connection">
+        <nz-icon nzType="lock" />
+        <span>Connected to {{ streamUrl }}</span>
+      </div>
+    </header>
+
+    <div class="cons-logs-body" [style.minHeight.px]="height">
+      @if (filteredLogs.length) {
+        @for (log of filteredLogs; track trackByLog($index, log)) {
+          <article class="cons-log-row" [ngClass]="'is-' + log.level">
+            <span class="cons-log-time">[{{ log.time }}]</span>
+            <span class="cons-log-level">{{ log.level | uppercase }}</span>
+            <div class="cons-log-content">
+              <span class="cons-log-message">{{ log.message }}</span>
+              @if (log.detail) {
+                <div class="cons-log-detail">
+                  @for (line of asDetailLines(log.detail); track line) {
+                    <div>{{ line }}</div>
+                  }
+                </div>
+              }
+            </div>
+          </article>
+        }
+      } @else {
+        <div class="cons-logs-empty">No logs match current filters.</div>
+      }
+
+      <div class="cons-logs-waiting">
+        <span></span>
+        <em>{{ waitingText }}</em>
+      </div>
+    </div>
+  </div>
+</section>

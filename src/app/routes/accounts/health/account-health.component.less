@@ -1,0 +1,167 @@
+:host {
+  display: block;
+}
+
+.health-page {
+  display: grid;
+  gap: 18px;
+  min-width: 0;
+}
+
+.header-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.header-actions {
+  display: flex;
+  flex: 0 0 auto;
+  gap: 10px;
+}
+
+.metric-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.metric-card {
+  min-width: 0;
+  padding: 18px 20px;
+  border: 1px solid rgb(var(--nm-primary-rgb) / 10%);
+  border-radius: 8px;
+  background: rgb(255 255 255 / 92%);
+}
+
+.metric-card span {
+  display: block;
+  color: #697684;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.metric-card strong {
+  display: block;
+  margin-top: 8px;
+  font-size: 22px;
+  font-weight: 850;
+  line-height: 1.2;
+}
+
+.metric-success strong {
+  color: #14856e;
+}
+
+.metric-warning strong {
+  color: #b7791f;
+}
+
+.metric-danger strong {
+  color: #c24141;
+}
+
+.health-card {
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid rgb(var(--nm-primary-rgb) / 10%);
+  border-radius: 8px;
+  background: #fff;
+}
+
+.health-card ::ng-deep {
+  .ant-card-body,
+  st,
+  .st,
+  .ant-table-wrapper,
+  .ant-table,
+  .ant-table-container {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .ant-table {
+    table-layout: fixed;
+  }
+
+  .ant-table-thead > tr > th,
+  .ant-table-tbody > tr > td {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    vertical-align: top;
+  }
+}
+
+.account-name,
+.provider-line,
+.quota-title {
+  color: #1d2b3f;
+  font-weight: 700;
+}
+
+.muted {
+  display: block;
+  overflow: hidden;
+  color: #7b8794;
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.quota-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.quota-chip {
+  display: inline-flex;
+  max-width: 100%;
+  padding: 2px 8px;
+  overflow: hidden;
+  border-radius: 999px;
+  color: #526174;
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  background: #eef2f7;
+}
+
+.quota-success {
+  color: #14856e;
+  background: #e8f7f0;
+}
+
+.quota-warning {
+  color: #b7791f;
+  background: #fff6df;
+}
+
+.quota-danger {
+  color: #c24141;
+  background: #fdecec;
+}
+
+@media (max-width: 960px) {
+  .metric-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 767px) {
+  .header-row,
+  .metric-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .header-row {
+    display: grid;
+  }
+
+  .header-actions {
+    width: 100%;
+  }
+}

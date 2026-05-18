@@ -1,0 +1,164 @@
+@import '@delon/theme/index';
+
+:host ::ng-deep {
+  .container {
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    min-height: 100%;
+    background:
+      radial-gradient(circle at 24% 38%, rgb(196 241 240 / 46%), transparent 30%),
+      radial-gradient(circle at 84% 18%, rgb(220 238 255 / 64%), transparent 34%),
+      linear-gradient(116deg, #edf7ff 0%, #f7fbff 46%, #e8f4ff 100%);
+
+    &::before,
+    &::after {
+      pointer-events: none;
+      content: '';
+      position: absolute;
+    }
+
+    &::before {
+      inset: -18% -10%;
+      transform: rotate(-2deg);
+      background:
+        linear-gradient(118deg, transparent 0 24%, rgb(255 255 255 / 44%) 32%, transparent 42%),
+        linear-gradient(124deg, transparent 0 48%, rgb(185 230 239 / 24%) 56%, transparent 66%),
+        linear-gradient(130deg, transparent 0 68%, rgb(255 255 255 / 34%) 76%, transparent 84%);
+      filter: blur(10px);
+    }
+
+    &::after {
+      inset: auto -8% -22%;
+      height: 42%;
+      background: radial-gradient(ellipse at center, rgb(73 196 193 / 18%), transparent 68%);
+      filter: blur(34px);
+    }
+  }
+
+  .langs {
+    width: 100%;
+    height: 40px;
+    line-height: 44px;
+    text-align: right;
+
+    .anticon {
+      cursor: pointer;
+      margin-top: 24px;
+      margin-right: 24px;
+      font-size: 14px;
+      vertical-align: top;
+    }
+  }
+
+  .wrap {
+    position: relative;
+    z-index: 1;
+    flex: 1;
+    box-sizing: border-box;
+    width: min(456px, calc(100% - 32px));
+    margin: 12px auto;
+    padding: 44px 44px 32px;
+    border: 1px solid rgb(255 255 255 / 72%);
+    border-radius: 28px;
+    background: rgb(255 255 255 / 82%);
+    backdrop-filter: blur(18px);
+    box-shadow:
+      0 28px 80px rgb(77 127 156 / 14%),
+      inset 0 1px 0 rgb(255 255 255 / 90%);
+  }
+
+  .ant-form-item {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 24px;
+  }
+
+  .top {
+    text-align: center;
+  }
+
+  .header {
+    height: 44px;
+    line-height: 44px;
+
+    a {
+      text-decoration: none;
+    }
+  }
+
+  .logo {
+    height: 44px;
+  }
+
+  .title {
+    position: relative;
+    font-family: 'Myriad Pro', 'Helvetica Neue', Arial, Helvetica, sans-serif;
+    font-size: 28px;
+    font-weight: 700;
+    color: #162033;
+    vertical-align: middle;
+  }
+
+  .desc {
+    margin-top: 10px;
+    margin-bottom: 34px;
+    font-size: @font-size-base;
+    color: #5f6f7a;
+  }
+
+  @media (min-width: @screen-md-min) {
+    .container {
+      justify-content: center;
+    }
+
+    .wrap {
+      flex: 0 0 auto;
+      margin-top: 8px;
+      margin-bottom: 8px;
+    }
+  }
+
+  @media (max-width: @screen-sm-max) {
+    .container {
+      justify-content: flex-start;
+      padding: 20px 0;
+    }
+
+    .wrap {
+      padding: 34px 24px 24px;
+      border-radius: 24px;
+    }
+  }
+}
+
+[data-theme='dark'] {
+  :host ::ng-deep {
+    .container {
+      background: #141414;
+    }
+
+    .title {
+      color: fade(@white, 85%);
+    }
+
+    .desc {
+      color: fade(@white, 45%);
+    }
+
+    @media (min-width: @screen-md-min) {
+      .container {
+        background-image: none;
+      }
+    }
+  }
+}
+
+[data-theme='compact'] {
+  :host ::ng-deep {
+    .ant-form-item {
+      margin-bottom: 16px;
+    }
+  }
+}

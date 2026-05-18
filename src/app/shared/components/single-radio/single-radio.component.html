@@ -1,0 +1,31 @@
+<div class="single-radio">
+  @if (label) {
+    <div class="single-radio__label">{{ label }}</div>
+  }
+  <div class="single-radio__group" [style.gridTemplateColumns]="asGridTemplateColumns()">
+    @for (option of options; track trackByValue($index, option)) {
+      <button
+        type="button"
+        class="single-radio__item"
+        [class.is-active]="isChecked(option)"
+        [class.is-disabled]="disabled || option.disabled"
+        [disabled]="disabled || option.disabled"
+        (click)="select(option)"
+      >
+        <span class="single-radio__icon">
+          @if (option.iconUrl) {
+            <img [src]="option.iconUrl" [alt]="option.label" />
+          } @else if (option.icon) {
+            <span nz-icon [nzType]="option.icon"></span>
+          }
+        </span>
+
+        <span class="single-radio__text">{{ option.label }}</span>
+
+        @if (option.description) {
+          <span class="single-radio__desc">{{ option.description }}</span>
+        }
+      </button>
+    }
+  </div>
+</div>

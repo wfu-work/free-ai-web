@@ -1,0 +1,162 @@
+<section class="key-page">
+  <div class="d-flex justify-content-between header-row">
+    <title-label
+      title="平台密钥"
+      description="管理业务客户端访问 /v1 代理入口使用的本地平台密钥。"
+    />
+    <div class="header-actions">
+      <button nz-button (click)="load()">
+        <i nz-icon nzType="reload"></i>
+        刷新
+      </button>
+      <button nz-button nzType="primary" (click)="openCreate()">
+        <i nz-icon nzType="plus"></i>
+        创建密钥
+      </button>
+    </div>
+  </div>
+
+  <nz-alert
+    nzType="warning"
+    nzShowIcon
+    nzMessage="密钥明文只在创建成功后展示一次，请立即复制到业务客户端配置中。"
+  />
+
+  <nz-card class="key-card" [nzBordered]="false">
+    <st
+      [data]="items"
+      [columns]="columns"
+      [loading]="loading"
+      [page]="{ front: true, showSize: true, pageSizes: [10, 20, 50], showQuickJumper: true }"
+    >
+      <ng-template st-row="nameRender" let-item>
+        <div class="key-name">{{ item.name || '-' }}</div>
+        <button
+          type="button"
+          class="copy-text"
+          nz-tooltip
+          nzTooltipTitle="复制 keyPrefix"
+          (click)="copy(item.keyPrefix, 'keyPrefix')"
+        >
+          {{ item.keyPrefix || '-' }}
+        </button>
+      </ng-template>
+
+      <ng-template st-row="modelsRender" let-item>
+        <span class="models-text">{{ formatModels(item.allowedModels) }}</span>
+      </ng-template>
+
+      <ng-template st-row="limitRender" let-item>
+        {{ formatLimit(item.rateLimitPerMinute) }}
+      </ng-template>
+
+      <ng-template st-row="lastUsedRender" let-item>
+        {{ formatTime(item.lastUsedAt) }}
+      </ng-template>
+
+      <ng-template st-row="remarkRender" let-item>
+        <span class="muted">{{ item.remark || '-' }}</span>
+      </ng-template>
+
+      <ng-template st-row="actionRender" let-item>
+        <div class="row-actions">
+          <button nz-button nzType="link" nzSize="small" (click)="openEdit(item)">编辑</button>
+          @if (item.enabled) {
+            <button nz-button nzType="link" nzSize="small" (click)="setEnabled(item, false)">
+              禁用
+            </button>
+          } @else {
+            <button nz-button nzType="link" nzSize="small" (click)="setEnabled(item, true)">
+              启用
+            </button>
+          }
+          <button nz-button nzType="link" nzSize="small" class="danger-link" (click)="delete(item)">
+            删除
+          </button>
+        </div>
+      </ng-template>
+    </st>
+  </nz-card>
+</section>
+
+<nz-modal
+  [nzTitle]="formMode === 'create' ? '创建平台密钥' : '编辑平台密钥'"
+  [nzVisible]="formVisible"
+  [nzOkLoading]="saving"
+  nzOkText="保存"
+  nzCancelText="取消"
+  (nzOnOk)="save()"
+  (nzOnCancel)="closeForm()"
+>
+  <ng-container *nzModalContent>
+    <form nz-form [formGroup]="form" class="key-form">
+      <nz-form-item>
+        <nz-form-label nzRequired nzFor="name">密钥名称</nz-form-label>
+        <nz-form-control nzErrorTip="请输入密钥名称">
+          <input id="name" nz-input formControlName="name" placeholder="例如 内部服务调用" />
+        </nz-form-control>
+      </nz-form-item>
+
+      <nz-form-item>
+        <nz-form-label nzFor="rateLimitPerMinute">每分钟限速</nz-form-label>
+        <nz-form-control nzExtra="0 表示不限速。">
+          <nz-input-number
+            id="rateLimitPerMinute"
+            formControlName="rateLimitPerMinute"
+            [nzMin]="0"
+            [nzStep]="1"
+          />
+        </nz-form-control>
+      </nz-form-item>
+
+      <nz-form-item>
+        <nz-form-label nzFor="allowedModels">允许模型</nz-form-label>
+        <nz-form-control nzExtra='留空表示允许全部模型；建议填写 JSON 数组，例如 ["gpt-4.1-mini"]。'>
+          <textarea id="allowedModels" nz-input formControlName="allowedModels" rows="3"></textarea>
+        </nz-form-control>
+      </nz-form-item>
+
+      <nz-form-item>
+        <nz-form-label nzFor="remark">备注</nz-form-label>
+        <nz-form-control>
+          <textarea id="remark" nz-input formControlName="remark" rows="2"></textarea>
+        </nz-form-control>
+      </nz-form-item>
+    </form>
+  </ng-container>
+</nz-modal>
+
+<nz-modal
+  nzTitle="平台密钥已创建"
+  [nzVisible]="secretVisible"
+  nzOkText="我已保存"
+  [nzCancelText]="null"
+  (nzOnOk)="closeSecret()"
+  (nzOnCancel)="closeSecret()"
+>
+  <ng-container *nzModalContent>
+    @if (secretView) {
+      <div class="secret-panel">
+        <nz-alert
+          nzType="warning"
+          nzShowIcon
+          nzMessage="请立即保存完整密钥。关闭弹窗后无法再次查看，只能重新创建。"
+        />
+        <div class="secret-row">
+          <span>Authorization</span>
+          <code>Bearer {{ secretView.key }}</code>
+          <button nz-button nzSize="small" (click)="copy('Bearer ' + secretView.key, 'Authorization')">
+            复制
+          </button>
+        </div>
+        <div class="secret-row">
+          <span>keyPrefix</span>
+          <code>{{ secretView.entity.keyPrefix }}</code>
+          <button nz-button nzSize="small" (click)="copy(secretView.entity.keyPrefix, 'keyPrefix')">
+            复制
+          </button>
+        </div>
+      </div>
+    }
+  </ng-container>
+</nz-modal>

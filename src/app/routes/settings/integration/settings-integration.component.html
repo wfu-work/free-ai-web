@@ -1,0 +1,140 @@
+<section class="settings-page">
+  <div class="d-flex justify-content-between header-row">
+    <title-label
+      title="接入指南"
+      description="展示 OpenAI-compatible /v1 代理入口、平台密钥鉴权方式和客户端请求示例。"
+    />
+    <div class="header-actions">
+      <button nz-button (click)="load()">
+        <i nz-icon nzType="reload"></i>
+        刷新密钥样例
+      </button>
+    </div>
+  </div>
+
+  <nz-spin [nzSpinning]="loading">
+    <div class="metric-grid">
+      <article class="metric-card metric-success">
+        <span>代理前缀</span>
+        <strong>{{ proxyBaseUrl }}</strong>
+      </article>
+      <article class="metric-card">
+        <span>管理前缀</span>
+        <strong>{{ adminBaseUrl }}</strong>
+      </article>
+      <article class="metric-card">
+        <span>服务端口</span>
+        <strong>8787</strong>
+      </article>
+      <article class="metric-card metric-warning">
+        <span>启用平台密钥</span>
+        <strong>{{ enabledKeyCount }}</strong>
+      </article>
+    </div>
+
+    <div class="content-grid">
+      <nz-card class="panel-card" [nzBordered]="false">
+        <div class="panel-head">
+          <div class="panel-title">接入参数</div>
+          <button nz-button nzType="link" nzSize="small" (click)="copy(proxyBaseUrl, '代理地址')">
+            复制地址
+          </button>
+        </div>
+        <div class="detail-grid">
+          <div>
+            <span>Base URL</span>
+            <strong>{{ proxyBaseUrl }}</strong>
+          </div>
+          <div>
+            <span>Authorization</span>
+            <strong>{{ authHeaderPreview }}</strong>
+          </div>
+          <div>
+            <span>样例密钥前缀</span>
+            <strong>{{ sampleKeyPrefix }}</strong>
+          </div>
+          <div>
+            <span>默认模型样例</span>
+            <strong>{{ sampleModel }}</strong>
+          </div>
+        </div>
+        <ul class="note-list">
+          <li>业务侧统一访问 `/v1/*`，不要直接把前端管理端的登录状态拿来调用代理接口。</li>
+          <li>真实调用时请替换成创建平台密钥时返回的完整 key，而不是这里只展示的 `keyPrefix`。</li>
+          <li>如果某个平台密钥限制了 `allowedModels`，请求里的 `model` 必须在允许列表内。</li>
+        </ul>
+      </nz-card>
+
+      <nz-card class="panel-card mt-lg" [nzBordered]="false">
+        <div class="panel-head">
+          <div class="panel-title">接口范围</div>
+          <button nz-button nzType="link" nzSize="small" (click)="copy(adminBaseUrl, '管理地址')">
+            复制管理地址
+          </button>
+        </div>
+        <div class="api-list">
+          <code>GET {{ proxyBaseUrl }}/models</code>
+          <code>POST {{ proxyBaseUrl }}/chat/completions</code>
+          <code>POST {{ proxyBaseUrl }}/responses</code>
+          <code>POST {{ proxyBaseUrl }}/embeddings</code>
+          <code>GET {{ adminBaseUrl }}/platform-keys</code>
+          <code>GET {{ adminBaseUrl }}/models</code>
+          <code>GET {{ adminBaseUrl }}/ops/metrics</code>
+          <code>GET {{ adminBaseUrl }}/request-logs</code>
+        </div>
+      </nz-card>
+    </div>
+
+    <div class="snippet-grid">
+      <nz-card class="snippet-card" [nzBordered]="false">
+        <div class="panel-head">
+          <div class="panel-title">curl: models</div>
+          <button nz-button nzType="link" nzSize="small" (click)="copy(curlModelsExample, 'models 示例')">
+            复制
+          </button>
+        </div>
+        <pre><code>{{ curlModelsExample }}</code></pre>
+      </nz-card>
+
+      <nz-card class="snippet-card" [nzBordered]="false">
+        <div class="panel-head">
+          <div class="panel-title">curl: chat completions</div>
+          <button nz-button nzType="link" nzSize="small" (click)="copy(curlChatExample, 'chat 示例')">
+            复制
+          </button>
+        </div>
+        <pre><code>{{ curlChatExample }}</code></pre>
+      </nz-card>
+
+      <nz-card class="snippet-card" [nzBordered]="false">
+        <div class="panel-head">
+          <div class="panel-title">curl: responses</div>
+          <button nz-button nzType="link" nzSize="small" (click)="copy(curlResponsesExample, 'responses 示例')">
+            复制
+          </button>
+        </div>
+        <pre><code>{{ curlResponsesExample }}</code></pre>
+      </nz-card>
+
+      <nz-card class="snippet-card" [nzBordered]="false">
+        <div class="panel-head">
+          <div class="panel-title">OpenAI SDK</div>
+          <button nz-button nzType="link" nzSize="small" (click)="copy(openAiSdkExample, 'SDK 示例')">
+            复制
+          </button>
+        </div>
+        <pre><code>{{ openAiSdkExample }}</code></pre>
+      </nz-card>
+
+      <nz-card class="snippet-card" [nzBordered]="false">
+        <div class="panel-head">
+          <div class="panel-title">curl: embeddings</div>
+          <button nz-button nzType="link" nzSize="small" (click)="copy(embeddingsExample, 'embeddings 示例')">
+            复制
+          </button>
+        </div>
+        <pre><code>{{ embeddingsExample }}</code></pre>
+      </nz-card>
+    </div>
+  </nz-spin>
+</section>

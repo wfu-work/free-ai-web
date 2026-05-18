@@ -1,0 +1,57 @@
+<div class="bar-chart-card">
+  <div class="bar-chart-card__header">
+    <div class="bar-chart-card__heading">
+      <div class="bar-chart-card__title">{{ title || '柱状图' }}</div>
+      @if (subtitle) {
+        <div class="bar-chart-card__subtitle">{{ subtitle }}</div>
+      }
+    </div>
+
+    @if (actions.length) {
+      <div class="bar-chart-card__actions">
+        @for (action of actions; track trackByAction($index, action)) {
+          <button
+            nz-button
+            nzType="default"
+            nzShape="round"
+            class="bar-chart-card__action"
+            [disabled]="action.disabled"
+            (click)="onActionClick(action)"
+          >
+            @if (action.icon) {
+              <i nz-icon [nzType]="action.icon"></i>
+            }
+            <span>{{ action.label }}</span>
+          </button>
+        }
+      </div>
+    }
+  </div>
+
+  <nz-spin [nzSpinning]="loading">
+    <div class="bar-chart-card__body">
+      <div class="bar-chart-card__canvas" [style.height.px]="height" #chartRef></div>
+
+      @if (!hasData) {
+        <div class="bar-chart-card__empty">
+          <nz-empty [nzNotFoundContent]="emptyText" />
+        </div>
+      }
+
+      @if (statusCard; as card) {
+        <div class="bar-chart-card__status">
+          <span
+            class="bar-chart-card__status-dot"
+            [style.background]="card.color || '#0c7f56'"
+          ></span>
+          <div class="bar-chart-card__status-content">
+            <div class="bar-chart-card__status-title">{{ card.title }}</div>
+            @if (card.description) {
+              <div class="bar-chart-card__status-desc">{{ card.description }}</div>
+            }
+          </div>
+        </div>
+      }
+    </div>
+  </nz-spin>
+</div>
