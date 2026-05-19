@@ -47,11 +47,19 @@ export class SettingsIntegrationComponent implements OnInit {
   }
 
   protected get proxyBaseUrl(): string {
-    return 'http://127.0.0.1:8787/v1';
+    return `${this.gatewayBaseUrl}/v1`;
   }
 
   protected get adminBaseUrl(): string {
-    return 'http://127.0.0.1:8787/api';
+    return `${this.gatewayBaseUrl}/api`;
+  }
+
+  protected get gatewayBaseUrl(): string {
+    const { protocol, hostname, port } = window.location;
+    if ((hostname === 'localhost' || hostname === '127.0.0.1') && /^42\d\d$/.test(port)) {
+      return `http://${hostname}:8787`;
+    }
+    return `${protocol}//${window.location.host}`;
   }
 
   protected get enabledKeyCount(): number {
@@ -63,6 +71,11 @@ export class SettingsIntegrationComponent implements OnInit {
     return key?.keyPrefix || 'fk_live_example';
   }
 
+  protected get sampleKey(): string {
+    const key = this.keys.find((item) => item.enabled && item.key) || this.keys.find((item) => item.key) || this.keys[0];
+    return key?.key || `${this.sampleKeyPrefix}_完整密钥`;
+  }
+
   protected get sampleModel(): string {
     const key = this.keys.find((item) => item.enabled) || this.keys[0];
     const parsed = this.parseAllowedModels(key?.allowedModels);
@@ -70,7 +83,7 @@ export class SettingsIntegrationComponent implements OnInit {
   }
 
   protected get authHeaderPreview(): string {
-    return `Authorization: Bearer ${this.sampleKeyPrefix}...`;
+    return `Authorization: ${this.sampleKey}`;
   }
 
   protected get curlModelsExample(): string {
@@ -85,8 +98,8 @@ export class SettingsIntegrationComponent implements OnInit {
   -d '{
     "model": "${this.sampleModel}",
     "messages": [
-      { "role": "system", "content": "You are a helpful assistant." },
-      { "role": "user", "content": "ping" }
+      { "role": "system", "content": "你是一个可靠的助手。" },
+      { "role": "user", "content": "请回复 ping" }
     ],
     "stream": false
   }'`;
@@ -98,7 +111,7 @@ export class SettingsIntegrationComponent implements OnInit {
   -H "${this.authHeaderPreview}" \\
   -d '{
     "model": "${this.sampleModel}",
-    "input": "Summarize the current routing strategy in one sentence."
+    "input": "用一句话说明当前网关路由策略。"
   }'`;
   }
 
@@ -112,7 +125,7 @@ const client = new OpenAI({
 
 const response = await client.chat.completions.create({
   model: "${this.sampleModel}",
-  messages: [{ role: "user", content: "ping" }]
+  messages: [{ role: "user", content: "请回复 ping" }]
 });
 
 console.log(response.choices[0]?.message?.content);`;
@@ -124,7 +137,7 @@ console.log(response.choices[0]?.message?.content);`;
   -H "${this.authHeaderPreview}" \\
   -d '{
     "model": "${this.sampleModel}",
-    "input": "hello world"
+    "input": "你好，世界"
   }'`;
   }
 

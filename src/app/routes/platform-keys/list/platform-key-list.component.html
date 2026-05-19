@@ -5,6 +5,16 @@
       description="管理业务客户端访问 /v1 代理入口使用的本地平台密钥。"
     />
     <div class="header-actions">
+      <button
+        nz-button
+        nz-popover
+        nzPopoverPlacement="bottomRight"
+        nzPopoverTrigger="click"
+        [nzPopoverContent]="gatewayPanel"
+      >
+        <i nz-icon nzType="link"></i>
+        网关端点
+      </button>
       <button nz-button (click)="q.page = 1; getData()">
         <i nz-icon nzType="reload"></i>
         刷新
@@ -16,10 +26,57 @@
     </div>
   </div>
 
+  <ng-template #gatewayPanel>
+    <div class="gateway-panel">
+      <div class="gateway-panel__title">复制调用地址</div>
+      <button
+        type="button"
+        class="gateway-option gateway-option-active"
+        (click)="copy(openAiGatewayEndpoint, 'OpenAI / Codex 端点')"
+      >
+        <i nz-icon nzType="copy"></i>
+        <span>
+          <strong>复制 OpenAI / Codex 端点</strong>
+          <code>{{ openAiGatewayEndpoint }}</code>
+        </span>
+      </button>
+      <button
+        type="button"
+        class="gateway-option"
+        (click)="copy(cliGatewayEndpoint, 'Claude Code / Gemini CLI 端点')"
+      >
+        <i nz-icon nzType="copy"></i>
+        <span>
+          <strong>复制 Claude Code / Gemini CLI 端点</strong>
+          <code>{{ cliGatewayEndpoint }}</code>
+        </span>
+      </button>
+    </div>
+  </ng-template>
+
+  <div class="usage-summary-grid">
+    <article class="usage-summary-card">
+      <div>
+        <span>总使用 Token</span>
+        <strong>{{ formatTokens(stats.totalTokens) }}</strong>
+        <p>按全部平台密钥累计</p>
+      </div>
+      <i nz-icon nzType="thunderbolt"></i>
+    </article>
+    <article class="usage-summary-card">
+      <div>
+        <span>总费用</span>
+        <strong>{{ formatAmount(stats.totalAmount) }}</strong>
+        <p>按全部平台密钥累计</p>
+      </div>
+      <i nz-icon nzType="dollar"></i>
+    </article>
+  </div>
+
   <nz-alert
-    nzType="warning"
+    nzType="info"
     nzShowIcon
-    nzMessage="密钥明文只在创建成功后展示一次，请立即复制到业务客户端配置中。"
+    nzMessage="平台密钥可在列表中复制完整值；业务客户端使用时直接放入 Authorization 请求头。"
   />
 
   <nz-card class="key-card" [nzBordered]="false">
@@ -64,26 +121,44 @@
       [ps]="q.size"
       [total]="totalCount"
       (change)="tableChange($event)"
+      [scroll]="{ x: 'max-content' }"
     >
-      <ng-template st-row="nameRender" let-item>
-        <div class="key-name">{{ item.name || '-' }}</div>
+      <ng-template st-row="keyRender" let-item>
         <button
           type="button"
           class="copy-text"
           nz-tooltip
-          nzTooltipTitle="复制 keyPrefix"
-          (click)="copy(item.keyPrefix, 'keyPrefix')"
+          nzTooltipTitle="复制完整密钥"
+          (click)="copy(item.key || '', '平台密钥')"
         >
-          {{ item.keyPrefix || '-' }}
+          {{ item.key || item.keyPrefix || '-' }}
         </button>
       </ng-template>
 
-      <ng-template st-row="modelsRender" let-item>
-        <span class="models-text">{{ formatModels(item.allowedModels) }}</span>
+      <ng-template st-row="nameRender" let-item>
+        <div class="key-name">{{ item.name || '-' }}</div>
       </ng-template>
 
-      <ng-template st-row="limitRender" let-item>
-        {{ formatLimit(item.rateLimitPerMinute) }}
+      <ng-template st-row="protocolRender" let-item>
+        <span class="protocol-pill">{{ formatProtocolType(item.protocolType) }}</span>
+      </ng-template>
+
+      <ng-template st-row="strategyRender" let-item>
+        <div class="policy-main">{{ formatRoutingStrategy(item.routingStrategy) }}</div>
+        @if (item.accountGroupFilter) {
+          <div class="policy-sub">{{ item.accountGroupFilter }}</div>
+        }
+      </ng-template>
+
+      <ng-template st-row="boundModelRender" let-item>
+        <span class="models-text">{{ boundModelLabel(item) }}</span>
+      </ng-template>
+
+      <ng-template st-row="usageRender" let-item>
+        <div class="usage-main">{{ formatTokens(item.usedTokens) }}</div>
+        <div class="usage-sub">
+          已花费 {{ formatAmount(item.usedAmount) }} · {{ formatTokenLimitText(item) }}
+        </div>
       </ng-template>
 
       <ng-template st-row="lastUsedRender" let-item>
@@ -97,38 +172,3 @@
     </st>
   </nz-card>
 </section>
-
-<nz-modal
-  nzTitle="平台密钥已创建"
-  [nzVisible]="secretVisible"
-  nzOkText="我已保存"
-  [nzCancelText]="null"
-  (nzOnOk)="closeSecret()"
-  (nzOnCancel)="closeSecret()"
->
-  <ng-container *nzModalContent>
-    @if (secretView) {
-      <div class="secret-panel">
-        <nz-alert
-          nzType="warning"
-          nzShowIcon
-          nzMessage="请立即保存完整密钥。关闭弹窗后无法再次查看，只能重新创建。"
-        />
-        <div class="secret-row">
-          <span>Authorization</span>
-          <code>Bearer {{ secretView.key }}</code>
-          <button nz-button nzSize="small" (click)="copy('Bearer ' + secretView.key, 'Authorization')">
-            复制
-          </button>
-        </div>
-        <div class="secret-row">
-          <span>keyPrefix</span>
-          <code>{{ secretView.entity.keyPrefix }}</code>
-          <button nz-button nzSize="small" (click)="copy(secretView.entity.keyPrefix, 'keyPrefix')">
-            复制
-          </button>
-        </div>
-      </div>
-    }
-  </ng-container>
-</nz-modal>

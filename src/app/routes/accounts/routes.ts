@@ -4,7 +4,6 @@ import { AccountEditComponent } from './edit/account-edit.component';
 import { AccountGroupsComponent } from './groups/account-groups.component';
 import { AccountHealthComponent } from './health/account-health.component';
 import { AccountListComponent } from './list/account-list.component';
-import { AccountQuotasComponent } from './quotas/account-quotas.component';
 
 export const routes: Routes = [
   { path: '', redirectTo: 'list', pathMatch: 'full' },
@@ -32,10 +31,5 @@ export const routes: Routes = [
     path: 'health',
     component: AccountHealthComponent,
     data: { title: '账号健康' },
-  },
-  {
-    path: 'quotas',
-    component: AccountQuotasComponent,
-    data: { title: '额度管理' },
   },
 ];

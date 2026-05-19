@@ -1,0 +1,178 @@
+<section class="gateway-page">
+  <div class="d-flex justify-content-between header-row">
+    <title-label
+      title="网关配置"
+      description="配置账号选择策略、模型改写规则、上游请求头和连接超时参数。"
+    />
+    <div class="header-actions">
+      <button nz-button (click)="resetDefaults()">恢复默认</button>
+      <button nz-button nzType="primary" (click)="save()">保存配置</button>
+    </div>
+  </div>
+
+  <div class="summary-grid">
+    <article class="summary-card">
+      <span>服务监听</span>
+      <strong>{{ listenModeLabel }}</strong>
+    </article>
+    <article class="summary-card">
+      <span>账号选择</span>
+      <strong>{{ strategyLabel }}</strong>
+    </article>
+    <article class="summary-card">
+      <span>Free 模型</span>
+      <strong>{{ freeModelLabel }}</strong>
+    </article>
+    <article class="summary-card">
+      <span>上游连接</span>
+      <strong>{{ upstreamModeLabel }}</strong>
+    </article>
+    <article class="summary-card">
+      <span>区域驻留</span>
+      <strong>{{ residencyLabel }}</strong>
+    </article>
+  </div>
+
+  <nz-card class="config-card" [nzBordered]="false">
+    <form nz-form [formGroup]="form" class="gateway-form">
+      <section class="listen-section">
+        <div class="section-head section-head-with-icon">
+          <i nz-icon nzType="global"></i>
+          <div>
+            <h3>服务监听</h3>
+            <p>统一控制 Service 与 Web 的监听模式，决定仅本机访问还是开放给局域网</p>
+          </div>
+        </div>
+
+        <se-container col="1" nzLayout="vertical">
+          <se label="监听地址">
+            <nz-select formControlName="listenAddress" nzPlaceHolder="请选择监听地址">
+              @for (option of listenAddressOptions; track option.value) {
+                <nz-option [nzValue]="option.value" [nzLabel]="option.label" />
+              }
+            </nz-select>
+          </se>
+        </se-container>
+
+        <div class="listen-preview">
+          <div>
+            <span>当前访问地址</span>
+            <strong>{{ currentAccessAddress }}</strong>
+          </div>
+          <div>
+            <span>实际监听地址</span>
+            <strong>{{ actualListenAddress }}</strong>
+          </div>
+        </div>
+
+        <p class="listen-note">
+          切换到 0.0.0.0 后，局域网设备可通过当前机器 IP 访问；设置保存后需要重启相关进程才会生效，Web 监听地址会默认跟随这里的模式。
+        </p>
+      </section>
+
+      <nz-divider></nz-divider>
+
+      <section class="form-section">
+        <div class="section-head">
+          <h3>网关策略</h3>
+          <p>配置账号选择和请求头处理方式</p>
+        </div>
+
+        <se-container col="2" nzLayout="vertical">
+          <se label="账号选择策略">
+            <nz-select formControlName="accountSelectionStrategy" nzPlaceHolder="请选择账号选择策略">
+              @for (strategy of strategyOptions; track strategy.value) {
+                <nz-option [nzValue]="strategy.value" [nzLabel]="strategy.label" />
+              }
+            </nz-select>
+            <div class="field-extra">
+              顺序优先：按照账号候选顺序优先尝试，默认只会在头部小窗口内按健康度做轻微换头；均衡轮询：按“平台密钥 + 模型”维度严格轮询可用账号，默认不做健康度换头。
+            </div>
+          </se>
+
+          <se label="Free 账号使用模型">
+            <nz-select formControlName="freeAccountModel" nzPlaceHolder="请选择 Free 账号模型">
+              @for (model of freeModelOptions; track model.value) {
+                <nz-option [nzValue]="model.value" [nzLabel]="model.label" />
+              }
+            </nz-select>
+            <div class="field-extra">
+              设为“跟随请求”时，不会额外改写 free / 7天单窗口账号的模型；只有你选了具体模型后，命中这些账号时才会统一改写为该模型。
+            </div>
+          </se>
+        </se-container>
+
+        <se-container col="1" nzLayout="vertical">
+          <se label="模型转发规则">
+            <textarea
+              nz-input
+              formControlName="modelRewriteRules"
+              rows="4"
+              placeholder="spark*=gpt-5.4-mini&#10;claude-sonnet-4*=gpt-5.4"
+            ></textarea>
+            <div class="field-extra">
+              一行一条，格式为 源模型=目标模型，支持 * 通配。平台 Key 没有强绑定模型时，会先按这里把请求模型改写，再进入账号路由。
+            </div>
+          </se>
+        </se-container>
+      </section>
+
+      <nz-divider></nz-divider>
+
+      <section class="form-section">
+        <div class="section-head">
+          <h3>上游请求</h3>
+          <p>对齐 Codex 上游认证请求头，并配置代理连接方式</p>
+        </div>
+
+        <se-container col="3" nzLayout="vertical">
+          <se label="上游 Originator">
+            <input nz-input formControlName="originator" placeholder="codex_cli_rs" />
+            <div class="field-extra">
+              对齐官方 Codex 的上游 Originator。默认值为 codex_cli_rs，会同步影响登录和网关上游请求头。
+            </div>
+          </se>
+
+          <se label="区域驻留要求">
+            <nz-select formControlName="residency" nzPlaceHolder="请选择区域驻留要求">
+              @for (residency of residencyOptions; track residency.value) {
+                <nz-option [nzValue]="residency.value" [nzLabel]="residency.label" />
+              }
+            </nz-select>
+            <div class="field-extra">
+              对齐官方 Codex 的 x-openai-internal-codex-residency 头。当前只支持留空或 us。
+            </div>
+          </se>
+
+          <se label="上游代理 (Proxy)">
+            <input nz-input formControlName="upstreamProxy" placeholder="http://127.0.0.1:7897" />
+            <div class="field-extra">支持 http / https / socks5，留空表示直连。</div>
+          </se>
+        </se-container>
+      </section>
+
+      <nz-divider></nz-divider>
+
+      <section class="form-section">
+        <div class="section-head">
+          <h3>超时与保活</h3>
+          <p>配置 SSE 保活频率和上游请求超时时间</p>
+        </div>
+
+        <se-container col="3" nzLayout="vertical">
+          <se label="SSE 保活间隔 (ms)">
+            <nz-input-number formControlName="sseKeepAliveMs" [nzMin]="1000" [nzStep]="1000" />
+          </se>
+
+          <se label="上游总超时 (ms, 0 为关闭)">
+            <nz-input-number formControlName="upstreamTimeoutMs" [nzMin]="0" [nzStep]="1000" />
+          </se>
+
+          <se label="上游流式空闲超时 (ms)">
+            <nz-input-number formControlName="upstreamStreamIdleTimeoutMs" [nzMin]="1000" [nzStep]="10000" />
+          </se>
+        </se-container>
+      </section>
+    </form>
+  </nz-card>
+</section>

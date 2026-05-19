@@ -1,0 +1,220 @@
+:host {
+  display: block;
+}
+
+.gateway-page {
+  display: grid;
+  gap: 20px;
+  min-width: 0;
+}
+
+.header-row {
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.header-actions {
+  display: flex;
+  flex: 0 0 auto;
+  gap: 10px;
+}
+
+.summary-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.summary-card,
+.config-card {
+  min-width: 0;
+  border: 1px solid rgb(var(--nm-primary-rgb) / 10%);
+  border-radius: 8px;
+  background: rgb(255 255 255 / 92%);
+}
+
+.summary-card {
+  padding: 18px 20px;
+}
+
+.summary-card span {
+  display: block;
+  color: #697684;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.summary-card strong {
+  display: block;
+  min-height: 28px;
+  margin-top: 8px;
+  overflow: hidden;
+  color: #1f3148;
+  font-size: 18px;
+  font-weight: 850;
+  line-height: 1.45;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.config-card {
+  overflow: hidden;
+}
+
+.config-card ::ng-deep .ant-card-body {
+  padding: 28px;
+}
+
+.gateway-form {
+  display: grid;
+  gap: 2px;
+}
+
+.listen-section,
+.form-section {
+  display: grid;
+  gap: 18px;
+}
+
+.section-head {
+  display: grid;
+  gap: 4px;
+}
+
+.section-head-with-icon {
+  grid-template-columns: 28px minmax(0, 1fr);
+  align-items: start;
+}
+
+.section-head-with-icon i {
+  margin-top: 2px;
+  color: #159d8d;
+  font-size: 22px;
+}
+
+.section-head h3 {
+  margin: 0;
+  color: #203149;
+  font-size: 18px;
+  font-weight: 850;
+}
+
+.section-head p,
+.field-extra,
+.listen-note {
+  margin: 0;
+  color: #64748b;
+  font-size: 13px;
+  line-height: 1.7;
+}
+
+.listen-section ::ng-deep se-container {
+  max-width: 560px;
+}
+
+.listen-preview {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+  padding: 18px 28px;
+  border: 1px solid rgb(21 157 141 / 12%);
+  border-radius: 8px;
+  background: rgb(236 253 248 / 52%);
+}
+
+.listen-preview div {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  justify-content: space-between;
+  min-width: 0;
+}
+
+.listen-preview span {
+  color: #6a7584;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.listen-preview strong {
+  overflow: auto hidden;
+  color: #159d8d;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 15px;
+  font-weight: 780;
+  line-height: 1.5;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.gateway-form ::ng-deep se-container {
+  row-gap: 16px;
+}
+
+.gateway-form ::ng-deep .se__item {
+  margin-bottom: 0;
+}
+
+.gateway-form ::ng-deep .se__label {
+  color: #314155;
+  font-weight: 760;
+}
+
+.gateway-form nz-select,
+.gateway-form nz-input-number,
+.gateway-form input,
+.gateway-form textarea {
+  width: 100%;
+}
+
+.gateway-form textarea {
+  min-height: 112px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  line-height: 1.65;
+  resize: vertical;
+}
+
+nz-divider {
+  margin: 8px 0 10px;
+}
+
+@media (max-width: 1200px) {
+  .summary-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 767px) {
+  .header-row {
+    display: grid;
+  }
+
+  .header-actions {
+    width: 100%;
+  }
+
+  .header-actions button {
+    flex: 1;
+  }
+
+  .summary-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .listen-preview {
+    padding: 16px;
+  }
+
+  .listen-preview div {
+    display: grid;
+    gap: 4px;
+  }
+
+  .listen-preview strong {
+    text-align: left;
+  }
+
+  .config-card ::ng-deep .ant-card-body {
+    padding: 20px;
+  }
+}

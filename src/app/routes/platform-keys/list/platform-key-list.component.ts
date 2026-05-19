@@ -5,14 +5,15 @@ import {
   OnInit,
   inject,
 } from '@angular/core';
+import { Router } from '@angular/router';
 import { STChange, STColumn, STColumnTag } from '@delon/abc/st';
 import { SHARED_IMPORTS, TitleLabelComponent } from '@shared';
 import { NzMessageService } from 'ng-zorro-antd/message';
 import { NzModalService } from 'ng-zorro-antd/modal';
-import { finalize } from 'rxjs';
+import { NzPopoverModule } from 'ng-zorro-antd/popover';
+import { finalize, forkJoin } from 'rxjs';
 
-import { PlatformKeyEditComponent } from '../edit/platform-key-edit.component';
-import { CreatePlatformKeyResult, PlatformKey } from '../platform-key.model';
+import { PlatformKey, PlatformKeyStats } from '../platform-key.model';
 import { PlatformKeysService } from '../platform-keys.service';
 
 @Component({
@@ -20,9 +21,10 @@ import { PlatformKeysService } from '../platform-keys.service';
   templateUrl: './platform-key-list.component.html',
   styleUrls: ['./platform-key-list.component.less'],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [SHARED_IMPORTS, TitleLabelComponent],
+  imports: [SHARED_IMPORTS, TitleLabelComponent, NzPopoverModule],
 })
 export class PlatformKeyListComponent implements OnInit {
+  private readonly router = inject(Router);
   private readonly platformKeysService = inject(PlatformKeysService);
   private readonly message = inject(NzMessageService);
   private readonly modalService = inject(NzModalService);
@@ -38,8 +40,10 @@ export class PlatformKeyListComponent implements OnInit {
   protected data: PlatformKey[] = [];
   protected loading = false;
   totalCount = 0;
-  protected secretVisible = false;
-  protected secretView: CreatePlatformKeyResult | null = null;
+  protected stats: PlatformKeyStats = {
+    totalTokens: 0,
+    totalAmount: 0,
+  };
 
   protected readonly enabledTag: STColumnTag = {
     true: { text: '启用', color: 'green' },
@@ -47,15 +51,17 @@ export class PlatformKeyListComponent implements OnInit {
   };
 
   protected readonly columns: Array<STColumn<PlatformKey>> = [
-    { title: '密钥', index: 'name', render: 'nameRender', width: 230 },
-    { title: '允许模型', index: 'allowedModels', render: 'modelsRender' },
-    { title: '每分钟限速', index: 'rateLimitPerMinute', render: 'limitRender' },
-    { title: '启用', index: 'enabled', type: 'tag', tag: this.enabledTag },
-    { title: '最近使用', index: 'lastUsedAt', render: 'lastUsedRender' },
-    { title: '备注', index: 'remark', render: 'remarkRender' },
+     { title: '名称', index: 'name', render: 'nameRender', width: 140, fixed: 'left' },
+    { title: '密钥 / ID', render: 'keyRender', width: 160 },
+    { title: '协议', render: 'protocolRender', width: 170 },
+    { title: '轮转策略', render: 'strategyRender', width: 160 },
+    { title: '绑定模型', render: 'boundModelRender', width: 160 },
+    { title: 'Token / 金额', render: 'usageRender', width: 190 },
+    { title: '启用', index: 'enabled', type: 'tag', tag: this.enabledTag, width: 100, fixed: 'right' },
     {
       title: '操作',
       width: 190,
+      fixed: 'right',
       buttons: [
         {
           text: '编辑',
@@ -68,13 +74,24 @@ export class PlatformKeyListComponent implements OnInit {
         },
         {
           text: '禁用',
+          className: 'text-error',
           click: (item: PlatformKey) => this.setEnabled(item, false),
           iif: (item: PlatformKey) => item.enabled,
+          pop: {
+            title: '确定禁用?',
+            okType: 'danger',
+            icon: 'star',
+          },
         },
         {
           text: '删除',
           className: 'text-error',
           click: (item: PlatformKey) => this.delete(item),
+          pop: {
+            title: '确定删除?',
+            okType: 'danger',
+            icon: 'star',
+          },
         },
       ],
     },
@@ -86,51 +103,29 @@ export class PlatformKeyListComponent implements OnInit {
 
   protected getData(): void {
     this.loading = true;
-    this.platformKeysService
-      .list(this.q)
+    forkJoin({
+      page: this.platformKeysService.list(this.q),
+      stats: this.platformKeysService.stats(),
+    })
       .pipe(
         finalize(() => {
           this.loading = false;
           this.cdr.markForCheck();
         }),
       )
-      .subscribe((r) => {
-        this.data = r.data ?? [];
-        this.totalCount = r.total ?? 0;
+      .subscribe(({ page, stats }) => {
+        this.data = page.data ?? [];
+        this.totalCount = page.total ?? 0;
+        this.stats = stats ?? { totalTokens: 0, totalAmount: 0 };
       });
   }
 
   protected add(): void {
-    this.edit('new');
+    this.router.navigateByUrl('/platform-keys/edit');
   }
 
   protected edit(guid: string): void {
-     const title = guid === 'new平台密钥' ? '新增' : '编辑平台密钥';
-    const modal = this.modalService.create({
-      nzTitle: title,
-      nzContent: PlatformKeyEditComponent,
-      nzOkText: '确定',
-      nzCancelText: '取消',
-      nzMaskClosable: false,
-      nzData: guid,
-      nzOnOk: componentInstance => {
-        componentInstance.submit().subscribe({
-          next: r => {
-            modal.close();
-            if (r) {
-              this.message.success('操作成功');
-              this.getData();
-            } else {
-              this.message.error('操作失败');
-            }
-          },
-          error: e => {
-            this.message.error(e.message || '请求失败');
-          }
-        });
-        return false;
-      }
-    });
+    this.router.navigate(['/platform-keys/edit', guid]);
   }
 
   protected setEnabled(item: PlatformKey, enabled: boolean): void {
@@ -174,9 +169,20 @@ export class PlatformKeyListComponent implements OnInit {
     });
   }
 
-  protected closeSecret(): void {
-    this.secretVisible = false;
-    this.secretView = null;
+  protected get gatewayBaseUrl(): string {
+    const { protocol, hostname, port } = window.location;
+    if ((hostname === 'localhost' || hostname === '127.0.0.1') && /^42\d\d$/.test(port)) {
+      return `http://${hostname}:8787`;
+    }
+    return `${protocol}//${window.location.host}`;
+  }
+
+  protected get openAiGatewayEndpoint(): string {
+    return `${this.gatewayBaseUrl}/v1`;
+  }
+
+  protected get cliGatewayEndpoint(): string {
+    return this.gatewayBaseUrl;
   }
 
   protected formatModels(value?: string): string {
@@ -190,9 +196,58 @@ export class PlatformKeyListComponent implements OnInit {
     return value;
   }
 
+  protected formatRoutingStrategy(value?: string): string {
+    switch (value) {
+      case 'api_round_robin':
+        return '聚合 API 轮转';
+      case 'mixed_round_robin':
+        return '混合轮转';
+      case 'account_round_robin':
+      default:
+        return '账号轮转';
+    }
+  }
+
+  protected formatProtocolType(value?: string): string {
+    switch (value) {
+      case 'claude':
+        return 'Anthropic Native';
+      case 'gemini':
+        return 'Gemini Native';
+      case 'openai_compatible':
+      default:
+        return 'OpenAI Compat';
+    }
+  }
+
+  protected formatTokenLimit(item: PlatformKey): string {
+    if (!item.totalTokenLimit || item.totalTokenLimit <= 0) return '不限额度';
+    return `${item.totalTokenLimit}${item.tokenLimitUnit || ''} tokens`;
+  }
+
   protected formatLimit(value?: number): string {
     if (!value || value <= 0) return '不限速';
     return `${value} / min`;
+  }
+
+  protected formatTokens(value?: number): string {
+    const tokens = Number(value || 0);
+    if (tokens >= 1000000000) return `${(tokens / 1000000000).toFixed(2)}B`;
+    if (tokens >= 1000000) return `${(tokens / 1000000).toFixed(2)}M`;
+    if (tokens >= 1000) return `${(tokens / 1000).toFixed(2)}K`;
+    return tokens.toFixed(2);
+  }
+
+  protected formatAmount(value?: number): string {
+    return `$${Number(value || 0).toFixed(2)}`;
+  }
+
+  protected formatTokenLimitText(item: PlatformKey): string {
+    return item.totalTokenLimit && item.totalTokenLimit > 0 ? `${this.formatTokenLimit(item)}` : '不限额';
+  }
+
+  protected boundModelLabel(item: PlatformKey): string {
+    return item.boundModel || '跟随请求';
   }
 
   protected formatTime(value?: number): string {

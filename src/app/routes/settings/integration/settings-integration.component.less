@@ -71,13 +71,24 @@
 .detail-grid strong {
   display: block;
   margin-top: 8px;
-  overflow: hidden;
   color: #1f3148;
   font-size: 22px;
   font-weight: 850;
   line-height: 1.2;
-  text-overflow: ellipsis;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.metric-card strong.address-text {
+  overflow-x: auto;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  overflow-wrap: normal;
   white-space: nowrap;
+  word-break: normal;
+}
+
+.detail-grid strong.address-text {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 }
 
 .metric-success strong {
@@ -124,6 +135,7 @@
 .detail-grid strong {
   margin-top: 4px;
   font-size: 14px;
+  line-height: 1.55;
 }
 
 .note-list {
@@ -149,10 +161,9 @@ pre code {
 .api-list code {
   display: block;
   padding: 10px 12px;
-  overflow: hidden;
+  overflow-x: auto;
   border-radius: 8px;
   color: #2d3d55;
-  text-overflow: ellipsis;
   white-space: nowrap;
   background: #f8fafc;
 }

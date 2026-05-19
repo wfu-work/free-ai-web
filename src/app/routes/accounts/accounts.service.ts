@@ -12,8 +12,6 @@ import {
   AccountModelFetchPayload,
   AccountModelFetchResult,
   AccountPayload,
-  AccountQuota,
-  AccountQuotaPayload,
   AccountTestInput,
   AccountTestResult,
   AccountUsageRefreshResult,
@@ -35,19 +33,6 @@ export class AccountsService {
 
   health(): Observable<AccountHealthItem[]> {
     return this.http.get<AccountHealthItem[]>('/ops/account-health');
-  }
-
-  quotas(accountGuid?: string): Observable<AccountQuota[]> {
-    const params = accountGuid ? { accountGuid } : undefined;
-    return this.http.get<AccountQuota[]>('/quotas/list/all', { params });
-  }
-
-  quotaList(params: any): Observable<PageEntity<AccountQuota>> {
-    return this.http.get<PageEntity<AccountQuota>>('/quotas/list', { params });
-  }
-
-  upsertQuota(accountGuid: string, payload: AccountQuotaPayload): Observable<AccountQuota> {
-    return this.http.post<AccountQuota>(`/accounts/${accountGuid}/quotas`, payload);
   }
 
   get(guid: string): Observable<Account> {

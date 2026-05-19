@@ -34,7 +34,7 @@
   <nz-alert
     nzType="info"
     nzShowIcon
-    nzMessage="额度窗口来自 quota 数据；当账号状态异常时，优先结合失败次数、冷却时间和剩余额度一起判断。"
+    nzMessage="额度窗口来自账号健康数据，后端会每 3 分钟自动检查一次可查询额度的账号；当账号状态异常时，优先结合失败次数、冷却时间和剩余额度一起判断。"
   />
 
   <nz-card class="health-card" [nzBordered]="false">
@@ -79,6 +79,7 @@
       [ps]="q.size"
       [total]="totalCount"
       (change)="tableChange($event)"
+      [scroll]="{ x: 'max-content' }"
     >
       <ng-template st-row="nameRender" let-item>
         <div class="account-name">{{ item.name || '-' }}</div>
@@ -91,7 +92,6 @@
       </ng-template>
 
       <ng-template st-row="quotaRender" let-item>
-        <div class="quota-title">{{ quotaSummary(item.quotas) }}</div>
         <div class="quota-list">
           @for (quota of item.quotas || []; track quota.guid) {
             <span class="quota-chip" [class]="quotaTone(quota)">
@@ -103,6 +103,11 @@
             <span class="muted">无额度窗口</span>
           }
         </div>
+      </ng-template>
+
+      <ng-template st-row="nextCheckRender" let-item>
+        <div>{{ nextUsageCheckLabel(item) }}</div>
+        <span class="muted">{{ canRefreshUsage(item) ? '自动检查' : '手动维护' }}</span>
       </ng-template>
 
       <ng-template st-row="cooldownRender" let-item>

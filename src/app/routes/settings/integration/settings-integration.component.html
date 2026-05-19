@@ -2,7 +2,7 @@
   <div class="d-flex justify-content-between header-row">
     <title-label
       title="接入指南"
-      description="展示 OpenAI-compatible /v1 代理入口、平台密钥鉴权方式和客户端请求示例。"
+      description="展示兼容 OpenAI 的 /v1 网关入口、平台密钥鉴权方式和客户端请求示例。"
     />
     <div class="header-actions">
       <button nz-button (click)="load()">
@@ -16,11 +16,11 @@
     <div class="metric-grid">
       <article class="metric-card metric-success">
         <span>代理前缀</span>
-        <strong>{{ proxyBaseUrl }}</strong>
+        <strong class="address-text">{{ proxyBaseUrl }}</strong>
       </article>
       <article class="metric-card">
         <span>管理前缀</span>
-        <strong>{{ adminBaseUrl }}</strong>
+        <strong class="address-text">{{ adminBaseUrl }}</strong>
       </article>
       <article class="metric-card">
         <span>服务端口</span>
@@ -42,26 +42,30 @@
         </div>
         <div class="detail-grid">
           <div>
-            <span>Base URL</span>
-            <strong>{{ proxyBaseUrl }}</strong>
+            <span>基础地址</span>
+            <strong class="address-text">{{ proxyBaseUrl }}</strong>
           </div>
           <div>
-            <span>Authorization</span>
-            <strong>{{ authHeaderPreview }}</strong>
+            <span>请求鉴权头</span>
+            <strong class="address-text">{{ authHeaderPreview }}</strong>
+          </div>
+          <div>
+            <span>原始平台密钥</span>
+            <strong class="address-text">{{ sampleKey }}</strong>
           </div>
           <div>
             <span>样例密钥前缀</span>
-            <strong>{{ sampleKeyPrefix }}</strong>
+            <strong class="address-text">{{ sampleKeyPrefix }}</strong>
           </div>
           <div>
             <span>默认模型样例</span>
-            <strong>{{ sampleModel }}</strong>
+            <strong class="address-text">{{ sampleModel }}</strong>
           </div>
         </div>
         <ul class="note-list">
           <li>业务侧统一访问 `/v1/*`，不要直接把前端管理端的登录状态拿来调用代理接口。</li>
-          <li>真实调用时请替换成创建平台密钥时返回的完整 key，而不是这里只展示的 `keyPrefix`。</li>
-          <li>如果某个平台密钥限制了 `allowedModels`，请求里的 `model` 必须在允许列表内。</li>
+          <li>平台密钥本身是不带 `Bearer` 的原始值；放到 HTTP 请求头时直接使用 `Authorization: 平台密钥`。</li>
+          <li>如果某个平台密钥限制了允许模型，请求里的模型必须在允许列表内。</li>
         </ul>
       </nz-card>
 
@@ -73,22 +77,22 @@
           </button>
         </div>
         <div class="api-list">
-          <code>GET {{ proxyBaseUrl }}/models</code>
-          <code>POST {{ proxyBaseUrl }}/chat/completions</code>
-          <code>POST {{ proxyBaseUrl }}/responses</code>
-          <code>POST {{ proxyBaseUrl }}/embeddings</code>
-          <code>GET {{ adminBaseUrl }}/platform-keys</code>
-          <code>GET {{ adminBaseUrl }}/models</code>
-          <code>GET {{ adminBaseUrl }}/ops/metrics</code>
-          <code>GET {{ adminBaseUrl }}/request-logs</code>
+          <code>获取模型：GET {{ proxyBaseUrl }}/models</code>
+          <code>聊天补全：POST {{ proxyBaseUrl }}/chat/completions</code>
+          <code>响应接口：POST {{ proxyBaseUrl }}/responses</code>
+          <code>向量接口：POST {{ proxyBaseUrl }}/embeddings</code>
+          <code>平台密钥管理：GET {{ adminBaseUrl }}/platform-keys</code>
+          <code>模型映射管理：GET {{ adminBaseUrl }}/models</code>
+          <code>运行指标：GET {{ adminBaseUrl }}/ops/metrics</code>
+          <code>请求日志：GET {{ adminBaseUrl }}/request-logs</code>
         </div>
       </nz-card>
     </div>
 
-    <div class="snippet-grid">
+    <div class="snippet-grid mt-lg">
       <nz-card class="snippet-card" [nzBordered]="false">
         <div class="panel-head">
-          <div class="panel-title">curl: models</div>
+          <div class="panel-title">curl：获取模型</div>
           <button nz-button nzType="link" nzSize="small" (click)="copy(curlModelsExample, 'models 示例')">
             复制
           </button>
@@ -98,7 +102,7 @@
 
       <nz-card class="snippet-card" [nzBordered]="false">
         <div class="panel-head">
-          <div class="panel-title">curl: chat completions</div>
+          <div class="panel-title">curl：聊天补全</div>
           <button nz-button nzType="link" nzSize="small" (click)="copy(curlChatExample, 'chat 示例')">
             复制
           </button>
@@ -108,7 +112,7 @@
 
       <nz-card class="snippet-card" [nzBordered]="false">
         <div class="panel-head">
-          <div class="panel-title">curl: responses</div>
+          <div class="panel-title">curl：响应接口</div>
           <button nz-button nzType="link" nzSize="small" (click)="copy(curlResponsesExample, 'responses 示例')">
             复制
           </button>
@@ -118,7 +122,7 @@
 
       <nz-card class="snippet-card" [nzBordered]="false">
         <div class="panel-head">
-          <div class="panel-title">OpenAI SDK</div>
+          <div class="panel-title">OpenAI SDK 示例</div>
           <button nz-button nzType="link" nzSize="small" (click)="copy(openAiSdkExample, 'SDK 示例')">
             复制
           </button>
@@ -128,7 +132,7 @@
 
       <nz-card class="snippet-card" [nzBordered]="false">
         <div class="panel-head">
-          <div class="panel-title">curl: embeddings</div>
+          <div class="panel-title">curl：向量接口</div>
           <button nz-button nzType="link" nzSize="small" (click)="copy(embeddingsExample, 'embeddings 示例')">
             复制
           </button>

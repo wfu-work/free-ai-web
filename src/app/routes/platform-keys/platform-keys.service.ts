@@ -2,7 +2,7 @@ import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 
-import { CreatePlatformKeyResult, PlatformKey, PlatformKeyPayload } from './platform-key.model';
+import { CreatePlatformKeyResult, PlatformKey, PlatformKeyPayload, PlatformKeyStats } from './platform-key.model';
 import { PageEntity } from '@shared';
 
 @Injectable({ providedIn: 'root' })
@@ -15,6 +15,10 @@ export class PlatformKeysService {
 
   listAll(): Observable<PlatformKey[]> {
     return this.http.get<PlatformKey[]>('/platform-keys/list/all');
+  }
+
+  stats(): Observable<PlatformKeyStats> {
+    return this.http.get<PlatformKeyStats>('/platform-keys/stats');
   }
 
   get(guid: string): Observable<PlatformKey> {

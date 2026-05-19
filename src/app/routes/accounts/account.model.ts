@@ -56,23 +56,6 @@ export interface AccountQuota {
   extra: string;
 }
 
-export interface AccountQuotaPayload {
-  accountGuid?: string;
-  windowType: string;
-  usedPercent?: number;
-  remainingTokens?: number;
-  totalTokens?: number;
-  unit?: string;
-  usedAmount?: number;
-  remainingAmount?: number;
-  totalAmount?: number;
-  resetAt?: number;
-  nextRefreshAt?: number;
-  lastSyncedAt?: number;
-  status?: string;
-  extra?: string;
-}
-
 export interface AccountGroup {
   guid: string;
   name: string;
@@ -113,6 +96,7 @@ export interface AccountHealthItem {
   cooldownUntil: number;
   lastUsedAt: number;
   subscriptionExpiredAt: number;
+  nextUsageCheckAt: number;
   quotas: AccountQuota[];
 }
 

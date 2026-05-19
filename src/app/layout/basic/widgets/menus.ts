@@ -50,9 +50,6 @@ import { NzMenuModule } from 'ng-zorro-antd/menu';
               <li nz-menu-item nzMatchRouter routerLink="/accounts/health">
                 <span>账号健康</span>
               </li>
-              <li nz-menu-item nzMatchRouter routerLink="/accounts/quotas">
-                <span>额度管理</span>
-              </li>
             </ul>
           </li>
           <li nz-menu-item nzMatchRouter routerLink="/platform-keys/list">
@@ -86,7 +83,7 @@ import { NzMenuModule } from 'ng-zorro-antd/menu';
           <li nz-submenu nzTitle="系统设置" nzIcon="setting">
             <ul>
               <li nz-menu-item nzMatchRouter routerLink="/settings/integration">
-                <span>接入指南</span>
+                <span>网关配置</span>
               </li>
               <li nz-menu-item nzMatchRouter routerLink="/settings/security">
                 <span>安全设置</span>
@@ -314,7 +311,7 @@ import { NzMenuModule } from 'ng-zorro-antd/menu';
           width: auto;
           margin: 0 4px 8px;
           padding-inline: 16px !important;
-          border-radius: 999px;
+          border-radius: 8px;
           font-size: 15px;
           font-weight: 600;
           color: #5d6b82;

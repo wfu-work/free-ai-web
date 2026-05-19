@@ -53,12 +53,13 @@ export class AccountHealthComponent implements OnInit {
   };
 
   protected readonly columns: Array<STColumn<AccountHealthItem>> = [
-    { title: '账号', index: 'name', render: 'nameRender', width: 200 },
+    { title: '账号', index: 'name', render: 'nameRender', width: 200, fixed: 'left' },
     { title: '供应商 / 分组', index: 'provider', render: 'providerRender', width: 160 },
     { title: '状态', index: 'status', type: 'tag', tag: this.statusTag, width: 92 },
     { title: '启用', index: 'enabled', type: 'tag', tag: this.enabledTag, width: 86 },
     { title: '失败次数', index: 'failureCount', width: 92 },
     { title: '额度窗口', render: 'quotaRender', width: 280 },
+    { title: '下次检查', render: 'nextCheckRender', width: 150 },
     { title: '冷却 / 过期', render: 'cooldownRender', width: 190 },
     { title: '最近使用', render: 'activityRender', width: 180 },
     {
@@ -115,11 +116,6 @@ export class AccountHealthComponent implements OnInit {
     ).length;
   }
 
-  protected quotaSummary(quotas: AccountQuota[]): string {
-    if (!quotas?.length) return '无额度数据';
-    return `${quotas.length} 个窗口`;
-  }
-
   protected refreshUsage(item: AccountHealthItem): void {
     if (!this.canRefreshUsage(item)) return;
     this.syncingGuid = item.guid;
@@ -137,12 +133,22 @@ export class AccountHealthComponent implements OnInit {
   }
 
   protected canRefreshUsage(item: AccountHealthItem): boolean {
-    return item.usageQueryType === 'codexzh' || item.provider === 'codexzh';
+    if (item.usageQueryType === 'codexzh' || item.provider === 'codexzh') return true;
+    if (item.usageQueryType) return false;
+    return [item.supplierName, item.usageApiUrl]
+      .filter(Boolean)
+      .some((value) => String(value).toLowerCase().includes('codexzh'));
   }
 
   protected usageQueryLabel(item: AccountHealthItem): string {
     if (this.canRefreshUsage(item)) return 'CodexZH 额度';
     return '未配置额度查询';
+  }
+
+  protected nextUsageCheckLabel(item: AccountHealthItem): string {
+    if (!this.canRefreshUsage(item)) return '未配置';
+    if (!item.nextUsageCheckAt) return '待检查';
+    return this.formatTime(item.nextUsageCheckAt);
   }
 
   protected quotaTone(quota: AccountQuota): string {
@@ -204,6 +210,7 @@ export class AccountHealthComponent implements OnInit {
         item.accountGroup,
         item.status,
         item.usageQueryType,
+        this.nextUsageCheckLabel(item),
       ]
         .filter(Boolean)
         .some((value) => String(value).toLowerCase().includes(content));
