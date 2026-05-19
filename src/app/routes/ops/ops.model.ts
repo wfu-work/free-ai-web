@@ -23,3 +23,12 @@ export interface MasterKeyStatus {
   updatedAt: number;
   error?: string;
 }
+
+export interface CoreBackupImportResult {
+  accounts: number;
+  accountGroups: number;
+  accountQuotas: number;
+  modelMappings: number;
+  platformKeys: number;
+  routeStates: number;
+}

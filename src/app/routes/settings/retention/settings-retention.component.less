@@ -111,6 +111,55 @@
   padding: 28px;
 }
 
+.backup-card ::ng-deep .ant-card-body {
+  gap: 18px;
+}
+
+.backup-layout {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+}
+
+.backup-actions {
+  display: flex;
+  flex: 0 0 auto;
+  gap: 10px;
+}
+
+.backup-actions button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 38px;
+  font-weight: 760;
+}
+
+.backup-file-input {
+  display: none;
+}
+
+.backup-notes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding-top: 16px;
+  border-top: 1px solid rgb(var(--nm-primary-rgb) / 8%);
+}
+
+.backup-notes span {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 0 10px;
+  border-radius: 999px;
+  color: #526174;
+  font-size: 12px;
+  font-weight: 700;
+  background: #f8fafc;
+}
+
 .panel-head {
   display: flex;
   align-items: flex-start;
@@ -263,6 +312,14 @@
   .detail-grid {
     grid-template-columns: 1fr;
   }
+
+  .backup-layout {
+    display: grid;
+  }
+
+  .backup-actions {
+    flex-wrap: wrap;
+  }
 }
 
 @media (max-width: 767px) {
@@ -275,8 +332,14 @@
   }
 
   .header-actions button,
+  .backup-actions button,
   .cleanup-action button {
     width: 100%;
+  }
+
+  .backup-actions {
+    width: 100%;
+    display: grid;
   }
 
   .panel-card ::ng-deep .ant-card-body {

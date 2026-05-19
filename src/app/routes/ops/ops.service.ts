@@ -2,7 +2,7 @@ import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 
-import { MasterKeyStatus, OpsMetrics, OpsStats } from './ops.model';
+import { CoreBackupImportResult, MasterKeyStatus, OpsMetrics, OpsStats } from './ops.model';
 
 @Injectable({ providedIn: 'root' })
 export class OpsService {
@@ -18,5 +18,15 @@ export class OpsService {
 
   masterKey(): Observable<MasterKeyStatus> {
     return this.http.get<MasterKeyStatus>('/ops/master-key');
+  }
+
+  exportCoreBackup(): Observable<Blob> {
+    return this.http.get('/ops/core-backup', {
+      responseType: 'blob',
+    });
+  }
+
+  importCoreBackup(payload: unknown): Observable<CoreBackupImportResult> {
+    return this.http.post<CoreBackupImportResult>('/ops/core-backup', payload);
   }
 }

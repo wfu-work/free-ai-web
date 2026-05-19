@@ -32,6 +32,38 @@
       </article>
     </div>
 
+    <nz-card class="panel-card backup-card" [nzBordered]="false">
+      <div class="backup-layout">
+        <div class="panel-head">
+          <div>
+            <div class="panel-title">核心数据备份</div>
+            <p>导出账号、账号分组、模型映射、平台密钥、账号额度、路由状态和网关配置；导入时按 guid 恢复并覆盖同一份核心数据。</p>
+          </div>
+        </div>
+        <div class="backup-actions">
+          <button nz-button nzType="primary" type="button" [nzLoading]="backupLoading" (click)="exportCoreBackup()">
+            <i nz-icon nzType="download"></i>
+            导出备份文件
+          </button>
+          <button nz-button type="button" [disabled]="backupLoading" (click)="openImportFile()">
+            <i nz-icon nzType="upload"></i>
+            导入恢复数据
+          </button>
+          <input
+            #backupFileInput
+            class="backup-file-input"
+            type="file"
+            accept="application/json,.json"
+            (change)="handleBackupFileChange($event)"
+          />
+        </div>
+      </div>
+      <div class="backup-notes">
+        <span>备份文件不包含请求日志正文，适合在清理日志前保留核心配置。</span>
+        <span>密钥以数据库加密字段形式导出，不会在文件中生成明文 Bearer 或 API Key。</span>
+      </div>
+    </nz-card>
+
     <div class="content-grid mt-lg">
       <nz-card class="panel-card" [nzBordered]="false">
         <div class="panel-head">
