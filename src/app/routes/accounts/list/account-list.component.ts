@@ -68,14 +68,14 @@ export class AccountListComponent implements OnInit {
   };
 
   protected readonly columns: Array<STColumn<Account>> = [
-    { title: '账号', index: 'name', render: 'nameRender', width: 220 },
-    { title: '供应商 / 分组', index: 'provider', render: 'providerRender', width: 170 },
+    { title: '账号', index: 'name', render: 'nameRender', width: 200, fixed: 'left' },
+    { title: '供应商 / 分组', index: 'provider', render: 'providerRender', width: 150 },
     { title: '状态', index: 'status', type: 'tag', tag: this.statusTag, width: 92 },
     { title: '启用', index: 'enabled', type: 'tag', tag: this.enabledTag, width: 86 },
     { title: '权重', index: 'weight', render: 'weightRender', width: 92 },
     { title: '失败', index: 'failureCount', width: 72 },
     { title: '最近使用', index: 'lastUsedAt', render: 'lastUsedRender', width: 170 },
-    { title: 'Secret', index: 'secretHint', render: 'secretRender', width: 140 },
+    { title: 'Secret', index: 'secretHint', render: 'secretRender', width: 180 },
     {
       title: '操作',
       width: 230,

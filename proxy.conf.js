@@ -14,6 +14,14 @@ module.exports = {
     },
     changeOrigin: true,
   },
+  '/v1/': {
+    target: 'http://127.0.0.1:8787/v1/',
+    secure: false,
+    pathRewrite: {
+      '^/v1/': '',
+    },
+    changeOrigin: true,
+  },
   '/tmap': {
     target: 'https://tmap.navfirst.com',
     secure: false,

@@ -5,6 +5,10 @@
       description="展示兼容 OpenAI 的 /v1 网关入口、平台密钥鉴权方式和客户端请求示例。"
     />
     <div class="header-actions">
+      <button nz-button nzType="primary" (click)="openDebug()">
+        <i nz-icon nzType="bug"></i>
+        调试
+      </button>
       <button nz-button (click)="load()">
         <i nz-icon nzType="reload"></i>
         刷新密钥样例

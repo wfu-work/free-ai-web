@@ -27,6 +27,10 @@ import { AccountsService } from '../accounts.service';
 
 type AccountFormMode = 'create' | 'edit';
 
+const PROVIDER_API_BASE_URLS: Record<string, string> = {
+  openai: 'https://api.openai.com/v1',
+  codexzh: 'https://api.codexzh.com/v1',
+};
 const CODEXZH_USAGE_API_URL = 'https://codexzh.com/api/v1/usage/stats';
 const OPENAI_OAUTH_AUTHORIZE_URL = 'https://auth.openai.com/oauth/authorize';
 const OPENAI_OAUTH_CLIENT_ID = 'app_EMoamEEZ73f0CkXaXp7hrann';
@@ -103,6 +107,7 @@ export class AccountEditComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     window.addEventListener('message', this.handleOAuthCallbackMessage);
     this.form.controls.provider.valueChanges.subscribe((provider) => {
+      this.syncApiBaseUrlWithProvider(provider);
       this.syncUsageConfigWithProvider(provider);
       this.syncCustomProviderValidators();
       this.cdr.markForCheck();
@@ -140,7 +145,7 @@ export class AccountEditComponent implements OnInit, OnDestroy {
     const value = this.form.getRawValue();
     const payload: AccountPayload = {
       ...value,
-      apiBaseUrl: value.provider === 'custom' ? value.apiBaseUrl.trim() : '',
+      apiBaseUrl: this.resolveApiBaseUrl(value.provider, value.apiBaseUrl),
       supplierName: value.provider === 'custom' ? value.supplierName.trim() : '',
       officialUrl: value.provider === 'custom' ? value.officialUrl.trim() : '',
       usageQueryType: value.usageQueryType,
@@ -235,6 +240,10 @@ export class AccountEditComponent implements OnInit, OnDestroy {
     return this.form.controls.provider.value === 'custom';
   }
 
+  protected get apiBaseUrlReadonly(): boolean {
+    return !this.isCustomProvider;
+  }
+
   protected get showUsageConfig(): boolean {
     const provider = this.form.controls.provider.value;
     return provider === 'custom' || provider === 'codexzh';
@@ -250,6 +259,12 @@ export class AccountEditComponent implements OnInit, OnDestroy {
 
   protected get canOpenLoginAuth(): boolean {
     return this.form.controls.provider.value === 'openai';
+  }
+
+  protected get apiBaseUrlHint(): string {
+    const provider = this.form.controls.provider.value;
+    if (provider === 'custom') return '自定义供应商需要填写 OpenAI 兼容接口地址，通常以 /v1 结尾。';
+    return '系统会按供应商自动使用该接口地址，账号测试和网关转发都会走这里。';
   }
 
   protected async openLoginAuth(): Promise<void> {
@@ -324,7 +339,7 @@ export class AccountEditComponent implements OnInit, OnDestroy {
 
   protected fetchModels(): void {
     const value = this.form.getRawValue();
-    if (this.isCustomProvider && !value.apiBaseUrl.trim()) {
+    if (!this.resolveApiBaseUrl(value.provider, value.apiBaseUrl)) {
       this.message.warning('请先填写 API 请求地址');
       return;
     }
@@ -336,7 +351,7 @@ export class AccountEditComponent implements OnInit, OnDestroy {
     this.accountsService
       .fetchModels({
         provider: value.provider,
-        apiBaseUrl: value.apiBaseUrl,
+        apiBaseUrl: this.resolveApiBaseUrl(value.provider, value.apiBaseUrl),
         authType: value.authType,
         secret: value.secret,
       })
@@ -381,7 +396,7 @@ export class AccountEditComponent implements OnInit, OnDestroy {
       name: '',
       email: '',
       provider: 'openai',
-      apiBaseUrl: '',
+      apiBaseUrl: this.providerDefaultApiBaseUrl('openai'),
       supplierName: '',
       officialUrl: '',
       usageQueryType: '',
@@ -426,7 +441,7 @@ export class AccountEditComponent implements OnInit, OnDestroy {
           name: account.name ?? '',
           email: account.email ?? '',
           provider: account.provider ?? 'openai',
-          apiBaseUrl: account.apiBaseUrl ?? '',
+          apiBaseUrl: account.apiBaseUrl || this.providerDefaultApiBaseUrl(account.provider),
           supplierName: account.supplierName ?? '',
           officialUrl: account.officialUrl ?? '',
           usageQueryType: account.usageQueryType ?? '',
@@ -503,6 +518,25 @@ export class AccountEditComponent implements OnInit, OnDestroy {
       controls.forEach((control) => control.clearValidators());
     }
     controls.forEach((control) => control.updateValueAndValidity({ emitEvent: false }));
+  }
+
+  private syncApiBaseUrlWithProvider(provider: string): void {
+    if (provider === 'custom') {
+      const current = this.form.controls.apiBaseUrl.value.trim();
+      if (Object.values(PROVIDER_API_BASE_URLS).includes(current)) {
+        this.form.controls.apiBaseUrl.setValue('', { emitEvent: false });
+      }
+      return;
+    }
+    this.form.controls.apiBaseUrl.setValue(this.providerDefaultApiBaseUrl(provider), { emitEvent: false });
+  }
+
+  private providerDefaultApiBaseUrl(provider: string): string {
+    return PROVIDER_API_BASE_URLS[(provider || '').trim()] || '';
+  }
+
+  private resolveApiBaseUrl(provider: string, value: string): string {
+    return value.trim() || this.providerDefaultApiBaseUrl(provider);
   }
 
   private syncSecretValidators(): void {

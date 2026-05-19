@@ -1,6 +1,7 @@
 export interface OpsMetrics {
   ok: boolean;
   name: string;
+  proxyPrefix?: string;
   accounts: number;
   availableAccounts: number;
   enabledModels: number;

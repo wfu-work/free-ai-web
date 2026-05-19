@@ -74,11 +74,13 @@ import {
   OrderedListOutline,
   TransactionOutline,
   GlobalOutline,
+  BugOutline,
 } from '@ant-design/icons-angular/icons';
 
 export const ICONS_AUTO = [
   HomeOutline,
   AppleOutline,
+  BugOutline,
   GlobalOutline,
   BarChartOutline,
   ApiOutline,

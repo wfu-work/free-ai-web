@@ -13,6 +13,7 @@ import { NzModalService } from 'ng-zorro-antd/modal';
 import { NzPopoverModule } from 'ng-zorro-antd/popover';
 import { finalize, forkJoin } from 'rxjs';
 
+import { OpsService } from '../../ops/ops.service';
 import { PlatformKey, PlatformKeyStats } from '../platform-key.model';
 import { PlatformKeysService } from '../platform-keys.service';
 
@@ -26,6 +27,7 @@ import { PlatformKeysService } from '../platform-keys.service';
 export class PlatformKeyListComponent implements OnInit {
   private readonly router = inject(Router);
   private readonly platformKeysService = inject(PlatformKeysService);
+  private readonly opsService = inject(OpsService);
   private readonly message = inject(NzMessageService);
   private readonly modalService = inject(NzModalService);
   private readonly cdr = inject(ChangeDetectorRef);
@@ -40,6 +42,7 @@ export class PlatformKeyListComponent implements OnInit {
   protected data: PlatformKey[] = [];
   protected loading = false;
   totalCount = 0;
+  protected proxyPrefix = '/v1';
   protected stats: PlatformKeyStats = {
     totalTokens: 0,
     totalAmount: 0,
@@ -106,6 +109,7 @@ export class PlatformKeyListComponent implements OnInit {
     forkJoin({
       page: this.platformKeysService.list(this.q),
       stats: this.platformKeysService.stats(),
+      metrics: this.opsService.metrics(),
     })
       .pipe(
         finalize(() => {
@@ -113,10 +117,11 @@ export class PlatformKeyListComponent implements OnInit {
           this.cdr.markForCheck();
         }),
       )
-      .subscribe(({ page, stats }) => {
+      .subscribe(({ page, stats, metrics }) => {
         this.data = page.data ?? [];
         this.totalCount = page.total ?? 0;
         this.stats = stats ?? { totalTokens: 0, totalAmount: 0 };
+        this.proxyPrefix = this.normalizeProxyPrefix(metrics?.proxyPrefix);
       });
   }
 
@@ -178,7 +183,7 @@ export class PlatformKeyListComponent implements OnInit {
   }
 
   protected get openAiGatewayEndpoint(): string {
-    return `${this.gatewayBaseUrl}/v1`;
+    return `${this.gatewayBaseUrl}${this.proxyPrefix}`;
   }
 
   protected get cliGatewayEndpoint(): string {
@@ -228,6 +233,12 @@ export class PlatformKeyListComponent implements OnInit {
   protected formatLimit(value?: number): string {
     if (!value || value <= 0) return '不限速';
     return `${value} / min`;
+  }
+
+  private normalizeProxyPrefix(value?: string): string {
+    const prefix = (value || '/v1').trim();
+    const normalized = prefix.startsWith('/') ? prefix : `/${prefix}`;
+    return normalized.length > 1 ? normalized.replace(/\/+$/, '') : '/v1';
   }
 
   protected formatTokens(value?: number): string {

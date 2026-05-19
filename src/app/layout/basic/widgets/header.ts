@@ -1,4 +1,5 @@
 import {
+  ChangeDetectorRef,
   Component,
   DestroyRef,
   EventEmitter,
@@ -34,6 +35,18 @@ import { ThemeColorComponent } from './theme-color';
           (click)="collapsTap()"
         ></span>
         <span class="font-weight-bold text-xl title">{{ pageTitle }}</span>
+        <button
+          type="button"
+          class="gateway-status"
+          [class.gateway-status-ok]="gatewayStatus === 'ok'"
+          [class.gateway-status-error]="gatewayStatus === 'error'"
+          [class.gateway-status-checking]="gatewayStatus === 'checking'"
+          [title]="gatewayStatusTitle"
+          (click)="checkGatewayHealth()"
+        >
+          <i nz-icon [nzType]="gatewayStatusIcon" [nzSpin]="gatewayStatus === 'checking'"></i>
+          <span>{{ gatewayStatusText }}</span>
+        </button>
       </div>
       <div class="header-actions">
         <theme-color />
@@ -118,6 +131,50 @@ import { ThemeColorComponent } from './theme-color';
         color: var(--nm-primary);
       }
 
+      .gateway-status {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        height: 30px;
+        padding: 0 12px;
+        border: 1px solid rgb(148 163 184 / 24%);
+        border-radius: 999px;
+        color: #64748b;
+        font-size: 13px;
+        font-weight: 760;
+        line-height: 1;
+        white-space: nowrap;
+        background: rgb(255 255 255 / 70%);
+        cursor: pointer;
+        transition:
+          border-color 0.2s ease,
+          color 0.2s ease,
+          background-color 0.2s ease,
+          transform 0.2s ease;
+      }
+
+      .gateway-status:hover {
+        transform: translateY(-1px);
+      }
+
+      .gateway-status-ok {
+        border-color: rgb(20 148 112 / 18%);
+        color: #14856e;
+        background: rgb(20 148 112 / 8%);
+      }
+
+      .gateway-status-error {
+        border-color: rgb(194 65 65 / 18%);
+        color: #c24141;
+        background: rgb(194 65 65 / 8%);
+      }
+
+      .gateway-status-checking {
+        border-color: rgb(183 121 31 / 18%);
+        color: #b7791f;
+        background: rgb(183 121 31 / 8%);
+      }
+
       .header-actions {
         display: flex;
         align-items: center;
@@ -152,6 +209,16 @@ import { ThemeColorComponent } from './theme-color';
           height: 38px;
         }
 
+        .gateway-status span {
+          display: none;
+        }
+
+        .gateway-status {
+          width: 34px;
+          justify-content: center;
+          padding: 0;
+        }
+
         .header-actions {
           gap: 8px;
         }
@@ -163,8 +230,11 @@ import { ThemeColorComponent } from './theme-color';
 })
 export class BasicHeaderComponent implements OnInit {
   private readonly destroyRef = inject(DestroyRef);
+  private readonly cdr = inject(ChangeDetectorRef);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
+  private gatewayHealthTimer: ReturnType<typeof setInterval> | null = null;
+  private destroyed = false;
 
   @Output() public readonly collapsClick = new EventEmitter<boolean>();
 
@@ -172,9 +242,20 @@ export class BasicHeaderComponent implements OnInit {
 
   protected pageTitle = 'FreeAi';
   protected hasScrolled = false;
+  protected gatewayStatus: 'checking' | 'ok' | 'error' = 'checking';
+  protected gatewayCheckedAt = 0;
+  protected gatewayStatusTitle = '检查中，最后检查：尚未完成';
 
   ngOnInit(): void {
     this.updatePageTitle();
+    this.checkGatewayHealth();
+    this.gatewayHealthTimer = setInterval(() => this.checkGatewayHealth(), 30000);
+    this.destroyRef.onDestroy(() => {
+      this.destroyed = true;
+      if (this.gatewayHealthTimer) {
+        clearInterval(this.gatewayHealthTimer);
+      }
+    });
     this.router.events
       .pipe(
         filter((event): event is NavigationEnd => event instanceof NavigationEnd),
@@ -193,6 +274,68 @@ export class BasicHeaderComponent implements OnInit {
   protected collapsTap(): void {
     this.isCollapsed = !this.isCollapsed;
     this.collapsClick.emit(this.isCollapsed);
+  }
+
+  protected async checkGatewayHealth(): Promise<void> {
+    if (this.gatewayStatus === 'checking' && this.gatewayCheckedAt > 0) return;
+    this.gatewayStatus = 'checking';
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 2500);
+    try {
+      const response = await fetch('/api/ops/metrics', {
+        cache: 'no-store',
+        signal: controller.signal,
+      });
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+      const body = (await response.json().catch(() => null)) as Partial<{
+        code: number;
+        data: Partial<{ ok: boolean }>;
+        ok: boolean;
+      }> | null;
+      const ok = body?.data?.ok ?? body?.ok ?? response.ok;
+      this.gatewayStatus = ok ? 'ok' : 'error';
+    } catch {
+      this.gatewayStatus = 'error';
+    } finally {
+      clearTimeout(timer);
+      this.gatewayCheckedAt = Date.now();
+      this.gatewayStatusTitle = this.buildGatewayStatusTitle();
+      this.detectGatewayStatusChanges();
+    }
+  }
+
+  protected get gatewayStatusText(): string {
+    switch (this.gatewayStatus) {
+      case 'ok':
+        return '网关正常';
+      case 'error':
+        return '网关异常';
+      default:
+        return '检查中';
+    }
+  }
+
+  protected get gatewayStatusIcon(): string {
+    switch (this.gatewayStatus) {
+      case 'ok':
+        return 'check-circle';
+      case 'error':
+        return 'close-circle';
+      default:
+        return 'loading';
+    }
+  }
+
+  private buildGatewayStatusTitle(): string {
+    const checkedAt = this.gatewayCheckedAt ? new Date(this.gatewayCheckedAt).toLocaleTimeString('zh-CN', { hour12: false }) : '尚未完成';
+    return `${this.gatewayStatusText}，最后检查：${checkedAt}`;
+  }
+
+  private detectGatewayStatusChanges(): void {
+    if (this.destroyed) return;
+    this.cdr.detectChanges();
   }
 
   private updatePageTitle(): void {

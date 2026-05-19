@@ -45,16 +45,18 @@
                 </nz-select>
               </se>
 
-              @if (isCustomProvider) {
-                <se label="API 请求地址" required error="请输入 API 请求地址">
-                  <input
-                    id="apiBaseUrl"
-                    nz-input
-                    formControlName="apiBaseUrl"
-                    placeholder="https://api.example.com/v1"
-                  />
-                </se>
+              <se label="API 请求地址" [required]="isCustomProvider" error="请输入 API 请求地址">
+                <input
+                  id="apiBaseUrl"
+                  nz-input
+                  formControlName="apiBaseUrl"
+                  [readOnly]="apiBaseUrlReadonly"
+                  placeholder="https://api.example.com/v1"
+                />
+                <div class="field-extra">{{ apiBaseUrlHint }}</div>
+              </se>
 
+              @if (isCustomProvider) {
                 <se label="供应商名称" required error="请输入供应商名称">
                   <input
                     id="supplierName"
@@ -293,6 +295,10 @@
           <div class="quick-item">
             <span>账号类型</span>
             <strong>{{ accountTypeLabel }}</strong>
+          </div>
+          <div class="quick-item">
+            <span>接口地址</span>
+            <strong>{{ form.controls.apiBaseUrl.value || '-' }}</strong>
           </div>
         </div>
 

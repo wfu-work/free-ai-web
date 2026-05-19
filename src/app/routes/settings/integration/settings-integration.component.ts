@@ -7,10 +7,15 @@ import {
 } from '@angular/core';
 import { SHARED_IMPORTS, TitleLabelComponent } from '@shared';
 import { NzMessageService } from 'ng-zorro-antd/message';
-import { finalize } from 'rxjs';
+import { NzModalService } from 'ng-zorro-antd/modal';
+import { finalize, forkJoin } from 'rxjs';
 
+import { ModelMapping } from '../../models/model.model';
+import { ModelsService } from '../../models/models.service';
+import { OpsService } from '../../ops/ops.service';
 import { PlatformKey } from '../../platform-keys/platform-key.model';
 import { PlatformKeysService } from '../../platform-keys/platform-keys.service';
+import { SettingsIntegrationDebugComponent as EditComponent } from './debug/settings-integration-debug.component';
 
 @Component({
   selector: 'app-settings-integration',
@@ -21,11 +26,16 @@ import { PlatformKeysService } from '../../platform-keys/platform-keys.service';
 })
 export class SettingsIntegrationComponent implements OnInit {
   private readonly platformKeysService = inject(PlatformKeysService);
+  private readonly modelsService = inject(ModelsService);
+  private readonly opsService = inject(OpsService);
   private readonly message = inject(NzMessageService);
+  private readonly modalService = inject(NzModalService);
   private readonly cdr = inject(ChangeDetectorRef);
 
   protected loading = false;
   protected keys: PlatformKey[] = [];
+  protected modelMappings: ModelMapping[] = [];
+  protected proxyPrefix = '/v1';
 
   ngOnInit(): void {
     this.load();
@@ -33,21 +43,26 @@ export class SettingsIntegrationComponent implements OnInit {
 
   protected load(): void {
     this.loading = true;
-    this.platformKeysService
-      .listAll()
+    forkJoin({
+      keys: this.platformKeysService.listAll(),
+      models: this.modelsService.listAll(),
+      metrics: this.opsService.metrics(),
+    })
       .pipe(
         finalize(() => {
           this.loading = false;
           this.cdr.markForCheck();
         }),
       )
-      .subscribe((keys) => {
+      .subscribe(({ keys, models, metrics }) => {
         this.keys = keys ?? [];
+        this.modelMappings = models ?? [];
+        this.proxyPrefix = this.normalizeProxyPrefix(metrics?.proxyPrefix);
       });
   }
 
   protected get proxyBaseUrl(): string {
-    return `${this.gatewayBaseUrl}/v1`;
+    return `${this.gatewayBaseUrl}${this.proxyPrefix}`;
   }
 
   protected get adminBaseUrl(): string {
@@ -72,7 +87,10 @@ export class SettingsIntegrationComponent implements OnInit {
   }
 
   protected get sampleKey(): string {
-    const key = this.keys.find((item) => item.enabled && item.key) || this.keys.find((item) => item.key) || this.keys[0];
+    const key =
+      this.keys.find((item) => item.enabled && item.key) ||
+      this.keys.find((item) => item.key) ||
+      this.keys[0];
     return key?.key || `${this.sampleKeyPrefix}_完整密钥`;
   }
 
@@ -80,6 +98,14 @@ export class SettingsIntegrationComponent implements OnInit {
     const key = this.keys.find((item) => item.enabled) || this.keys[0];
     const parsed = this.parseAllowedModels(key?.allowedModels);
     return parsed[0] || 'gpt-4.1-mini';
+  }
+
+  protected get gatewayRequestBaseUrl(): string {
+    const { hostname, port } = window.location;
+    if ((hostname === 'localhost' || hostname === '127.0.0.1') && /^42\d\d$/.test(port)) {
+      return this.proxyPrefix;
+    }
+    return `${window.location.origin}${this.proxyPrefix}`;
   }
 
   protected get authHeaderPreview(): string {
@@ -151,6 +177,28 @@ console.log(response.choices[0]?.message?.content);`;
     }
   }
 
+  protected openDebug(): void {
+    const title = '网关接口调试';
+    const modal = this.modalService.create({
+      nzTitle: title,
+      nzContent: EditComponent,
+      nzOkText: '开始调试',
+      nzCancelText: '关闭',
+      nzMaskClosable: false,
+      nzWidth: 800,
+      nzData: {
+        keys: this.keys,
+        modelMappings: this.modelMappings,
+        proxyBaseUrl: this.proxyBaseUrl,
+        requestBaseUrl: this.gatewayRequestBaseUrl,
+        sampleKey: this.sampleKey,
+        sampleModel: this.sampleModel,
+      },
+      nzOnOk: (component) => component?.submit(),
+    });
+    modal.afterClose.subscribe(() => this.cdr.markForCheck());
+  }
+
   protected parseAllowedModels(value?: string): string[] {
     if (!value) return [];
     try {
@@ -165,5 +213,11 @@ console.log(response.choices[0]?.message?.content);`;
         .filter(Boolean);
     }
     return [];
+  }
+
+  private normalizeProxyPrefix(value?: string): string {
+    const prefix = (value || '/v1').trim();
+    const normalized = prefix.startsWith('/') ? prefix : `/${prefix}`;
+    return normalized.length > 1 ? normalized.replace(/\/+$/, '') : '/v1';
   }
 }

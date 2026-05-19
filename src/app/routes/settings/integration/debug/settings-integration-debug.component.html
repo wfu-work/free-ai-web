@@ -1,0 +1,89 @@
+<div class="debug-modal">
+  <nz-alert
+    nzType="info"
+    nzShowIcon
+    nzMessage="使用当前浏览器发起一次兼容 OpenAI 的网关请求，Authorization 使用平台密钥原始值，不自动添加 Bearer。"
+  />
+
+  <form nz-form nzLayout="vertical" class="debug-form">
+    <div class="form-grid">
+      <nz-form-item>
+        <nz-form-label>调试接口</nz-form-label>
+        <nz-form-control>
+          <nz-select [(ngModel)]="form.endpoint" name="endpoint">
+            @for (endpoint of endpoints; track endpoint.value) {
+              <nz-option [nzValue]="endpoint.value" [nzLabel]="endpoint.label" />
+            }
+          </nz-select>
+        </nz-form-control>
+      </nz-form-item>
+
+      <nz-form-item>
+        <nz-form-label>模型</nz-form-label>
+        <nz-form-control>
+          <nz-select [(ngModel)]="form.model" name="model" nzShowSearch nzAllowClear>
+            @for (model of availableModels; track model) {
+              <nz-option [nzValue]="model" [nzLabel]="model" />
+            }
+          </nz-select>
+        </nz-form-control>
+      </nz-form-item>
+    </div>
+
+    <nz-form-item>
+      <nz-form-label>平台密钥</nz-form-label>
+      <nz-form-control>
+        <nz-select
+          [(ngModel)]="form.platformKey"
+          name="platformKey"
+          nzShowSearch
+          nzAllowClear
+          nzPlaceHolder="请选择平台密钥"
+          (ngModelChange)="onKeyChange()"
+        >
+          @for (key of keys; track key.guid) {
+            <nz-option [nzValue]="key.key || key.keyPrefix" [nzLabel]="key.name + ' · ' + key.keyPrefix" />
+          }
+        </nz-select>
+      </nz-form-control>
+    </nz-form-item>
+
+    <div class="request-preview">
+      <span>请求地址</span>
+      <code>{{ requestPreview }}</code>
+    </div>
+
+    @if (form.endpoint === 'chat') {
+      <nz-form-item>
+        <nz-form-label>用户消息</nz-form-label>
+        <nz-form-control>
+          <textarea nz-input rows="4" [(ngModel)]="form.message" name="message"></textarea>
+        </nz-form-control>
+      </nz-form-item>
+    }
+
+    @if (form.endpoint === 'responses' || form.endpoint === 'embeddings') {
+      <nz-form-item>
+        <nz-form-label>输入内容</nz-form-label>
+        <nz-form-control>
+          <textarea nz-input rows="4" [(ngModel)]="form.input" name="input"></textarea>
+        </nz-form-control>
+      </nz-form-item>
+    }
+  </form>
+
+  <div class="result-panel">
+    <div class="result-head">
+      <div>
+        <strong>响应结果</strong>
+        @if (resultStatus) {
+          <span>{{ resultStatus }}</span>
+        }
+      </div>
+      <button nz-button nzType="link" nzSize="small" [disabled]="!resultText" (click)="copyResult()">复制结果</button>
+    </div>
+    <nz-spin [nzSpinning]="loading">
+      <pre><code>{{ resultText || '点击“开始调试”后，这里会显示网关响应。' }}</code></pre>
+    </nz-spin>
+  </div>
+</div>

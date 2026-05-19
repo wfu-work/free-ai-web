@@ -64,6 +64,7 @@
       [ps]="q.size"
       [total]="totalCount"
       (change)="tableChange($event)"
+      [scroll]="{ x: 'max-content' }"
     >
       <ng-template st-row="nameRender" let-item>
         <div class="account-name">{{ item.name || '-' }}</div>
