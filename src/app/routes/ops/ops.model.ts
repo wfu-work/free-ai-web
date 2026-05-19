@@ -25,10 +25,21 @@ export interface MasterKeyStatus {
 }
 
 export interface CoreBackupImportResult {
+  success: number;
+  failed: number;
   accounts: number;
+  failedAccounts: number;
   accountGroups: number;
+  failedAccountGroups: number;
   accountQuotas: number;
+  failedAccountQuotas: number;
   modelMappings: number;
+  failedModelMappings: number;
   platformKeys: number;
+  failedPlatformKeys: number;
   routeStates: number;
+  failedRouteStates: number;
+  gatewayConfig: number;
+  failedGatewayConfig: number;
+  errors?: string[];
 }

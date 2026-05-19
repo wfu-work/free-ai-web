@@ -186,7 +186,13 @@ export class SettingsRetentionComponent implements OnInit {
             .subscribe({
               next: (result) => {
                 this.lastAction = '已导入核心数据备份';
-                this.message.success(`核心数据已恢复：${this.importResultLabel(result)}`);
+                this.message.success(this.importResultLabel(result));
+                if (result.failed > 0 && result.errors?.length) {
+                  this.modal.info({
+                    nzTitle: '部分数据导入失败',
+                    nzContent: `成功 ${result.success || 0} 条，失败 ${result.failed || 0} 条。失败示例：${result.errors.join('；')}`,
+                  });
+                }
                 this.load();
                 resolve();
               },
@@ -253,12 +259,33 @@ export class SettingsRetentionComponent implements OnInit {
   }
 
   private importResultLabel(result: CoreBackupImportResult): string {
-    return [
-      `账号 ${result.accounts || 0}`,
-      `分组 ${result.accountGroups || 0}`,
-      `模型 ${result.modelMappings || 0}`,
-      `密钥 ${result.platformKeys || 0}`,
-    ].join('、');
+    const success = result.success ?? this.importSuccessTotal(result);
+    const failed = result.failed ?? this.importFailedTotal(result);
+    return `核心数据恢复完成：成功 ${success} 条，失败 ${failed} 条`;
+  }
+
+  private importSuccessTotal(result: CoreBackupImportResult): number {
+    return (
+      Number(result.accounts || 0) +
+      Number(result.accountGroups || 0) +
+      Number(result.accountQuotas || 0) +
+      Number(result.modelMappings || 0) +
+      Number(result.platformKeys || 0) +
+      Number(result.routeStates || 0) +
+      Number(result.gatewayConfig || 0)
+    );
+  }
+
+  private importFailedTotal(result: CoreBackupImportResult): number {
+    return (
+      Number(result.failedAccounts || 0) +
+      Number(result.failedAccountGroups || 0) +
+      Number(result.failedAccountQuotas || 0) +
+      Number(result.failedModelMappings || 0) +
+      Number(result.failedPlatformKeys || 0) +
+      Number(result.failedRouteStates || 0) +
+      Number(result.failedGatewayConfig || 0)
+    );
   }
 
   private formatFilenameTime(): string {
