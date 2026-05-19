@@ -19,10 +19,15 @@
         <strong>{{ serviceStatusLabel }}</strong>
         <small>{{ metrics.name || 'FreeAiGo' }}</small>
       </article>
+      <article class="metric-card" [class]="readinessScore >= 90 ? 'metric-success' : readinessScore >= 65 ? 'metric-warning' : 'metric-danger'">
+        <span>接入就绪度</span>
+        <strong>{{ readinessScore }}%</strong>
+        <small>{{ readinessLabel }}</small>
+      </article>
       <article class="metric-card">
         <span>账号可用率</span>
         <strong>{{ accountAvailability }}</strong>
-        <small>可用账号 / 总账号</small>
+        <small>{{ accountPoolLabel }}</small>
       </article>
       <article class="metric-card metric-success">
         <span>启用模型</span>
@@ -37,6 +42,32 @@
     </div>
 
     <div class="content-grid mt-lg">
+      <nz-card class="panel-card panel-card-wide" [nzBordered]="false">
+        <div class="panel-title">网关就绪检查</div>
+        <div class="readiness-layout">
+          <div class="readiness-score">
+            <nz-progress
+              nzType="circle"
+              [nzPercent]="readinessScore"
+              [nzWidth]="128"
+              [nzStrokeColor]="readinessScore >= 90 ? '#14856e' : readinessScore >= 65 ? '#b7791f' : '#c24141'"
+            />
+            <p>{{ readinessLabel }}：网关是否能稳定接流量，取决于服务、主密钥、账号、模型和平台密钥是否同时就绪。</p>
+          </div>
+          <div class="check-list">
+            @for (item of readinessChecks; track item.label) {
+              <div class="check-item" [class.check-item-ok]="item.ok">
+                <i nz-icon [nzType]="item.ok ? 'check-circle' : 'exclamation-circle'"></i>
+                <div>
+                  <strong>{{ item.label }} · {{ item.value }}</strong>
+                  <span>{{ item.tip }}</span>
+                </div>
+              </div>
+            }
+          </div>
+        </div>
+      </nz-card>
+
       <nz-card class="panel-card" [nzBordered]="false">
         <div class="panel-title">账号池概览</div>
         <div class="detail-grid">
@@ -55,6 +86,14 @@
           <div>
             <span>启用模型</span>
             <strong>{{ metrics.enabledModels || 0 }}</strong>
+          </div>
+          <div>
+            <span>账号可用比例</span>
+            <strong>{{ accountAvailabilityPercent }}%</strong>
+          </div>
+          <div>
+            <span>代理前缀</span>
+            <strong>{{ proxyPrefixLabel }}</strong>
           </div>
         </div>
       </nz-card>
@@ -86,6 +125,29 @@
             <span>错误信息</span>
             <strong class="error-text">{{ masterKey?.error || '无' }}</strong>
           </div>
+        </div>
+      </nz-card>
+
+      <nz-card class="panel-card panel-card-wide" [nzBordered]="false">
+        <div class="panel-title">运维关注点</div>
+        <div class="ops-notes">
+          <div>
+            <strong>先看就绪度</strong>
+            <span>低于 65% 时，优先补齐账号、模型映射或平台密钥；这些是代理请求能否成功进入上游的前置条件。</span>
+          </div>
+          <div>
+            <strong>再看账号池</strong>
+            <span>可用账号比例偏低时，请到账号健康页检查额度、冷却、过期和认证失败。</span>
+          </div>
+          <div>
+            <strong>最后看请求质量</strong>
+            <span>服务就绪但请求失败率高时，再进入统计分析和请求日志定位供应商、模型或密钥维度的问题。</span>
+          </div>
+        </div>
+        <div class="panel-actions">
+          <a nz-button routerLink="/accounts/health">账号健康</a>
+          <a nz-button routerLink="/request-logs/list">请求日志</a>
+          <a nz-button routerLink="/ops/stats">统计分析</a>
         </div>
       </nz-card>
     </div>

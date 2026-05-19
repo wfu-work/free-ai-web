@@ -1,0 +1,131 @@
+<section class="log-detail-page">
+  <div class="d-flex justify-content-between header-row">
+    <title-label title="请求详情" description="查看单次网关请求的路由、密钥、账号、模型等级和耗时用量。" [showBack]="true" />
+    <div class="header-actions">
+      <button nz-button (click)="goList()">返回列表</button>
+    </div>
+  </div>
+
+  <nz-spin [nzSpinning]="loading">
+    @if (record) {
+      <div class="metric-grid">
+        <article class="metric-card">
+          <span>状态</span>
+          <strong [class.danger-text]="record.statusCode >= 400">{{ record.statusCode || '-' }}</strong>
+        </article>
+        <article class="metric-card">
+          <span>请求耗时</span>
+          <strong>{{ formatMs(record.latencyMs) }}</strong>
+        </article>
+        <article class="metric-card">
+          <span>首响</span>
+          <strong>{{ formatMs(record.firstTokenMs) }}</strong>
+        </article>
+        <article class="metric-card">
+          <span>Token 总量</span>
+          <strong>{{ formatNumber(tokenTotal(record)) }}</strong>
+        </article>
+      </div>
+
+      <div class="content-grid">
+        <nz-card class="detail-card" [nzBordered]="false">
+          <div class="section-title">请求信息</div>
+          <div class="detail-grid">
+            <div>
+              <span>请求 ID</span>
+              <button type="button" class="copy-text" (click)="copy(record.requestId, '请求 ID')">
+                {{ record.requestId || '-' }}
+              </button>
+            </div>
+            <div>
+              <span>时间</span>
+              <strong>{{ formatTime(logTime(record)) }}</strong>
+            </div>
+            <div>
+              <span>方法</span>
+              <strong>{{ requestMethod(record) }}</strong>
+            </div>
+            <div>
+              <span>路径</span>
+              <button type="button" class="copy-text" (click)="copy(requestPath(record), '请求路径')">
+                {{ requestPath(record) }}
+              </button>
+            </div>
+          </div>
+        </nz-card>
+
+        <nz-card class="detail-card" [nzBordered]="false">
+          <div class="section-title">路由命中</div>
+          <div class="detail-grid">
+            <div>
+              <span>账号</span>
+              <strong>{{ record.accountName || record.accountGuid || '-' }}</strong>
+            </div>
+            <div>
+              <span>平台密钥</span>
+              <strong>{{ record.platformKey || '-' }}</strong>
+              <small>{{ record.keyPrefix || record.platformKeyId || '-' }}</small>
+            </div>
+            <div>
+              <span>供应商</span>
+              <strong>{{ record.provider || '-' }}</strong>
+            </div>
+            <div>
+              <span>路由切换</span>
+              <strong>{{ record.switched ? '已切换' : '未切换' }}</strong>
+              <small>{{ record.switchCount || 0 }} 次 · {{ record.switchReason || '无原因' }}</small>
+            </div>
+          </div>
+        </nz-card>
+
+        <nz-card class="detail-card" [nzBordered]="false">
+          <div class="section-title">模型与等级</div>
+          <div class="detail-grid">
+            <div>
+              <span>请求模型</span>
+              <strong>{{ record.model || '-' }}</strong>
+            </div>
+            <div>
+              <span>上游模型</span>
+              <strong>{{ record.upstreamModel || '-' }}</strong>
+            </div>
+            <div>
+              <span>推理强度</span>
+              <strong>{{ record.reasoningEffort || 'auto' }}</strong>
+            </div>
+            <div>
+              <span>模型等级</span>
+              <strong>{{ record.serviceTier || 'auto' }}</strong>
+            </div>
+          </div>
+        </nz-card>
+
+        <nz-card class="detail-card" [nzBordered]="false">
+          <div class="section-title">用量与错误</div>
+          <div class="detail-grid">
+            <div>
+              <span>输入 Token</span>
+              <strong>{{ formatNumber(record.inputTokens) }}</strong>
+            </div>
+            <div>
+              <span>输出 Token</span>
+              <strong>{{ formatNumber(record.outputTokens) }}</strong>
+            </div>
+            <div>
+              <span>错误类型</span>
+              <strong [class.danger-text]="record.errorType">{{ record.errorType || '无' }}</strong>
+            </div>
+            <div>
+              <span>平台密钥 GUID</span>
+              <button type="button" class="copy-text" (click)="copy(record.platformKeyId, '平台密钥 GUID')">
+                {{ record.platformKeyId || '-' }}
+              </button>
+            </div>
+          </div>
+        </nz-card>
+      </div>
+    } @else if (!loading) {
+      <div class="empty-state">请求日志不存在或已被清理</div>
+    }
+  </nz-spin>
+</section>

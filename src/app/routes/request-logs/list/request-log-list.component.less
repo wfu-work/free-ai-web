@@ -121,11 +121,10 @@
   .ant-table,
   .ant-table-container {
     min-width: 0;
-    max-width: 100%;
   }
 
   .ant-table {
-    table-layout: fixed;
+    table-layout: auto;
   }
 
   .ant-table-thead > tr > th,
@@ -159,6 +158,58 @@
   font-weight: 700;
 }
 
+.request-lines,
+.identity-lines {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+
+.protocol-pill {
+  display: inline-flex;
+  align-items: center;
+  height: 22px;
+  padding: 0 9px;
+  border: 1px solid #d8e2ec;
+  border-radius: 999px;
+  color: #60758c;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1;
+  background: #eef5fb;
+}
+
+.method-text {
+  margin-left: 8px;
+  color: #109884;
+  font-weight: 850;
+}
+
+.identity-name {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  gap: 6px;
+}
+
+.identity-name strong {
+  overflow: hidden;
+  color: #1d2b3f;
+  font-weight: 750;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.identity-icon {
+  flex: 0 0 auto;
+  color: #f2b300;
+}
+
+.latency-text {
+  color: #159a8c;
+  font-weight: 800;
+}
+
 .copy-text:hover {
   color: var(--nm-primary);
 }
@@ -177,57 +228,6 @@
   font-weight: 700;
 }
 
-.detail-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 14px;
-}
-
-.detail-grid div {
-  min-width: 0;
-  padding: 12px;
-  border: 1px solid rgb(var(--nm-primary-rgb) / 10%);
-  border-radius: 8px;
-  background: #f8fafc;
-}
-
-.detail-grid span,
-.detail-grid small,
-.detail-grid strong,
-.detail-grid code {
-  display: block;
-}
-
-.detail-grid span {
-  color: #697789;
-  font-size: 12px;
-  font-weight: 700;
-}
-
-.detail-grid strong,
-.detail-grid code {
-  margin-top: 4px;
-  overflow: hidden;
-  color: #213149;
-  font-size: 14px;
-  font-weight: 800;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.detail-grid code {
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-}
-
-.detail-grid small {
-  margin-top: 3px;
-  overflow: hidden;
-  color: #7b8794;
-  font-size: 12px;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
 @media (max-width: 960px) {
   .metric-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -244,7 +244,6 @@
 
 @media (max-width: 767px) {
   .header-row,
-  .detail-grid,
   .filter-row {
     grid-template-columns: 1fr;
   }

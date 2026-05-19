@@ -1,7 +1,9 @@
-import { ChangeDetectionStrategy, Component, OnInit, inject } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnInit, inject } from '@angular/core';
 import { FormBuilder } from '@angular/forms';
 import { SHARED_IMPORTS, TitleLabelComponent } from '@shared';
 import { NzMessageService } from 'ng-zorro-antd/message';
+import { finalize } from 'rxjs';
 
 interface GatewayConfig {
   listenAddress: string;
@@ -10,7 +12,8 @@ interface GatewayConfig {
   modelRewriteRules: string;
   originator: string;
   residency: string;
-  upstreamProxy: string;
+  upstreamProxyEnabled: boolean;
+  upstreamProxyUrl: string;
   sseKeepAliveMs: number;
   upstreamTimeoutMs: number;
   upstreamStreamIdleTimeoutMs: number;
@@ -25,7 +28,8 @@ const DEFAULT_GATEWAY_CONFIG: GatewayConfig = {
   modelRewriteRules: 'spark*=gpt-5.4-mini\nclaude-sonnet-4*=gpt-5.4',
   originator: 'codex_cli_rs',
   residency: '',
-  upstreamProxy: '',
+  upstreamProxyEnabled: false,
+  upstreamProxyUrl: '',
   sseKeepAliveMs: 15000,
   upstreamTimeoutMs: 120000,
   upstreamStreamIdleTimeoutMs: 1800000,
@@ -40,7 +44,12 @@ const DEFAULT_GATEWAY_CONFIG: GatewayConfig = {
 })
 export class SettingsGatewayComponent implements OnInit {
   private readonly fb = inject(FormBuilder);
+  private readonly http = inject(HttpClient);
   private readonly message = inject(NzMessageService);
+  private readonly cdr = inject(ChangeDetectorRef);
+
+  protected loading = false;
+  protected saving = false;
 
   protected readonly listenAddressOptions = [
     { label: '仅本机 (127.0.0.1)', value: '127.0.0.1' },
@@ -72,7 +81,8 @@ export class SettingsGatewayComponent implements OnInit {
     modelRewriteRules: [DEFAULT_GATEWAY_CONFIG.modelRewriteRules],
     originator: [DEFAULT_GATEWAY_CONFIG.originator],
     residency: [DEFAULT_GATEWAY_CONFIG.residency],
-    upstreamProxy: [DEFAULT_GATEWAY_CONFIG.upstreamProxy],
+    upstreamProxyEnabled: [DEFAULT_GATEWAY_CONFIG.upstreamProxyEnabled],
+    upstreamProxyUrl: [DEFAULT_GATEWAY_CONFIG.upstreamProxyUrl],
     sseKeepAliveMs: [DEFAULT_GATEWAY_CONFIG.sseKeepAliveMs],
     upstreamTimeoutMs: [DEFAULT_GATEWAY_CONFIG.upstreamTimeoutMs],
     upstreamStreamIdleTimeoutMs: [DEFAULT_GATEWAY_CONFIG.upstreamStreamIdleTimeoutMs],
@@ -80,19 +90,40 @@ export class SettingsGatewayComponent implements OnInit {
 
   ngOnInit(): void {
     this.loadLocalConfig();
+    this.loadRemoteConfig();
   }
 
   protected save(): void {
     const payload = this.normalizeConfig(this.form.getRawValue());
+    if (payload.upstreamProxyEnabled && !payload.upstreamProxyUrl) {
+      this.message.warning('开启翻墙代理后需要填写代理地址');
+      return;
+    }
     this.form.patchValue(payload);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
-    this.message.success('网关配置已保存');
+    this.saving = true;
+    this.http
+      .put<Partial<GatewayConfig>>('/ops/gateway-config', {
+        upstreamProxyEnabled: payload.upstreamProxyEnabled,
+        upstreamProxyUrl: payload.upstreamProxyUrl,
+      })
+      .pipe(
+        finalize(() => {
+          this.saving = false;
+          this.cdr.markForCheck();
+        }),
+      )
+      .subscribe((remote) => {
+        const saved = this.normalizeConfig({ ...payload, ...remote });
+        this.form.patchValue(saved);
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(saved));
+        this.message.success('网关配置已保存');
+      });
   }
 
   protected resetDefaults(): void {
     this.form.reset(DEFAULT_GATEWAY_CONFIG);
     localStorage.removeItem(STORAGE_KEY);
-    this.message.success('已恢复默认配置');
+    this.save();
   }
 
   protected get listenModeLabel(): string {
@@ -119,7 +150,7 @@ export class SettingsGatewayComponent implements OnInit {
   }
 
   protected get upstreamModeLabel(): string {
-    return this.form.controls.upstreamProxy.value.trim() ? '代理转发' : '直连上游';
+    return this.form.controls.upstreamProxyEnabled.value ? '代理转发' : '直连上游';
   }
 
   protected get residencyLabel(): string {
@@ -133,10 +164,31 @@ export class SettingsGatewayComponent implements OnInit {
 
     try {
       const parsed = JSON.parse(raw) as Partial<GatewayConfig>;
-      this.form.patchValue(this.normalizeConfig({ ...DEFAULT_GATEWAY_CONFIG, ...parsed }));
+      const migrated = {
+        ...parsed,
+        upstreamProxyUrl: parsed.upstreamProxyUrl || (parsed as { upstreamProxy?: string }).upstreamProxy || '',
+      };
+      this.form.patchValue(this.normalizeConfig({ ...DEFAULT_GATEWAY_CONFIG, ...migrated }));
     } catch {
       localStorage.removeItem(STORAGE_KEY);
     }
+  }
+
+  private loadRemoteConfig(): void {
+    this.loading = true;
+    this.http
+      .get<Partial<GatewayConfig>>('/ops/gateway-config')
+      .pipe(
+        finalize(() => {
+          this.loading = false;
+          this.cdr.markForCheck();
+        }),
+      )
+      .subscribe((remote) => {
+        const payload = this.normalizeConfig({ ...this.form.getRawValue(), ...remote });
+        this.form.patchValue(payload);
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+      });
   }
 
   private normalizeConfig(value: GatewayConfig): GatewayConfig {
@@ -145,7 +197,8 @@ export class SettingsGatewayComponent implements OnInit {
       listenAddress: this.normalizeListenAddress(value.listenAddress),
       modelRewriteRules: value.modelRewriteRules.trim(),
       originator: value.originator.trim() || DEFAULT_GATEWAY_CONFIG.originator,
-      upstreamProxy: value.upstreamProxy.trim(),
+      upstreamProxyEnabled: Boolean(value.upstreamProxyEnabled),
+      upstreamProxyUrl: value.upstreamProxyUrl.trim(),
       sseKeepAliveMs: Number(value.sseKeepAliveMs || DEFAULT_GATEWAY_CONFIG.sseKeepAliveMs),
       upstreamTimeoutMs: Number(value.upstreamTimeoutMs || 0),
       upstreamStreamIdleTimeoutMs: Number(

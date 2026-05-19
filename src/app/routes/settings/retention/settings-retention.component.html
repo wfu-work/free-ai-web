@@ -34,37 +34,62 @@
 
     <div class="content-grid mt-lg">
       <nz-card class="panel-card" [nzBordered]="false">
-        <div class="panel-title">清理工具</div>
+        <div class="panel-head">
+          <div>
+            <div class="panel-title">清理工具</div>
+            <p>按保留策略或指定时间点清理请求日志，清理前请确认不再需要追溯这些请求。</p>
+          </div>
+        </div>
         <form nz-form [formGroup]="retentionForm" class="retention-form">
-          <nz-form-item>
-            <nz-form-label nzFor="retentionDays">保留天数</nz-form-label>
-            <nz-form-control nzExtra="默认与后端 cleanup-log-retention-days 保持 30 天。">
+          <section class="cleanup-section">
+            <div class="cleanup-copy">
+              <div class="cleanup-title">
+                <strong>按保留天数清理</strong>
+                <span>推荐</span>
+              </div>
+              <p>保留最近一段时间的日志，清理超出窗口的数据。默认与后端 cleanup-log-retention-days 保持 30 天。</p>
+            </div>
+
+            <div class="cleanup-action">
+              <label for="retentionDays">保留天数</label>
               <nz-input-number
                 id="retentionDays"
                 formControlName="retentionDays"
                 [nzMin]="1"
                 [nzStep]="1"
               />
-            </nz-form-control>
-          </nz-form-item>
+              <span class="input-unit">天</span>
+              <button nz-button nzType="primary" type="button" (click)="clearByRetention()">
+                清理保留期外日志
+              </button>
+            </div>
+          </section>
 
-          <button nz-button nzType="primary" type="button" (click)="clearByRetention()">
-            清理保留期外日志
-          </button>
+          <section class="cleanup-section cleanup-section-muted">
+            <div class="cleanup-copy">
+              <div class="cleanup-title">
+                <strong>按时间戳清理</strong>
+                <span>一次性</span>
+              </div>
+              <p>填写毫秒时间戳，清理该时间点之前的全部请求日志。适合迁移、转储后的批量裁剪。</p>
+            </div>
 
-          <nz-form-item>
-            <nz-form-label nzFor="before">Before 时间戳</nz-form-label>
-            <nz-form-control nzExtra="毫秒时间戳，用于按指定时间点前的数据做一次性清理。">
+            <div class="cleanup-action">
+              <label for="before">Before 时间戳</label>
               <nz-input-number id="before" formControlName="before" [nzMin]="0" [nzStep]="1000" />
-            </nz-form-control>
-          </nz-form-item>
-
-          <button nz-button type="button" (click)="clearBefore()">按时间戳清理</button>
+              <button nz-button type="button" (click)="clearBefore()">按时间戳清理</button>
+            </div>
+          </section>
         </form>
       </nz-card>
 
       <nz-card class="panel-card" [nzBordered]="false">
-        <div class="panel-title">日志范围</div>
+        <div class="panel-head">
+          <div>
+            <div class="panel-title">日志范围</div>
+            <p>这里展示最近抓取样本的时间边界和请求结果分布，帮助判断日志增长状态。</p>
+          </div>
+        </div>
         <div class="detail-grid">
           <div>
             <span>样本最早时间</span>

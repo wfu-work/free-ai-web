@@ -1,0 +1,151 @@
+:host {
+  display: block;
+}
+
+.log-detail-page {
+  display: grid;
+  gap: 18px;
+}
+
+.header-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.header-actions {
+  flex: 0 0 auto;
+}
+
+.metric-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+  margin-bottom: 18px;
+}
+
+.metric-card,
+.detail-card {
+  border: 1px solid rgb(var(--nm-primary-rgb) / 10%);
+  border-radius: 8px;
+  background: #fff;
+}
+
+.metric-card {
+  min-width: 0;
+  padding: 18px 20px;
+}
+
+.metric-card span,
+.detail-grid span {
+  display: block;
+  color: #697789;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.metric-card strong {
+  display: block;
+  margin-top: 8px;
+  color: #1f3148;
+  font-size: 22px;
+  font-weight: 850;
+  line-height: 1.2;
+}
+
+.content-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.section-title {
+  margin-bottom: 14px;
+  color: #1f3148;
+  font-size: 15px;
+  font-weight: 850;
+}
+
+.detail-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.detail-grid div {
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid rgb(var(--nm-primary-rgb) / 10%);
+  border-radius: 8px;
+  background: #f8fafc;
+}
+
+.detail-grid strong,
+.detail-grid small,
+.copy-text {
+  display: block;
+  margin-top: 4px;
+  overflow: hidden;
+  color: #213149;
+  font-size: 14px;
+  font-weight: 800;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.detail-grid small {
+  color: #7b8794;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.copy-text {
+  width: 100%;
+  padding: 0;
+  border: 0;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  text-align: left;
+  background: transparent;
+  cursor: pointer;
+}
+
+.copy-text:hover {
+  color: var(--nm-primary);
+}
+
+.danger-text {
+  color: #c24141 !important;
+}
+
+.empty-state {
+  padding: 44px 24px;
+  border: 1px solid rgb(var(--nm-primary-rgb) / 10%);
+  border-radius: 8px;
+  color: #7b8794;
+  font-weight: 700;
+  text-align: center;
+  background: #fff;
+}
+
+@media (max-width: 960px) {
+  .metric-grid,
+  .content-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .detail-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 767px) {
+  .header-row {
+    display: grid;
+  }
+
+  .metric-grid,
+  .content-grid {
+    grid-template-columns: 1fr;
+  }
+}

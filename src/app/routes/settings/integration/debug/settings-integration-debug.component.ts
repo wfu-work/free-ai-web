@@ -42,6 +42,18 @@ export class SettingsIntegrationDebugComponent {
     { label: '响应接口', value: 'responses', method: 'POST', path: '/responses' },
     { label: '向量接口', value: 'embeddings', method: 'POST', path: '/embeddings' },
   ];
+  protected readonly reasoningOptions = [
+    { label: '跟随密钥/请求', value: '' },
+    { label: '低', value: 'low' },
+    { label: '中', value: 'medium' },
+    { label: '高', value: 'high' },
+  ];
+  protected readonly serviceTierOptions = [
+    { label: '跟随密钥/默认', value: '' },
+    { label: '默认', value: 'default' },
+    { label: '优先', value: 'priority' },
+    { label: '弹性', value: 'flex' },
+  ];
 
   protected readonly keys = this.data?.keys ?? [];
   protected readonly modelMappings = this.data?.modelMappings ?? [];
@@ -52,6 +64,8 @@ export class SettingsIntegrationDebugComponent {
     endpoint: 'chat' as DebugEndpoint,
     platformKey: this.data?.sampleKey || '',
     model: this.data?.sampleModel || 'gpt-4.1-mini',
+    reasoningEffort: '',
+    serviceTier: '',
     message: '请回复 ping',
     input: '用一句话说明当前网关路由策略。',
   };
@@ -78,10 +92,13 @@ export class SettingsIntegrationDebugComponent {
   }
 
   protected onKeyChange(): void {
+    const selectedKey = this.keys.find((item) => item.key === this.form.platformKey);
     const models = this.availableModels;
     if (models.length > 0 && !models.includes(this.form.model)) {
       this.form.model = models[0];
     }
+    this.form.reasoningEffort = selectedKey?.reasoningEffort || '';
+    this.form.serviceTier = selectedKey?.serviceTier || '';
   }
 
   async submit(): Promise<boolean> {
@@ -155,6 +172,11 @@ export class SettingsIntegrationDebugComponent {
   }
 
   private buildPayload(endpoint: DebugEndpoint): Record<string, unknown> {
+    const payload = this.basePayload(endpoint);
+    return this.withModelLevel(payload);
+  }
+
+  private basePayload(endpoint: DebugEndpoint): Record<string, unknown> {
     switch (endpoint) {
       case 'responses':
         return { model: this.form.model, input: this.form.input };
@@ -167,6 +189,16 @@ export class SettingsIntegrationDebugComponent {
           stream: false,
         };
     }
+  }
+
+  private withModelLevel(payload: Record<string, unknown>): Record<string, unknown> {
+    if (this.form.reasoningEffort) {
+      payload['reasoning'] = { effort: this.form.reasoningEffort };
+    }
+    if (this.form.serviceTier) {
+      payload['service_tier'] = this.form.serviceTier;
+    }
+    return payload;
   }
 
   private formatResponse(text: string): string {

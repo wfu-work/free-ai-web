@@ -1,10 +1,17 @@
 export interface RequestLog {
   guid: string;
   requestId: string;
+  method: string;
+  path: string;
   platformKeyId: string;
+  platformKey: string;
+  keyPrefix: string;
   accountGuid: string;
+  accountName: string;
   model: string;
   upstreamModel: string;
+  reasoningEffort: string;
+  serviceTier: string;
   provider: string;
   statusCode: number;
   errorType: string;
@@ -16,6 +23,7 @@ export interface RequestLog {
   inputTokens: number;
   outputTokens: number;
   createdAtUnix: number;
+  createTime?: number;
 }
 
 export interface OpsStats {

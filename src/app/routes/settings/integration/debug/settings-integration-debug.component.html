@@ -28,6 +28,28 @@
           </nz-select>
         </nz-form-control>
       </nz-form-item>
+
+      <nz-form-item>
+        <nz-form-label>推理强度</nz-form-label>
+        <nz-form-control>
+          <nz-select [(ngModel)]="form.reasoningEffort" name="reasoningEffort">
+            @for (option of reasoningOptions; track option.value) {
+              <nz-option [nzValue]="option.value" [nzLabel]="option.label" />
+            }
+          </nz-select>
+        </nz-form-control>
+      </nz-form-item>
+
+      <nz-form-item>
+        <nz-form-label>模型等级</nz-form-label>
+        <nz-form-control>
+          <nz-select [(ngModel)]="form.serviceTier" name="serviceTier">
+            @for (option of serviceTierOptions; track option.value) {
+              <nz-option [nzValue]="option.value" [nzLabel]="option.label" />
+            }
+          </nz-select>
+        </nz-form-control>
+      </nz-form-item>
     </div>
 
     <nz-form-item>

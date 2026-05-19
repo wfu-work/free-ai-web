@@ -30,9 +30,37 @@
         <span>平均延迟</span>
         <strong>{{ formatMs(stats.avgLatencyMs) }}</strong>
       </article>
+      <article class="metric-card" [class]="qualityScore >= 90 ? 'metric-success' : qualityScore >= 70 ? 'metric-warning' : 'metric-danger'">
+        <span>质量评分</span>
+        <strong>{{ qualityScore || 0 }}</strong>
+      </article>
     </div>
 
     <div class="content-grid mt-lg">
+      <nz-card class="panel-card panel-card-wide" [nzBordered]="false">
+        <div class="panel-title">请求质量概览</div>
+        <div class="quality-layout">
+          <div class="quality-score">
+            <nz-progress
+              nzType="circle"
+              [nzPercent]="qualityScore"
+              [nzWidth]="128"
+              [nzStrokeColor]="qualityScore >= 90 ? '#14856e' : qualityScore >= 70 ? '#b7791f' : '#c24141'"
+            />
+            <strong>{{ reliabilityLabel }}</strong>
+            <span>质量评分综合了成功率和平均延迟，用来快速判断当前网关对业务请求是否友好。</span>
+          </div>
+          <div class="analysis-list">
+            @for (item of analysisItems; track item.title) {
+              <div class="analysis-item" [class.analysis-warn]="item.tone === 'warn'" [class.analysis-bad]="item.tone === 'bad'">
+                <strong>{{ item.title }}</strong>
+                <span>{{ item.text }}</span>
+              </div>
+            }
+          </div>
+        </div>
+      </nz-card>
+
       <nz-card class="panel-card" [nzBordered]="false">
         <div class="panel-title">成功率概览</div>
         <div class="summary-grid">
@@ -52,16 +80,43 @@
             <span>失败请求</span>
             <strong>{{ stats.failures || 0 }}</strong>
           </div>
+          <div>
+            <span>成功/失败</span>
+            <strong>{{ successFailureRatio }}</strong>
+          </div>
+          <div>
+            <span>失败压力</span>
+            <strong [class.danger-text]="failurePercent > 15">{{ failurePressureLabel }}</strong>
+          </div>
         </div>
       </nz-card>
 
       <nz-card class="panel-card" [nzBordered]="false">
-        <div class="panel-title">解读建议</div>
+        <div class="panel-title">排查建议</div>
         <ul class="note-list">
-          <li>成功率长期低于 95% 时，优先检查账号状态、模型映射和平台密钥是否异常。</li>
-          <li>平均延迟偏高时，结合请求日志查看具体供应商、模型和切换原因。</li>
-          <li>失败量突然升高时，建议联动账号健康页和请求日志页一起排查。</li>
+          <li>成功率低于 95% 时，优先检查账号状态、模型映射和平台密钥限制。</li>
+          <li>平均延迟超过 5 秒时，结合请求日志查看具体供应商、模型和是否发生路由切换。</li>
+          <li>失败量突然升高时，先看错误类型：认证失败看账号密钥，限流或额度耗尽看账号健康。</li>
+          <li>如果运行指标正常但统计质量差，通常是上游供应商、代理网络或模型映射层面的问题。</li>
         </ul>
+      </nz-card>
+
+      <nz-card class="panel-card panel-card-wide" [nzBordered]="false">
+        <div class="panel-title">下一步动作</div>
+        <div class="action-grid">
+          <a routerLink="/request-logs/list">
+            <strong>查看请求日志</strong>
+            <span>按账号、模型、状态码和错误类型定位具体失败请求。</span>
+          </a>
+          <a routerLink="/accounts/health">
+            <strong>检查账号健康</strong>
+            <span>确认额度、冷却、过期时间和认证状态是否正常。</span>
+          </a>
+          <a routerLink="/models/list">
+            <strong>检查模型映射</strong>
+            <span>确认业务侧传入的 model 能匹配到启用的上游模型。</span>
+          </a>
+        </div>
       </nz-card>
     </div>
   </nz-spin>

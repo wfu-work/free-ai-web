@@ -6,7 +6,7 @@
     />
     <div class="header-actions">
       <button nz-button (click)="resetDefaults()">恢复默认</button>
-      <button nz-button nzType="primary" (click)="save()">保存配置</button>
+      <button nz-button nzType="primary" [nzLoading]="saving" (click)="save()">保存配置</button>
     </div>
   </div>
 
@@ -34,6 +34,7 @@
   </div>
 
   <nz-card class="config-card" [nzBordered]="false">
+    <nz-spin [nzSpinning]="loading">
     <form nz-form [formGroup]="form" class="gateway-form">
       <section class="listen-section">
         <div class="section-head section-head-with-icon">
@@ -125,7 +126,7 @@
           <p>对齐 Codex 上游认证请求头，并配置代理连接方式</p>
         </div>
 
-        <se-container col="3" nzLayout="vertical">
+        <se-container col="2" nzLayout="vertical">
           <se label="上游 Originator">
             <input nz-input formControlName="originator" placeholder="codex_cli_rs" />
             <div class="field-extra">
@@ -143,10 +144,24 @@
               对齐官方 Codex 的 x-openai-internal-codex-residency 头。当前只支持留空或 us。
             </div>
           </se>
+        </se-container>
 
-          <se label="上游代理 (Proxy)">
-            <input nz-input formControlName="upstreamProxy" placeholder="http://127.0.0.1:7897" />
-            <div class="field-extra">支持 http / https / socks5，留空表示直连。</div>
+        <se-container col="2" nzLayout="vertical">
+          <se label="翻墙代理">
+            <label nz-checkbox formControlName="upstreamProxyEnabled">开启后端上游代理</label>
+            <div class="field-extra">
+              开启后，获取 OpenAI 模型、OpenAI 登录回调换 token、CodexZH 额度查询、网关上游请求都会走代理。
+            </div>
+          </se>
+
+          <se label="代理地址">
+            <input
+              nz-input
+              formControlName="upstreamProxyUrl"
+              placeholder="http://127.0.0.1:7897"
+              [disabled]="!form.controls.upstreamProxyEnabled.value"
+            />
+            <div class="field-extra">支持 http / https / socks5，例如 http://127.0.0.1:7897。</div>
           </se>
         </se-container>
       </section>
@@ -174,5 +189,6 @@
         </se-container>
       </section>
     </form>
+    </nz-spin>
   </nz-card>
 </section>

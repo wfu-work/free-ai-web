@@ -89,28 +89,50 @@
       [ps]="q.size"
       [total]="totalCount"
       (change)="tableChange($event)"
+      [scroll]="{ x: 'max-content' }"
     >
       <ng-template st-row="requestRender" let-item>
-        <button
-          type="button"
-          class="copy-text strong"
-          nz-tooltip
-          nzTooltipTitle="复制 requestId"
-          (click)="copy(item.requestId, 'requestId')"
-        >
-          {{ item.requestId || '-' }}
-        </button>
-        <span class="muted">{{ item.platformKeyId || '无平台密钥' }}</span>
+        <div class="request-lines">
+          <div>
+            <span class="protocol-pill">HTTP</span>
+            <strong class="method-text">{{ requestMethod(item) }}</strong>
+          </div>
+          <button
+            type="button"
+            class="copy-text muted"
+            nz-tooltip
+            nzTooltipTitle="复制请求路径"
+            (click)="copy(requestPath(item), '请求路径')"
+          >
+            {{ requestPath(item) }}
+          </button>
+        </div>
+      </ng-template>
+
+      <ng-template st-row="identityRender" let-item>
+        <div class="identity-lines">
+          <div class="identity-name">
+            <i nz-icon nzType="thunderbolt" class="identity-icon"></i>
+            <strong>{{ item.accountName || shortText(item.accountGuid, '未命中账号') }}</strong>
+          </div>
+          <button
+            type="button"
+            class="copy-text muted"
+            nz-tooltip
+            nzTooltipTitle="复制平台密钥"
+            (click)="copy(item.keyPrefix || item.platformKeyId, '平台密钥')"
+          >
+            <i nz-icon nzType="safety-certificate"></i>
+            {{ platformKeyTitle(item) }}
+          </button>
+          <span class="muted">{{ platformKeyMeta(item) }}</span>
+        </div>
       </ng-template>
 
       <ng-template st-row="modelRender" let-item>
         <div class="model-name">{{ item.model || '-' }}</div>
-        <span class="muted">{{ item.upstreamModel || '-' }}</span>
-      </ng-template>
-
-      <ng-template st-row="providerRender" let-item>
-        <div>{{ item.provider || '-' }}</div>
-        <span class="muted">{{ item.accountGuid || '-' }}</span>
+        <span class="muted">推理 {{ item.reasoningEffort || 'auto' }} · 等级 {{ item.serviceTier || 'auto' }}</span>
+        <span class="muted">{{ item.upstreamModel || '-' }} · {{ item.provider || '-' }}</span>
       </ng-template>
 
       <ng-template st-row="errorRender" let-item>
@@ -118,78 +140,19 @@
       </ng-template>
 
       <ng-template st-row="latencyRender" let-item>
-        <div>{{ formatMs(item.latencyMs) }}</div>
-        <span class="muted">首 {{ formatMs(item.firstTokenMs) }}</span>
+        <div class="latency-text">{{ formatSeconds(item.latencyMs) }}/{{ formatSeconds(item.firstTokenMs) }}</div>
       </ng-template>
 
       <ng-template st-row="tokenRender" let-item>
-        <div>{{ tokenTotal(item) }}</div>
-        <span class="muted">in {{ item.inputTokens || 0 }} / out {{ item.outputTokens || 0 }}</span>
+        <div>总 {{ formatNumber(tokenTotal(item)) }}</div>
+        <span class="muted">输入 {{ formatNumber(item.inputTokens) }}</span>
+        <span class="muted">输出 {{ formatNumber(item.outputTokens) }}</span>
       </ng-template>
 
       <ng-template st-row="timeRender" let-item>
-        {{ formatTime(item.createdAtUnix) }}
+        {{ formatTime(logTime(item)) }}
       </ng-template>
 
     </st>
   </nz-card>
 </section>
-
-<nz-modal
-  nzTitle="请求详情"
-  [nzVisible]="detailVisible"
-  [nzOkText]="null"
-  nzCancelText="关闭"
-  (nzOnCancel)="closeDetail()"
->
-  <ng-container *nzModalContent>
-    @if (detailRecord) {
-      <nz-spin [nzSpinning]="detailLoading">
-        <div class="detail-grid">
-          <div>
-            <span>requestId</span>
-            <code>{{ detailRecord.requestId || '-' }}</code>
-          </div>
-          <div>
-            <span>模型</span>
-            <strong>{{ detailRecord.model || '-' }}</strong>
-            <small>{{ detailRecord.upstreamModel || '-' }}</small>
-          </div>
-          <div>
-            <span>供应商</span>
-            <strong>{{ detailRecord.provider || '-' }}</strong>
-            <small>{{ detailRecord.accountGuid || '-' }}</small>
-          </div>
-          <div>
-            <span>平台密钥</span>
-            <strong>{{ detailRecord.platformKeyId || '-' }}</strong>
-          </div>
-          <div>
-            <span>状态</span>
-            <strong>{{ detailRecord.statusCode || '-' }}</strong>
-            <small>{{ detailRecord.errorType || '无错误类型' }}</small>
-          </div>
-          <div>
-            <span>路由切换</span>
-            <strong>{{ detailRecord.switched ? '已切换' : '未切换' }}</strong>
-            <small>{{ detailRecord.switchCount || 0 }} 次 · {{ detailRecord.switchReason || '无原因' }}</small>
-          </div>
-          <div>
-            <span>延迟</span>
-            <strong>{{ formatMs(detailRecord.latencyMs) }}</strong>
-            <small>首 Token {{ formatMs(detailRecord.firstTokenMs) }}</small>
-          </div>
-          <div>
-            <span>Token</span>
-            <strong>{{ tokenTotal(detailRecord) }}</strong>
-            <small>input {{ detailRecord.inputTokens || 0 }} / output {{ detailRecord.outputTokens || 0 }}</small>
-          </div>
-          <div>
-            <span>创建时间</span>
-            <strong>{{ formatTime(detailRecord.createdAtUnix) }}</strong>
-          </div>
-        </div>
-      </nz-spin>
-    }
-  </ng-container>
-</nz-modal>

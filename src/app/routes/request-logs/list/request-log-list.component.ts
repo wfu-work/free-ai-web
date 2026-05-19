@@ -5,6 +5,7 @@ import {
   OnInit,
   inject,
 } from '@angular/core';
+import { Router } from '@angular/router';
 import { STChange, STColumn, STColumnTag } from '@delon/abc/st';
 import { SHARED_IMPORTS, TitleLabelComponent } from '@shared';
 import { NzMessageService } from 'ng-zorro-antd/message';
@@ -26,6 +27,7 @@ export class RequestLogListComponent implements OnInit {
   private readonly message = inject(NzMessageService);
   private readonly modal = inject(NzModalService);
   private readonly cdr = inject(ChangeDetectorRef);
+  private readonly router = inject(Router);
 
   q = {
     page: 1,
@@ -39,9 +41,6 @@ export class RequestLogListComponent implements OnInit {
   protected stats: OpsStats = { total: 0, success: 0, failures: 0, avgLatencyMs: 0 };
   protected loading = false;
   totalCount = 0;
-  protected detailVisible = false;
-  protected detailLoading = false;
-  protected detailRecord: RequestLog | null = null;
 
   protected readonly statusTag: STColumnTag = {
     200: { text: '200', color: 'green' },
@@ -55,21 +54,15 @@ export class RequestLogListComponent implements OnInit {
     503: { text: '503', color: 'red' },
   };
 
-  protected readonly switchTag: STColumnTag = {
-    true: { text: '已切换', color: 'gold' },
-    false: { text: '未切换', color: 'default' },
-  };
-
   protected readonly columns: Array<STColumn<RequestLog>> = [
-    { title: '请求', index: 'requestId', render: 'requestRender', width: 230 },
-    { title: '模型', index: 'model', render: 'modelRender', width: 210 },
-    { title: '供应商', index: 'provider', render: 'providerRender', width: 140 },
-    { title: '状态码', index: 'statusCode', type: 'tag', tag: this.statusTag, width: 88 },
-    { title: '错误类型', index: 'errorType', render: 'errorRender', width: 150 },
-    { title: '切换', index: 'switched', type: 'tag', tag: this.switchTag, width: 96 },
-    { title: '延迟', index: 'latencyMs', render: 'latencyRender', width: 120 },
-    { title: 'Token', index: 'inputTokens', render: 'tokenRender', width: 120 },
-    { title: '时间', index: 'createdAtUnix', render: 'timeRender', width: 170 },
+    { title: '时间', index: 'createdAtUnix', render: 'timeRender', width: 180 },
+    { title: '类型 / 方法 / 路径', index: 'path', render: 'requestRender', width: 220 },
+    { title: '账号 / 密钥', index: 'accountName', render: 'identityRender', width: 250 },
+    { title: '模型 / 推理 / 等级', index: 'model', render: 'modelRender', width: 230 },
+    { title: '状态', index: 'statusCode', type: 'tag', tag: this.statusTag, width: 95 },
+    { title: '用时 / 首响', index: 'latencyMs', render: 'latencyRender', width: 150 },
+    { title: 'TOKEN', index: 'inputTokens', render: 'tokenRender', width: 170 },
+    { title: '错误', index: 'errorType', render: 'errorRender', width: 170 },
     {
       title: '操作',
       width: 80,
@@ -115,25 +108,7 @@ export class RequestLogListComponent implements OnInit {
   }
 
   protected detail(item: RequestLog): void {
-    this.detailVisible = true;
-    this.detailLoading = true;
-    this.detailRecord = item;
-    this.requestLogsService
-      .get(item.guid)
-      .pipe(
-        finalize(() => {
-          this.detailLoading = false;
-          this.cdr.markForCheck();
-        }),
-      )
-      .subscribe((detail) => {
-        this.detailRecord = detail;
-      });
-  }
-
-  protected closeDetail(): void {
-    this.detailVisible = false;
-    this.detailRecord = null;
+    void this.router.navigate(['/request-logs/detail', item.guid]);
   }
 
   protected clearRetention(days: number): void {
@@ -196,8 +171,46 @@ export class RequestLogListComponent implements OnInit {
     return `${Number(value).toFixed(0)} ms`;
   }
 
+  protected formatSeconds(value?: number): string {
+    if (value === undefined || value === null || Number.isNaN(Number(value))) return '-';
+    if (Number(value) <= 0) return '-';
+    const seconds = Number(value) / 1000;
+    return seconds >= 10 ? `${seconds.toFixed(0)}s` : `${seconds.toFixed(1)}s`;
+  }
+
   protected tokenTotal(item: RequestLog): number {
     return Number(item.inputTokens || 0) + Number(item.outputTokens || 0);
+  }
+
+  protected logTime(item: RequestLog): number | undefined {
+    return item.createdAtUnix || item.createTime;
+  }
+
+  protected formatNumber(value?: number): string {
+    return Number(value || 0).toLocaleString('zh-CN');
+  }
+
+  protected shortText(value?: string, fallback = '-'): string {
+    const text = (value || '').trim();
+    if (!text) return fallback;
+    return text.length > 14 ? `${text.slice(0, 10)}...` : text;
+  }
+
+  protected requestMethod(item: RequestLog): string {
+    return item.method || 'POST';
+  }
+
+  protected requestPath(item: RequestLog): string {
+    return item.path || '/v1';
+  }
+
+  protected platformKeyTitle(item: RequestLog): string {
+    return item.platformKey || item.keyPrefix || this.shortText(item.platformKeyId, '无平台密钥');
+  }
+
+  protected platformKeyMeta(item: RequestLog): string {
+    if (item.platformKey && item.keyPrefix) return item.keyPrefix;
+    return item.platformKeyId || item.keyPrefix || '-';
   }
 
   protected async copy(value: string, label: string): Promise<void> {

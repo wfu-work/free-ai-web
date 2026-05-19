@@ -9,8 +9,12 @@ import { PageEntity } from '@shared';
 export class RequestLogsService {
   private readonly http = inject(HttpClient);
 
-  list(limit = 200): Observable<RequestLog[]> {
-    return this.http.get<RequestLog[]>('/request-logs/list/all', { params: { limit } });
+  list(limit = 200, since?: number): Observable<RequestLog[]> {
+    const params: Record<string, number> = { limit };
+    if (since) {
+      params['since'] = since;
+    }
+    return this.http.get<RequestLog[]>('/request-logs/list/all', { params });
   }
 
   pageList(params: any): Observable<PageEntity<RequestLog>> {

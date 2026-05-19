@@ -1,4 +1,6 @@
-import { ChangeDetectionStrategy, Component, Input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, EventEmitter, Input, Output } from '@angular/core';
+import { FormsModule } from '@angular/forms';
+import { NzSelectModule } from 'ng-zorro-antd/select';
 
 interface TrafficBar {
   time: string;
@@ -7,17 +9,37 @@ interface TrafficBar {
   raw?: number;
 }
 
+interface TrendRangeOption {
+  label: string;
+  value: string;
+}
+
 @Component({
   selector: 'dashboard-traffic-trend',
   template: `
     <section class="trend-card">
       <div class="trend-card-header">
         <h2>{{ title }}</h2>
-        <span>{{ badge }}</span>
+        <div class="trend-card-tools">
+          <span>{{ badge }}</span>
+          <nz-select
+            class="trend-range-select"
+            [ngModel]="selectedRange"
+            (ngModelChange)="selectedRangeChange.emit($event)"
+          >
+            @for (option of rangeOptions; track option.value) {
+              <nz-option [nzValue]="option.value" [nzLabel]="option.label" />
+            }
+          </nz-select>
+        </div>
       </div>
 
-      <div class="trend-chart" aria-label="过去 1 小时代理请求趋势柱状图">
-        @for (item of bars; track item.time) {
+      <div
+        class="trend-chart"
+        [style.--trend-bar-count]="bars.length || 1"
+        [attr.aria-label]="selectedRangeLabel + '代理请求趋势柱状图'"
+      >
+        @for (item of bars; track trackBar($index, item)) {
           <div class="trend-bar-wrap" [attr.aria-label]="item.time + ' ' + (item.raw || 0) + ' 次请求'">
             <div
               class="trend-bar"
@@ -29,11 +51,9 @@ interface TrafficBar {
       </div>
 
       <div class="trend-axis">
-        <span>10:00</span>
-        <span>10:15</span>
-        <span>10:30</span>
-        <span>10:45</span>
-        <span>11:00</span>
+        @for (item of axisLabels; track item) {
+          <span>{{ item }}</span>
+        }
       </div>
     </section>
   `,
@@ -72,7 +92,14 @@ interface TrafficBar {
         line-height: 1.35;
       }
 
-      .trend-card-header span {
+      .trend-card-tools {
+        display: flex;
+        align-items: center;
+        flex: 0 0 auto;
+        gap: 10px;
+      }
+
+      .trend-card-tools span {
         flex: 0 0 auto;
         padding: 7px 14px;
         border-radius: 999px;
@@ -83,15 +110,20 @@ interface TrafficBar {
         background: rgb(var(--nm-primary-rgb) / 10%);
       }
 
+      .trend-range-select {
+        width: 132px;
+      }
+
       .trend-chart {
         position: relative;
         display: grid;
-        grid-template-columns: repeat(8, minmax(0, 1fr));
+        grid-template-columns: repeat(var(--trend-bar-count, 8), minmax(0, 1fr));
         align-items: end;
-        gap: 34px;
+        gap: clamp(12px, 2vw, 34px);
         height: 218px;
         margin-top: 42px;
         padding: 0 8px 0 10px;
+        overflow: hidden;
       }
 
       .trend-chart::after {
@@ -138,6 +170,14 @@ interface TrafficBar {
           padding: 22px 20px;
         }
 
+        .trend-card-header {
+          display: grid;
+        }
+
+        .trend-card-tools {
+          justify-content: space-between;
+        }
+
         .trend-chart {
           gap: 14px;
           height: 180px;
@@ -147,10 +187,14 @@ interface TrafficBar {
     `,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [FormsModule, NzSelectModule],
 })
 export class DashboardTrafficTrendComponent {
   @Input() title = '请求趋势';
   @Input() badge = '过去 1 小时';
+  @Input() selectedRange = '1h';
+  @Input() rangeOptions: TrendRangeOption[] = [];
+  @Output() selectedRangeChange = new EventEmitter<string>();
   @Input() bars: TrafficBar[] = [
     { time: '10:00', value: 24, raw: 8 },
     { time: '10:10', value: 38, raw: 12 },
@@ -161,4 +205,18 @@ export class DashboardTrafficTrendComponent {
     { time: '10:50', value: 62, raw: 21 },
     { time: '11:00', value: 28, raw: 7 },
   ];
+
+  get axisLabels(): string[] {
+    if (this.bars.length <= 5) return this.bars.map((item) => item.time);
+    const indexes = [0, Math.floor(this.bars.length / 3), Math.floor((this.bars.length / 3) * 2), this.bars.length - 1];
+    return indexes.map((index) => this.bars[index]?.time).filter(Boolean);
+  }
+
+  get selectedRangeLabel(): string {
+    return this.rangeOptions.find((item) => item.value === this.selectedRange)?.label || this.badge;
+  }
+
+  protected trackBar(index: number, item: TrafficBar): string {
+    return `${this.selectedRange}-${index}-${item.time}`;
+  }
 }
