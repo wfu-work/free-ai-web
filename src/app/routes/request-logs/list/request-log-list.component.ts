@@ -55,7 +55,7 @@ export class RequestLogListComponent implements OnInit {
   };
 
   protected readonly columns: Array<STColumn<RequestLog>> = [
-    { title: '时间', index: 'createdAtUnix', render: 'timeRender', width: 180 },
+    { title: '时间', index: 'createdAtUnix', render: 'timeRender', width: 180, fixed: 'left' },
     { title: '类型 / 方法 / 路径', index: 'path', render: 'requestRender', width: 220 },
     { title: '账号 / 密钥', index: 'accountName', render: 'identityRender', width: 250 },
     { title: '模型 / 推理 / 等级', index: 'model', render: 'modelRender', width: 230 },

@@ -97,16 +97,32 @@ export class AccountListComponent implements OnInit {
           text: '启用',
           click: (item: Account) => this.setEnabled(item, true),
           iif: (item: Account) => !item.enabled,
+          pop: {
+            title: '确定启用?',
+            okType: 'danger',
+            icon: 'star',
+          },
         },
         {
           text: '禁用',
+          className: 'text-error',
           click: (item: Account) => this.setEnabled(item, false),
           iif: (item: Account) => item.enabled,
+          pop: {
+            title: '确定禁用?',
+            okType: 'danger',
+            icon: 'star',
+          },
         },
         {
           text: '删除',
           className: 'text-error',
           click: (item: Account) => this.delete(item),
+          pop: {
+            title: '确定删除?',
+            okType: 'danger',
+            icon: 'star',
+          },
         },
       ],
     },

@@ -77,6 +77,7 @@ export class ModelListComponent implements OnInit {
         },
         {
           text: '禁用',
+          className: 'text-error',
           click: (item: any) => this.setEnabled(item.guid, false),
           iif: (item: any) => item.enabled,
           pop: {
