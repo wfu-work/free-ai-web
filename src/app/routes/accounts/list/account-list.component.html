@@ -2,7 +2,7 @@
   <div class="d-flex justify-content-between header-row">
     <title-label
       title="账号列表"
-      description="维护上游 AI 账号、Token、Provider、账号组、权重和可用状态。"
+      description="维护上游 AI 账号、Token、供应商、账号组、权重和可用状态。"
     />
     <div class="header-actions">
       <button nz-button (click)="load()">
@@ -117,7 +117,7 @@
           <strong>{{ testResult.ok ? '通过' : '未通过' }}</strong>
         </div>
         <div>
-          <span>Provider</span>
+          <span>供应商</span>
           <strong>{{ testResult.provider || '-' }}</strong>
         </div>
         <div>

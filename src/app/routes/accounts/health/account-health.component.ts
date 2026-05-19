@@ -25,6 +25,7 @@ export class AccountHealthComponent implements OnInit {
 
   protected items: AccountHealthItem[] = [];
   protected loading = false;
+  protected syncingGuid = '';
 
   protected readonly statusTag: STColumnTag = {
     available: { text: '可用', color: 'green' },
@@ -44,13 +45,14 @@ export class AccountHealthComponent implements OnInit {
 
   protected readonly columns: Array<STColumn<AccountHealthItem>> = [
     { title: '账号', index: 'name', render: 'nameRender', width: 200 },
-    { title: 'Provider / 分组', index: 'provider', render: 'providerRender', width: 160 },
+    { title: '供应商 / 分组', index: 'provider', render: 'providerRender', width: 160 },
     { title: '状态', index: 'status', type: 'tag', tag: this.statusTag, width: 92 },
     { title: '启用', index: 'enabled', type: 'tag', tag: this.enabledTag, width: 86 },
     { title: '失败次数', index: 'failureCount', width: 92 },
     { title: '额度窗口', render: 'quotaRender', width: 280 },
     { title: '冷却 / 过期', render: 'cooldownRender', width: 190 },
     { title: '最近使用', render: 'activityRender', width: 180 },
+    { title: '操作', render: 'actionRender', width: 140, fixed: 'right' },
   ];
 
   ngOnInit(): void {
@@ -97,6 +99,31 @@ export class AccountHealthComponent implements OnInit {
     return `${quotas.length} 个窗口`;
   }
 
+  protected refreshUsage(item: AccountHealthItem): void {
+    if (!this.canRefreshUsage(item)) return;
+    this.syncingGuid = item.guid;
+    this.accountsService
+      .refreshUsage(item.guid)
+      .pipe(
+        finalize(() => {
+          this.syncingGuid = '';
+          this.cdr.markForCheck();
+        }),
+      )
+      .subscribe(() => {
+        this.load();
+      });
+  }
+
+  protected canRefreshUsage(item: AccountHealthItem): boolean {
+    return item.usageQueryType === 'codexzh' || item.provider === 'codexzh';
+  }
+
+  protected usageQueryLabel(item: AccountHealthItem): string {
+    if (this.canRefreshUsage(item)) return 'CodexZH 额度';
+    return '未配置额度查询';
+  }
+
   protected quotaTone(quota: AccountQuota): string {
     switch (quota.status) {
       case 'available':
@@ -120,6 +147,13 @@ export class AccountHealthComponent implements OnInit {
     if (count >= 1_000_000) return `${(count / 1_000_000).toFixed(1)}M`;
     if (count >= 1_000) return `${(count / 1_000).toFixed(1)}K`;
     return `${count}`;
+  }
+
+  protected formatQuotaValue(quota: AccountQuota): string {
+    if (quota.unit === 'usd') {
+      return `$${Number(quota.remainingAmount || 0).toFixed(2)}/$${Number(quota.totalAmount || 0).toFixed(2)}`;
+    }
+    return `${this.formatTokens(quota.remainingTokens)}/${this.formatTokens(quota.totalTokens)}`;
   }
 
   protected formatTime(value?: number): string {

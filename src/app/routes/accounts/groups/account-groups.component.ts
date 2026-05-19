@@ -64,7 +64,7 @@ export class AccountGroupsComponent implements OnInit {
 
   protected readonly columns: Array<STColumn<AccountGroupRow>> = [
     { title: '账号分组', render: 'groupRender', width: 230 },
-    { title: 'Provider 覆盖', render: 'providerRender', width: 190 },
+    { title: '供应商覆盖', render: 'providerRender', width: 190 },
     { title: '账号池', render: 'accountRender', width: 150 },
     { title: '已启用模型', render: 'modelRender', width: 230 },
     { title: '账号类型', render: 'typeRender', width: 170 },

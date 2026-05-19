@@ -113,7 +113,7 @@ export class ModelEditComponent implements OnInit {
 
   protected get pageDescription(): string {
     return this.formMode === 'create'
-      ? '配置 publicModel、上游模型、Provider、账号组与超时策略，建立新的代理路由映射。'
+      ? '配置 publicModel、上游模型、供应商、账号组与超时策略，建立新的代理路由映射。'
       : '更新已有模型映射的目标模型、账号组和流式能力，保存后立即影响后端路由。';
   }
 

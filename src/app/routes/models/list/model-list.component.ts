@@ -43,13 +43,13 @@ export class ModelListComponent implements OnInit {
   };
 
   protected readonly columns: Array<STColumn<ModelMapping>> = [
-    { title: '对外模型', index: 'publicModel', render: 'publicRender', width: 240 },
-    { title: '上游模型', index: 'upstreamModel', render: 'upstreamRender', width: 210 },
-    { title: 'Provider / 分组', index: 'provider', render: 'providerRender', width: 170 },
-    { title: '流式', index: 'stream', type: 'tag', tag: this.streamTag, width: 86 },
-    { title: '超时', index: 'timeoutSec', render: 'timeoutRender', width: 86 },
-    { title: '启用', index: 'enabled', type: 'tag', tag: this.enabledTag, width: 86 },
-    { title: '操作', render: 'actionRender', width: 180, fixed: 'right' },
+    { title: '对外模型', index: 'publicModel', render: 'publicRender' },
+    { title: '上游模型', index: 'upstreamModel', render: 'upstreamRender' },
+    { title: '供应商 / 分组', index: 'provider', render: 'providerRender' },
+    { title: '流式', index: 'stream', type: 'tag', tag: this.streamTag },
+    { title: '超时', index: 'timeoutSec', render: 'timeoutRender' },
+    { title: '启用', index: 'enabled', type: 'tag', tag: this.enabledTag },
+    { title: '操作', render: 'actionRender', width: 180 },
   ];
 
   ngOnInit(): void {

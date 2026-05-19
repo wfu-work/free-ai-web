@@ -51,7 +51,7 @@
 
       <ng-template st-row="providerRender" let-item>
         <div class="provider-line">{{ item.provider || '-' }}</div>
-        <span class="muted">{{ item.accountGroup || '默认账号组' }}</span>
+        <span class="muted">{{ item.accountGroup || '默认账号组' }} · {{ usageQueryLabel(item) }}</span>
       </ng-template>
 
       <ng-template st-row="quotaRender" let-item>
@@ -60,7 +60,7 @@
           @for (quota of item.quotas || []; track quota.guid) {
             <span class="quota-chip" [class]="quotaTone(quota)">
               {{ quota.windowType || 'window' }} · {{ quotaPercent(quota) }} ·
-              {{ formatTokens(quota.remainingTokens) }}/{{ formatTokens(quota.totalTokens) }}
+              {{ formatQuotaValue(quota) }}
             </span>
           }
           @if (!item.quotas?.length) {
@@ -77,6 +77,21 @@
       <ng-template st-row="activityRender" let-item>
         <div>{{ formatTime(item.lastUsedAt) }}</div>
         <span class="muted">失败 {{ item.failureCount || 0 }} 次</span>
+      </ng-template>
+
+      <ng-template st-row="actionRender" let-item>
+        <button
+          nz-button
+          nzType="link"
+          nzSize="small"
+          [nzLoading]="syncingGuid === item.guid"
+          [disabled]="!canRefreshUsage(item)"
+          nz-tooltip
+          [nzTooltipTitle]="canRefreshUsage(item) ? '同步额度' : '请先在账号编辑中配置额度查询方式'"
+          (click)="refreshUsage(item)"
+        >
+          同步额度
+        </button>
       </ng-template>
     </st>
   </nz-card>

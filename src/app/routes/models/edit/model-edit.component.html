@@ -10,7 +10,7 @@
   <nz-spin [nzSpinning]="loading">
     <div class="metric-grid">
       <article class="metric-card">
-        <span>当前 Provider</span>
+        <span>当前供应商</span>
         <strong>{{ providerLabel }}</strong>
       </article>
       <article class="metric-card">
@@ -57,8 +57,8 @@
           <section class="form-section">
             <div class="section-title">路由绑定</div>
             <se-container col="2" nzLayout="vertical">
-              <se label="Provider" required error="请选择 Provider">
-                <nz-select id="provider" formControlName="provider" nzShowSearch nzPlaceHolder="请选择 Provider">
+              <se label="供应商" required error="请选择供应商">
+                <nz-select id="provider" formControlName="provider" nzShowSearch nzPlaceHolder="请选择供应商">
                   @for (provider of providerOptions; track provider) {
                     <nz-option [nzValue]="provider.value" [nzLabel]="provider.label" />
                   }
@@ -93,7 +93,7 @@
       <nz-card class="side-card" [nzBordered]="false">
         <div class="aside-intro">
           <strong>路由提示</strong>
-          <p>模型映射会按 Provider 和账号组落到对应账号池，保存后新的 publicModel 会立即参与代理路由。</p>
+          <p>模型映射会按供应商和账号组落到对应账号池，保存后新的 publicModel 会立即参与代理路由。</p>
         </div>
 
         <div class="quick-grid">
@@ -106,7 +106,7 @@
             <strong>{{ groupLabel }}</strong>
           </div>
           <div class="quick-item">
-            <span>Provider</span>
+            <span>供应商</span>
             <strong>{{ providerLabel }}</strong>
           </div>
           <div class="quick-item">
@@ -118,7 +118,7 @@
         <div class="section-title">填写建议</div>
         <ul class="note-list">
           <li>对外模型建议与业务侧实际传入的 `model` 完全一致，避免多余兼容逻辑。</li>
-          <li>如果某个 Provider 下有多组账号池，请明确指定账号组，避免请求落到错误的上游账户。</li>
+          <li>如果某个供应商下有多组账号池，请明确指定账号组，避免请求落到错误的上游账户。</li>
           <li>超时秒数应与上游模型响应时长匹配，长上下文或推理模型通常需要更高超时。</li>
           <li>流式能力关闭后，请确认客户端不会再以 SSE/stream 模式调用这个模型。</li>
         </ul>

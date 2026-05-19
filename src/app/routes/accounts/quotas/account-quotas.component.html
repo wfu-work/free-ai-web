@@ -95,7 +95,7 @@
       </ng-template>
 
       <ng-template st-row="tokenRender" let-item>
-        <div>{{ formatTokens(item.remainingTokens) }} / {{ formatTokens(item.totalTokens) }}</div>
+        <div>{{ formatQuotaValue(item) }}</div>
         <span class="muted">GUID {{ item.guid }}</span>
       </ng-template>
 

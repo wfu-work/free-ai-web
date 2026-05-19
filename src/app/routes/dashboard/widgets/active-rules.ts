@@ -178,6 +178,6 @@ export class DashboardActiveRulesComponent {
   @Input() rules: RuleSnapshot[] = [
     { name: '账号认证失败', flow: '检查上游 Secret 和账号状态', status: '--', tone: 'warning' },
     { name: '额度即将耗尽', flow: '查看账号额度和限流状态', status: '--', tone: 'warning' },
-    { name: '模型路由待确认', flow: '核对 Provider、账号组和 publicModel', status: '--', tone: 'idle' },
+    { name: '模型路由待确认', flow: '核对供应商、账号组和 publicModel', status: '--', tone: 'idle' },
   ];
 }

@@ -19,6 +19,8 @@ export interface Account {
   apiBaseUrl: string;
   supplierName: string;
   officialUrl: string;
+  usageQueryType: string;
+  usageApiUrl: string;
   accountType: string;
   authType: AccountAuthType;
   secretHint: string;
@@ -43,9 +45,15 @@ export interface AccountQuota {
   usedPercent: number;
   remainingTokens: number;
   totalTokens: number;
+  unit: string;
+  usedAmount: number;
+  remainingAmount: number;
+  totalAmount: number;
   resetAt: number;
   nextRefreshAt: number;
+  lastSyncedAt: number;
   status: string;
+  extra: string;
 }
 
 export interface AccountQuotaPayload {
@@ -54,9 +62,15 @@ export interface AccountQuotaPayload {
   usedPercent?: number;
   remainingTokens?: number;
   totalTokens?: number;
+  unit?: string;
+  usedAmount?: number;
+  remainingAmount?: number;
+  totalAmount?: number;
   resetAt?: number;
   nextRefreshAt?: number;
+  lastSyncedAt?: number;
   status?: string;
+  extra?: string;
 }
 
 export interface AccountGroup {
@@ -80,6 +94,9 @@ export interface AccountHealthItem {
   guid: string;
   name: string;
   provider: string;
+  supplierName: string;
+  usageQueryType: string;
+  usageApiUrl: string;
   accountGroup: string;
   status: AccountStatus;
   enabled: boolean;
@@ -97,6 +114,8 @@ export interface AccountPayload {
   apiBaseUrl?: string;
   supplierName?: string;
   officialUrl?: string;
+  usageQueryType?: string;
+  usageApiUrl?: string;
   accountType?: string;
   authType?: AccountAuthType;
   secret?: string;
@@ -141,4 +160,12 @@ export interface AccountModelFetchPayload {
 
 export interface AccountModelFetchResult {
   models: string[];
+}
+
+export interface AccountUsageRefreshResult {
+  accountGuid: string;
+  provider: string;
+  usageType: string;
+  quotas: AccountQuota[];
+  raw?: Record<string, unknown>;
 }

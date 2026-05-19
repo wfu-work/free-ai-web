@@ -207,6 +207,13 @@ export class AccountQuotasComponent implements OnInit {
     return `${count}`;
   }
 
+  protected formatQuotaValue(item: AccountQuota): string {
+    if (item.unit === 'usd') {
+      return `$${Number(item.remainingAmount || 0).toFixed(2)} / $${Number(item.totalAmount || 0).toFixed(2)}`;
+    }
+    return `${this.formatTokens(item.remainingTokens)} / ${this.formatTokens(item.totalTokens)}`;
+  }
+
   protected formatTime(value?: number): string {
     if (!value) return '-';
     const date = new Date(value);

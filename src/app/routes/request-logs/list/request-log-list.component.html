@@ -45,9 +45,9 @@
   <nz-card class="filter-card" [nzBordered]="false">
     <form nz-form [formGroup]="filterForm" class="filter-row">
       <nz-form-item>
-        <nz-form-label nzFor="provider">Provider</nz-form-label>
+        <nz-form-label nzFor="provider">供应商</nz-form-label>
         <nz-form-control>
-          <nz-select id="provider" formControlName="provider" nzAllowClear nzPlaceHolder="全部 Provider">
+          <nz-select id="provider" formControlName="provider" nzAllowClear nzPlaceHolder="全部供应商">
             @for (provider of providerOptions; track provider) {
               <nz-option [nzValue]="provider" [nzLabel]="provider" />
             }
@@ -162,7 +162,7 @@
             <small>{{ detail.upstreamModel || '-' }}</small>
           </div>
           <div>
-            <span>Provider</span>
+            <span>供应商</span>
             <strong>{{ detail.provider || '-' }}</strong>
             <small>{{ detail.accountGuid || '-' }}</small>
           </div>

@@ -103,7 +103,7 @@ import { NzMenuModule } from 'ng-zorro-antd/menu';
         <a class="sidebar-bottom-item" routerLink="/help">
           <i nz-icon nzType="question-circle"></i>
           @if (!isCollapsed) {
-            <span>帮助</span>
+            <span>接入指南</span>
           }
         </a>
         <button

@@ -37,8 +37,8 @@
                 <input id="name" nz-input formControlName="name" placeholder="例如 OpenAI 主账号" />
               </se>
 
-              <se label="Provider" required error="请输入 Provider">
-                <nz-select id="provider" formControlName="provider" nzShowSearch nzPlaceHolder="请选择 Provider">
+              <se label="供应商" required error="请选择供应商">
+                <nz-select id="provider" formControlName="provider" nzShowSearch nzPlaceHolder="请选择供应商">
                   @for (provider of providerOptions; track provider) {
                     <nz-option [nzValue]="provider.value" [nzLabel]="provider.label" />
                   }
@@ -154,6 +154,29 @@
                 </div>
                 <div class="field-extra">留空表示不限制；点击右侧图标可从上游 API 拉取模型列表。</div>
               </se>
+
+              @if (showUsageConfig) {
+                <se label="额度查询">
+                  <nz-select id="usageQueryType" formControlName="usageQueryType" nzPlaceHolder="请选择额度查询方式">
+                    @for (option of usageQueryOptions; track option.value) {
+                      <nz-option [nzValue]="option.value" [nzLabel]="option.label" />
+                    }
+                  </nz-select>
+                  <div class="field-extra">自定义 CodexZH 中转账号需要选择 CodexZH，才可以同步额度。</div>
+                </se>
+
+                @if (isCodexZHUsageQuery) {
+                  <se label="额度接口地址" required error="请输入额度接口地址">
+                    <input
+                      id="usageApiUrl"
+                      nz-input
+                      formControlName="usageApiUrl"
+                      placeholder="https://codexzh.com/api/v1/usage/stats"
+                    />
+                    <div class="field-extra">同步时会使用当前 Secret 作为 key 参数请求该地址。</div>
+                  </se>
+                }
+              }
             </se-container>
           </section>
 
@@ -195,12 +218,12 @@
       <nz-card class="side-card" [nzBordered]="false">
         <div class="aside-intro">
           <strong>填写建议</strong>
-          <p>先确认 Provider 与认证方式，再补充模型限制、调度优先级和运营备注，联调时会更顺手。</p>
+          <p>先确认供应商与认证方式，再补充模型限制、调度优先级和运营备注，联调时会更顺手。</p>
         </div>
 
         <div class="quick-grid">
           <div class="quick-item">
-            <span>Provider</span>
+            <span>供应商</span>
             <strong>{{ providerLabel }}</strong>
           </div>
           <div class="quick-item">
@@ -219,7 +242,7 @@
 
         <div class="section-title">填写建议</div>
         <ul class="note-list">
-          <li>Provider 建议与后端路由配置保持一致，例如 `openai`、`claude` 等。</li>
+          <li>供应商建议与后端路由配置保持一致，目前支持 OpenAI、CodexZH 和自定义供应商。</li>
           <li>支持模型可留空表示不限制；如果填了列表，请确保模型映射中的 public model 能匹配到这里。</li>
           <li>权重越高越容易被选中，优先级用于做更粗粒度的先后顺序控制。</li>
           <li>编辑账号时如果不打算更换 Secret，直接留空即可，后端会保留原值。</li>

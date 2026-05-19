@@ -14,6 +14,7 @@ import { finalize, forkJoin } from 'rxjs';
 import {
   AccountSelectOption,
   DEFAULT_ACCOUNT_GROUP_OPTIONS,
+  DEFAULT_USAGE_QUERY_OPTIONS,
   getAccountTypeLabel,
   getProviderLabel,
   mergeAccountTypeOptions,
@@ -24,6 +25,8 @@ import { Account, AccountPayload } from '../account.model';
 import { AccountsService } from '../accounts.service';
 
 type AccountFormMode = 'create' | 'edit';
+
+const CODEXZH_USAGE_API_URL = 'https://codexzh.com/api/v1/usage/stats';
 
 @Component({
   selector: 'app-account-edit',
@@ -50,6 +53,7 @@ export class AccountEditComponent implements OnInit {
   protected accountTypeOptions: AccountSelectOption[] = mergeAccountTypeOptions([]);
   protected modelOptions: string[] = [];
   protected fetchingModels = false;
+  protected readonly usageQueryOptions = DEFAULT_USAGE_QUERY_OPTIONS;
 
   protected readonly form = this.fb.nonNullable.group({
     name: ['', [Validators.required]],
@@ -58,6 +62,8 @@ export class AccountEditComponent implements OnInit {
     apiBaseUrl: [''],
     supplierName: [''],
     officialUrl: [''],
+    usageQueryType: [''],
+    usageApiUrl: [''],
     accountType: [''],
     authType: ['bearer_token', [Validators.required]],
     secret: [''],
@@ -70,11 +76,17 @@ export class AccountEditComponent implements OnInit {
   });
 
   ngOnInit(): void {
-    this.form.controls.provider.valueChanges.subscribe(() => {
+    this.form.controls.provider.valueChanges.subscribe((provider) => {
+      this.syncUsageConfigWithProvider(provider);
       this.syncCustomProviderValidators();
       this.cdr.markForCheck();
     });
+    this.form.controls.usageQueryType.valueChanges.subscribe(() => {
+      this.syncUsageApiUrlValidators();
+      this.cdr.markForCheck();
+    });
     this.syncCustomProviderValidators();
+    this.syncUsageApiUrlValidators();
     this.loadSelectOptions();
     const guid = this.route.snapshot.paramMap.get('guid');
     if (guid) {
@@ -97,6 +109,8 @@ export class AccountEditComponent implements OnInit {
       apiBaseUrl: value.provider === 'custom' ? value.apiBaseUrl.trim() : '',
       supplierName: value.provider === 'custom' ? value.supplierName.trim() : '',
       officialUrl: value.provider === 'custom' ? value.officialUrl.trim() : '',
+      usageQueryType: value.usageQueryType,
+      usageApiUrl: value.usageQueryType === 'codexzh' ? value.usageApiUrl.trim() || CODEXZH_USAGE_API_URL : '',
       supportedModels: value.supportedModels ? JSON.stringify([value.supportedModels]) : '',
       priority: Number(value.priority || 0),
       weight: Math.max(Number(value.weight || 1), 1),
@@ -137,8 +151,8 @@ export class AccountEditComponent implements OnInit {
 
   protected get pageDescription(): string {
     return this.formMode === 'create'
-      ? '创建新的上游 AI 账号，配置 Provider、认证方式、支持模型与调度优先级。'
-      : '更新已有账号的 Provider、调度参数与 Secret；留空 Secret 表示继续使用当前值。';
+      ? '创建新的上游 AI 账号，配置供应商、认证方式、支持模型与调度优先级。'
+      : '更新已有账号的供应商、调度参数与 Secret；留空 Secret 表示继续使用当前值。';
   }
 
   protected get statusLabel(): string {
@@ -184,6 +198,15 @@ export class AccountEditComponent implements OnInit {
 
   protected get isCustomProvider(): boolean {
     return this.form.controls.provider.value === 'custom';
+  }
+
+  protected get showUsageConfig(): boolean {
+    const provider = this.form.controls.provider.value;
+    return provider === 'custom' || provider === 'codexzh';
+  }
+
+  protected get isCodexZHUsageQuery(): boolean {
+    return this.form.controls.usageQueryType.value === 'codexzh';
   }
 
   protected fetchModels(): void {
@@ -248,6 +271,8 @@ export class AccountEditComponent implements OnInit {
       apiBaseUrl: '',
       supplierName: '',
       officialUrl: '',
+      usageQueryType: '',
+      usageApiUrl: '',
       accountType: 'manual',
       authType: 'bearer_token',
       secret: '',
@@ -289,6 +314,8 @@ export class AccountEditComponent implements OnInit {
           apiBaseUrl: account.apiBaseUrl ?? '',
           supplierName: account.supplierName ?? '',
           officialUrl: account.officialUrl ?? '',
+          usageQueryType: account.usageQueryType ?? '',
+          usageApiUrl: account.usageApiUrl ?? '',
           accountType: account.accountType ?? '',
           authType: account.authType || 'bearer_token',
           secret: '',
@@ -359,5 +386,33 @@ export class AccountEditComponent implements OnInit {
       controls.forEach((control) => control.clearValidators());
     }
     controls.forEach((control) => control.updateValueAndValidity({ emitEvent: false }));
+  }
+
+  private syncUsageConfigWithProvider(provider: string): void {
+    const usageTypeControl = this.form.controls.usageQueryType;
+    const usageUrlControl = this.form.controls.usageApiUrl;
+    if (provider === 'codexzh') {
+      usageTypeControl.setValue('codexzh', { emitEvent: false });
+      if (!usageUrlControl.value.trim()) {
+        usageUrlControl.setValue(CODEXZH_USAGE_API_URL, { emitEvent: false });
+      }
+    } else if (provider !== 'custom') {
+      usageTypeControl.setValue('', { emitEvent: false });
+      usageUrlControl.setValue('', { emitEvent: false });
+    }
+    this.syncUsageApiUrlValidators();
+  }
+
+  private syncUsageApiUrlValidators(): void {
+    const control = this.form.controls.usageApiUrl;
+    if (this.isCodexZHUsageQuery) {
+      control.setValidators([Validators.required]);
+      if (!control.value.trim()) {
+        control.setValue(CODEXZH_USAGE_API_URL, { emitEvent: false });
+      }
+    } else {
+      control.clearValidators();
+    }
+    control.updateValueAndValidity({ emitEvent: false });
   }
 }

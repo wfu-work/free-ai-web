@@ -14,6 +14,7 @@ import {
   AccountQuotaPayload,
   AccountTestInput,
   AccountTestResult,
+  AccountUsageRefreshResult,
   ReorderAccountItem,
 } from './account.model';
 
@@ -64,6 +65,10 @@ export class AccountsService {
 
   refresh(guid: string): Observable<Account> {
     return this.http.post<Account>(`/accounts/${guid}/refresh`, {});
+  }
+
+  refreshUsage(guid: string): Observable<AccountUsageRefreshResult> {
+    return this.http.post<AccountUsageRefreshResult>(`/accounts/${guid}/refresh-usage`, {});
   }
 
   test(guid: string, payload: AccountTestInput = {}): Observable<AccountTestResult> {

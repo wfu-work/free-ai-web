@@ -5,12 +5,7 @@ export interface AccountSelectOption {
 
 export const DEFAULT_PROVIDER_OPTIONS: AccountSelectOption[] = [
   { value: 'openai', label: 'OpenAI' },
-  { value: 'anthropic', label: 'Anthropic Claude' },
-  { value: 'gemini', label: 'Google Gemini' },
-  { value: 'deepseek', label: 'DeepSeek' },
-  { value: 'xai', label: 'xAI Grok' },
-  { value: 'openrouter', label: 'OpenRouter' },
-  { value: 'azure-openai', label: 'Azure OpenAI' },
+  { value: 'codexzh', label: 'CodexZH 中转站' },
   { value: 'custom', label: '自定义供应商' },
 ];
 
@@ -25,6 +20,11 @@ export const DEFAULT_ACCOUNT_TYPE_OPTIONS: AccountSelectOption[] = [
   { value: 'pool', label: '轮询池' },
 ];
 
+export const DEFAULT_USAGE_QUERY_OPTIONS: AccountSelectOption[] = [
+  { value: '', label: '不启用' },
+  { value: 'codexzh', label: 'CodexZH 额度查询' },
+];
+
 export function mergeStringOptions(defaults: string[], values: Array<string | null | undefined>): string[] {
   return Array.from(
     new Set(
@@ -35,17 +35,8 @@ export function mergeStringOptions(defaults: string[], values: Array<string | nu
   );
 }
 
-export function mergeProviderOptions(values: Array<string | null | undefined>): AccountSelectOption[] {
-  const base = new Map(DEFAULT_PROVIDER_OPTIONS.map((item) => [item.value, item]));
-  values
-    .map((item) => (item || '').trim())
-    .filter(Boolean)
-    .forEach((value) => {
-      if (!base.has(value)) {
-        base.set(value, { value, label: value });
-      }
-    });
-  return Array.from(base.values());
+export function mergeProviderOptions(_values: Array<string | null | undefined>): AccountSelectOption[] {
+  return [...DEFAULT_PROVIDER_OPTIONS];
 }
 
 export function getProviderLabel(value?: string): string {
