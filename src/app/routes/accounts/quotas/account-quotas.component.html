@@ -5,11 +5,11 @@
       description="查看和维护账号额度窗口，跟踪剩余 Token、已用比例、重置时间和额度状态。"
     />
     <div class="header-actions">
-      <button nz-button (click)="load()">
+      <button nz-button (click)="q.page = 1; getData()">
         <i nz-icon nzType="reload"></i>
         刷新
       </button>
-      <button nz-button nzType="primary" (click)="openCreate()">
+      <button nz-button nzType="primary" (click)="add()">
         <i nz-icon nzType="plus"></i>
         新增额度
       </button>
@@ -35,42 +35,6 @@
     </article>
   </div>
 
-  <nz-card class="filter-card" [nzBordered]="false">
-    <form nz-form [formGroup]="filterForm" class="filter-row">
-      <nz-form-item>
-        <nz-form-label nzFor="accountGuid">账号</nz-form-label>
-        <nz-form-control>
-          <nz-select
-            id="accountGuid"
-            formControlName="accountGuid"
-            nzAllowClear
-            nzPlaceHolder="全部账号"
-          >
-            @for (account of accounts; track account.guid) {
-              <nz-option [nzValue]="account.guid" [nzLabel]="account.name" />
-            }
-          </nz-select>
-        </nz-form-control>
-      </nz-form-item>
-
-      <nz-form-item>
-        <nz-form-label nzFor="status">状态</nz-form-label>
-        <nz-form-control>
-          <nz-select id="status" formControlName="status" nzAllowClear nzPlaceHolder="全部状态">
-            <nz-option nzValue="available" nzLabel="可用" />
-            <nz-option nzValue="limited" nzLabel="限流" />
-            <nz-option nzValue="exhausted" nzLabel="耗尽" />
-            <nz-option nzValue="unknown" nzLabel="未知" />
-          </nz-select>
-        </nz-form-control>
-      </nz-form-item>
-
-      <div class="filter-actions">
-        <button nz-button nzType="primary" type="button" (click)="applyFilters()">筛选</button>
-      </div>
-    </form>
-  </nz-card>
-
   <nz-alert
     nzType="info"
     nzShowIcon
@@ -78,11 +42,60 @@
   />
 
   <nz-card class="quota-card" [nzBordered]="false">
+    <div class="d-flex justify-content-between mb-md">
+      <h2>{{ '额度管理' }}</h2>
+      <div class=" d-flex text-right">
+        <nz-select
+          [(ngModel)]="q.accountGuid"
+          placeholder="全部账号"
+          (ngModelChange)="q.page = 1; getData()"
+        >
+          <nz-option [nzValue]="''" [nzLabel]="'全部账号'" />
+          @for (account of accounts; track account.guid) {
+            <nz-option [nzValue]="account.guid" [nzLabel]="account.name" />
+          }
+        </nz-select>
+        <nz-select
+          class="ml-lg"
+          [(ngModel)]="q.status"
+          placeholder="额度状态"
+          (ngModelChange)="q.page = 1; getData()"
+        >
+          <nz-option [nzValue]="''" [nzLabel]="'全部'" />
+          <nz-option nzValue="available" nzLabel="可用" />
+          <nz-option nzValue="limited" nzLabel="限流" />
+          <nz-option nzValue="exhausted" nzLabel="耗尽" />
+          <nz-option nzValue="unknown" nzLabel="未知" />
+        </nz-select>
+        <nz-input-wrapper class="ml-lg">
+          <nz-icon nzInputPrefix nzType="search" />
+          <input
+            nz-input
+            [(ngModel)]="q.content"
+            name="content"
+            [placeholder]="'请输入窗口类型'"
+            (keydown.enter)="q.page = 1; getData()"
+          />
+        </nz-input-wrapper>
+        <div class="d-flex ml-lg">
+          <button nz-button (click)="q.page = 1; getData()" nzType="primary">
+            {{ '搜索' }}
+          </button>
+          <button nz-button (click)="q.page = 1; q.accountGuid = ''; q.status = ''; q.content = ''; getData()">
+            {{ '重置' }}
+          </button>
+        </div>
+      </div>
+    </div>
+
     <st
-      [data]="items"
+      [data]="data"
       [columns]="columns"
       [loading]="loading"
-      [page]="{ front: true, showSize: true, pageSizes: [10, 20, 50], showQuickJumper: true }"
+      [pi]="q.page"
+      [ps]="q.size"
+      [total]="totalCount"
+      (change)="tableChange($event)"
     >
       <ng-template st-row="accountRender" let-item>
         <div class="account-name">{{ accountName(item.accountGuid) }}</div>
@@ -107,9 +120,6 @@
         {{ formatTime(item.nextRefreshAt) }}
       </ng-template>
 
-      <ng-template st-row="actionRender" let-item>
-        <button nz-button nzType="link" nzSize="small" (click)="openEdit(item)">编辑</button>
-      </ng-template>
     </st>
   </nz-card>
 </section>

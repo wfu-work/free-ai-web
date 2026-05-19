@@ -5,7 +5,7 @@
       description="查看 weighted round-robin 的路由键、游标和最近命中账号，定位请求切换与账号池分布。"
     />
     <div class="header-actions">
-      <button nz-button (click)="load()">
+      <button nz-button (click)="q.page = 1; getData()">
         <i nz-icon nzType="reload"></i>
         刷新
       </button>
@@ -38,11 +38,47 @@
   />
 
   <nz-card class="route-card" [nzBordered]="false">
+    <div class="d-flex justify-content-between mb-md">
+      <h2>{{ '路由状态' }}</h2>
+      <div class=" d-flex text-right">
+        <nz-select
+          [(ngModel)]="q.linked"
+          placeholder="关联状态"
+          (ngModelChange)="q.page = 1; applyTableFilters()"
+        >
+          <nz-option [nzValue]="''" [nzLabel]="'全部'" />
+          <nz-option [nzValue]="1" [nzLabel]="'已关联'" />
+          <nz-option [nzValue]="0" [nzLabel]="'未关联'" />
+        </nz-select>
+        <nz-input-wrapper class="ml-lg">
+          <nz-icon nzInputPrefix nzType="search" />
+          <input
+            nz-input
+            [(ngModel)]="q.content"
+            name="content"
+            [placeholder]="'请输入搜索内容'"
+            (keydown.enter)="q.page = 1; applyTableFilters()"
+          />
+        </nz-input-wrapper>
+        <div class="d-flex ml-lg">
+          <button nz-button (click)="q.page = 1; applyTableFilters()" nzType="primary">
+            {{ '搜索' }}
+          </button>
+          <button nz-button (click)="q.page = 1; q.content = ''; q.linked = ''; applyTableFilters()">
+            {{ '重置' }}
+          </button>
+        </div>
+      </div>
+    </div>
+
     <st
-      [data]="items"
+      [data]="data"
       [columns]="columns"
       [loading]="loading"
-      [page]="{ front: true, showSize: true, pageSizes: [10, 20, 50], showQuickJumper: true }"
+      [pi]="q.page"
+      [ps]="q.size"
+      [total]="totalCount"
+      (change)="tableChange($event)"
     >
       <ng-template st-row="routeKeyRender" let-item>
         <div class="route-key">{{ item.routeKey || '-' }}</div>

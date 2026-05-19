@@ -2,18 +2,19 @@ import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 
-import {
-  CreatePlatformKeyResult,
-  PlatformKey,
-  PlatformKeyPayload,
-} from './platform-key.model';
+import { CreatePlatformKeyResult, PlatformKey, PlatformKeyPayload } from './platform-key.model';
+import { PageEntity } from '@shared';
 
 @Injectable({ providedIn: 'root' })
 export class PlatformKeysService {
   private readonly http = inject(HttpClient);
 
-  list(): Observable<PlatformKey[]> {
-    return this.http.get<PlatformKey[]>('/platform-keys');
+  list(params: any): Observable<PageEntity<PlatformKey>> {
+    return this.http.get<PageEntity<PlatformKey>>('/platform-keys/list', { params });
+  }
+
+  listAll(): Observable<PlatformKey[]> {
+    return this.http.get<PlatformKey[]>('/platform-keys/list/all');
   }
 
   get(guid: string): Observable<PlatformKey> {

@@ -190,8 +190,8 @@ export class ModelEditComponent implements OnInit {
 
   private loadSelectOptions(): void {
     forkJoin({
-      models: this.modelsService.list(),
-      accounts: this.accountsService.list(),
+      models: this.modelsService.listAll(),
+      accounts: this.accountsService.listAll(),
       groups: this.accountsService.listGroups(),
     }).subscribe({
       next: ({ models, accounts, groups }) => {

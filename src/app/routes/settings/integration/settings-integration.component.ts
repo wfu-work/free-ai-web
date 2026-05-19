@@ -34,7 +34,7 @@ export class SettingsIntegrationComponent implements OnInit {
   protected load(): void {
     this.loading = true;
     this.platformKeysService
-      .list()
+      .listAll()
       .pipe(
         finalize(() => {
           this.loading = false;

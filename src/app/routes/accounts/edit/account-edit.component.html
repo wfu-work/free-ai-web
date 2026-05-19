@@ -113,6 +113,7 @@
                 <nz-select id="authType" formControlName="authType">
                   <nz-option nzValue="bearer_token" nzLabel="Bearer Token" />
                   <nz-option nzValue="api_key" nzLabel="API Key" />
+                  <nz-option nzValue="login_callback" nzLabel="登录回调" />
                 </nz-select>
               </se>
 
@@ -126,6 +127,61 @@
                   {{ formMode === 'edit' ? '留空表示保留当前 Secret。' : 'Secret 只会写入后端加密存储。' }}
                 </div>
               </se>
+
+              @if (isLoginCallbackAuth) {
+                <se class="span-2" label="登录授权">
+                  <button
+                    nz-button
+                    nzType="primary"
+                    type="button"
+                    [disabled]="!canOpenLoginAuth"
+                    (click)="openLoginAuth()"
+                  >
+                    <i nz-icon nzType="login"></i>
+                    登录授权
+                  </button>
+                  <button
+                    nz-button
+                    type="button"
+                    class="ml-sm"
+                    [disabled]="!openAIAuthorizeUrl"
+                    (click)="copyOpenAIAuthorizeUrl()"
+                  >
+                    <i nz-icon nzType="copy"></i>
+                    复制授权链接
+                  </button>
+                  <div class="field-extra">
+                    将打开 OpenAI OAuth 授权页，并携带 client_id、redirect_uri、scope、state 和 PKCE 参数；登录完成后复制浏览器地址栏中的完整回调 URL 到下方解析。
+                  </div>
+                  @if (openAIAuthorizeUrl) {
+                    <div class="field-extra">
+                      如果 OpenAI 登录页超时，可以复制授权链接到其它浏览器或网络环境打开。
+                    </div>
+                  }
+                </se>
+
+                <se class="span-2" label="手动解析回调">
+                  <div class="model-picker">
+                    <input
+                      id="callbackUrl"
+                      nz-input
+                      formControlName="callbackUrl"
+                      placeholder="粘贴浏览器跳转后的完整回调 URL（包含 state、code 或 access_token）"
+                    />
+                    <button
+                      nz-button
+                      type="button"
+                      [nzLoading]="parsingCallback"
+                      (click)="parseLoginCallback()"
+                    >
+                      解析
+                    </button>
+                  </div>
+                  <div class="field-extra">
+                    {{ loginCallbackHint || '解析成功后会自动写入 Secret；只有 access_token 可直接用于代理请求。' }}
+                  </div>
+                </se>
+              }
 
               <se class="span-2" label="支持模型">
                 <div class="model-picker">
@@ -244,6 +300,7 @@
         <ul class="note-list">
           <li>供应商建议与后端路由配置保持一致，目前支持 OpenAI、CodexZH 和自定义供应商。</li>
           <li>支持模型可留空表示不限制；如果填了列表，请确保模型映射中的 public model 能匹配到这里。</li>
+          <li>登录回调会解析回调 URL 中的 token 或 code/state；只有 access_token 可以直接用于代理请求。</li>
           <li>权重越高越容易被选中，优先级用于做更粗粒度的先后顺序控制。</li>
           <li>编辑账号时如果不打算更换 Secret，直接留空即可，后端会保留原值。</li>
         </ul>

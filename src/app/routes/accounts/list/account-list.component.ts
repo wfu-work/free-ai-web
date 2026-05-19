@@ -7,7 +7,7 @@ import {
 } from '@angular/core';
 import { Router } from '@angular/router';
 import { FormBuilder } from '@angular/forms';
-import { STColumn, STColumnTag } from '@delon/abc/st';
+import { STChange, STColumn, STColumnTag } from '@delon/abc/st';
 import { SHARED_IMPORTS, TitleLabelComponent } from '@shared';
 import { NzMessageService } from 'ng-zorro-antd/message';
 import { NzModalService } from 'ng-zorro-antd/modal';
@@ -31,8 +31,16 @@ export class AccountListComponent implements OnInit {
   private readonly cdr = inject(ChangeDetectorRef);
   private readonly fb = inject(FormBuilder);
 
-  protected items: Account[] = [];
+  q = {
+    page: 1,
+    size: 10,
+    enabled: '',
+    content: '',
+  };
+
+  protected data: Account[] = [];
   protected loading = false;
+  totalCount = 0;
   protected testVisible = false;
   protected testing = false;
   protected testTarget: Account | null = null;
@@ -68,33 +76,67 @@ export class AccountListComponent implements OnInit {
     { title: '失败', index: 'failureCount', width: 72 },
     { title: '最近使用', index: 'lastUsedAt', render: 'lastUsedRender', width: 170 },
     { title: 'Secret', index: 'secretHint', render: 'secretRender', width: 140 },
-    { title: '操作', render: 'actionRender', width: 230, fixed: 'right' },
+    {
+      title: '操作',
+      width: 230,
+      fixed: 'right',
+      buttons: [
+        {
+          text: '编辑',
+          click: (item: Account) => this.edit(item),
+        },
+        {
+          text: '测试',
+          click: (item: Account) => this.openTest(item),
+        },
+        {
+          text: '刷新',
+          click: (item: Account) => this.refresh(item),
+        },
+        {
+          text: '启用',
+          click: (item: Account) => this.setEnabled(item, true),
+          iif: (item: Account) => !item.enabled,
+        },
+        {
+          text: '禁用',
+          click: (item: Account) => this.setEnabled(item, false),
+          iif: (item: Account) => item.enabled,
+        },
+        {
+          text: '删除',
+          className: 'text-error',
+          click: (item: Account) => this.delete(item),
+        },
+      ],
+    },
   ];
 
   ngOnInit(): void {
-    this.load();
+    this.getData();
   }
 
-  protected load(): void {
+  protected getData(): void {
     this.loading = true;
     this.accountsService
-      .list()
+      .list(this.q)
       .pipe(
         finalize(() => {
           this.loading = false;
           this.cdr.markForCheck();
         }),
       )
-      .subscribe((items) => {
-        this.items = items ?? [];
+      .subscribe((r) => {
+        this.data = r.data ?? [];
+        this.totalCount = r.total ?? 0;
       });
   }
 
-  protected openCreate(): void {
+  protected add(): void {
     this.router.navigateByUrl('/accounts/edit');
   }
 
-  protected openEdit(item: Account): void {
+  protected edit(item: Account): void {
     this.router.navigate(['/accounts/edit', item.guid]);
   }
 
@@ -112,7 +154,7 @@ export class AccountListComponent implements OnInit {
           request.subscribe({
             next: () => {
               this.message.success(enabled ? '账号已启用' : '账号已禁用');
-              this.load();
+              this.getData();
               resolve();
             },
             error: reject,
@@ -125,7 +167,7 @@ export class AccountListComponent implements OnInit {
   protected refresh(item: Account): void {
     this.accountsService.refresh(item.guid).subscribe(() => {
       this.message.success('账号状态已刷新');
-      this.load();
+      this.getData();
     });
   }
 
@@ -139,7 +181,7 @@ export class AccountListComponent implements OnInit {
           this.accountsService.delete(item.guid).subscribe({
             next: () => {
               this.message.success('账号已删除');
-              this.load();
+              this.getData();
               resolve();
             },
             error: reject,
@@ -181,7 +223,7 @@ export class AccountListComponent implements OnInit {
         } else {
           this.message.warning('账号测试未通过，请查看结果');
         }
-        this.load();
+        this.getData();
       });
   }
 
@@ -229,6 +271,21 @@ export class AccountListComponent implements OnInit {
       this.message.success(`${label}已复制`);
     } catch {
       this.message.warning('当前浏览器不允许自动复制，请手动选择文本');
+    }
+  }
+
+  tableChange(event: STChange): void {
+    switch (event.type) {
+      case 'pi':
+      case 'ps':
+      case 'filter':
+      case 'sort':
+        this.q.page = event.pi;
+        this.q.size = event.ps;
+        this.getData();
+        break;
+      default:
+        break;
     }
   }
 }

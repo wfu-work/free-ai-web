@@ -2,14 +2,14 @@
   <div class="d-flex justify-content-between header-row">
     <title-label
       title="账号分组"
-      description="按账号组查看供应商覆盖、账号池可用性和模型映射关系，方便维护路由分层。"
+      description="维护后台账号分组，账号和模型映射在编辑时选择对应分组。"
     />
     <div class="header-actions">
-      <button nz-button (click)="load()">
+      <button nz-button (click)="q.page = 1; getData()">
         <i nz-icon nzType="reload"></i>
         刷新
       </button>
-      <button nz-button nzType="primary" (click)="openCreate()">
+      <button nz-button nzType="primary" (click)="add()">
         <i nz-icon nzType="plus"></i>
         新增分组
       </button>
@@ -22,95 +22,122 @@
       <strong>{{ totalGroups }}</strong>
     </article>
     <article class="metric-card metric-success">
-      <span>已接入分组</span>
+      <span>启用分组</span>
       <strong>{{ activeGroups }}</strong>
     </article>
-    <article class="metric-card metric-danger">
-      <span>待补账号</span>
-      <strong>{{ pendingAccountGroups }}</strong>
-    </article>
     <article class="metric-card metric-warning">
-      <span>待补模型</span>
-      <strong>{{ pendingModelGroups }}</strong>
+      <span>停用分组</span>
+      <strong>{{ disabledGroups }}</strong>
+    </article>
+    <article class="metric-card">
+      <span>当前页分组</span>
+      <strong>{{ data.length }}</strong>
     </article>
   </div>
 
   <nz-alert
     nzType="info"
     nzShowIcon
-    nzMessage="账号分组由后台保存维护；表格会同时聚合已有账号和模型映射，帮助判断每个分组是否已经具备完整路由能力。"
+    nzMessage="账号分组由后台保存维护；列表直接使用分页接口返回的数据，不再根据账号或模型映射做前端聚合。"
   />
 
   <nz-card class="groups-card" [nzBordered]="false">
+    <div class="d-flex justify-content-between mb-md">
+      <h2>{{ '账号分组' }}</h2>
+      <div class=" d-flex text-right">
+        <nz-select
+          [(ngModel)]="q.enabled"
+          placeholder="启用状态"
+          (ngModelChange)="q.page = 1; getData()"
+        >
+          <nz-option [nzValue]="''" [nzLabel]="'全部'" />
+          <nz-option [nzValue]="1" [nzLabel]="'启用'" />
+          <nz-option [nzValue]="0" [nzLabel]="'禁用'" />
+        </nz-select>
+        <nz-input-wrapper class="ml-lg">
+          <nz-icon nzInputPrefix nzType="search" />
+          <input
+            nz-input
+            [(ngModel)]="q.content"
+            name="content"
+            [placeholder]="'请输入搜索内容'"
+            (keydown.enter)="q.page = 1; getData()"
+          />
+        </nz-input-wrapper>
+        <div class="d-flex ml-lg">
+          <button nz-button (click)="q.page = 1; getData()" nzType="primary">
+            {{ '搜索' }}
+          </button>
+          <button nz-button (click)="q.page = 1; q.content = ''; q.enabled = ''; getData()">
+            {{ '重置' }}
+          </button>
+        </div>
+      </div>
+    </div>
+
     <st
-      [data]="items"
+      [data]="data"
       [columns]="columns"
       [loading]="loading"
-      [page]="{ front: true, showSize: true, pageSizes: [10, 20, 50], showQuickJumper: true }"
+      [pi]="q.page"
+      [ps]="q.size"
+      [total]="totalCount"
+      [scroll]="{ x: '1320px' }"
+      (change)="tableChange($event)"
     >
       <ng-template st-row="groupRender" let-item>
         <div class="group-name">{{ item.name }}</div>
-        <span class="muted">{{ item.description || item.remark || '未填写说明' }}</span>
+        <span class="muted">{{ item.guid }}</span>
       </ng-template>
 
       <ng-template st-row="providerRender" let-item>
         <div class="chip-list">
-          @for (provider of item.providers; track provider) {
+          @for (provider of summaryValues(item.providerSummary); track provider) {
             <span class="chip">{{ provider }}</span>
           }
-          @if (!item.providers.length) {
+          @if (!summaryValues(item.providerSummary).length) {
             <span class="muted">未配置</span>
           }
         </div>
       </ng-template>
 
       <ng-template st-row="accountRender" let-item>
-        <div class="stat-line">{{ item.accountCount }} 个账号</div>
-        <span class="muted">可用 {{ item.availableCount }} · 启用 {{ item.enabledCount }}</span>
+        <div class="stat-line">{{ item.accountCount || 0 }} 个账号</div>
+        <span class="muted">可用 {{ item.availableAccountCount || 0 }} · 启用 {{ item.enabledAccountCount || 0 }}</span>
       </ng-template>
 
       <ng-template st-row="modelRender" let-item>
-        <div class="stat-line">{{ modelSummary(item) }}</div>
+        <div class="stat-line">{{ item.modelCount || 0 }} 个模型</div>
         <div class="chip-list compact">
-          @for (model of item.publicModels.slice(0, 3); track model) {
+          @for (model of summaryValues(item.modelSummary).slice(0, 3); track model) {
             <span class="chip chip-soft">{{ model }}</span>
           }
-          @if (item.publicModels.length > 3) {
-            <span class="muted">+{{ item.publicModels.length - 3 }}</span>
+          @if (summaryValues(item.modelSummary).length > 3) {
+            <span class="muted">+{{ summaryValues(item.modelSummary).length - 3 }}</span>
           }
-          @if (!item.publicModels.length) {
-            <span class="muted">暂无已启用映射</span>
+          @if (!summaryValues(item.modelSummary).length) {
+            <span class="muted">暂无模型</span>
           }
         </div>
       </ng-template>
 
       <ng-template st-row="typeRender" let-item>
         <div class="chip-list">
-          @for (type of item.accountTypes; track type) {
+          @for (type of summaryValues(item.accountTypeSummary); track type) {
             <span class="chip chip-soft">{{ type }}</span>
           }
-          @if (!item.accountTypes.length) {
+          @if (!summaryValues(item.accountTypeSummary).length) {
             <span class="muted">未设置</span>
           }
         </div>
       </ng-template>
 
-      <ng-template st-row="statusRender" let-item>
-        <span class="status-pill" [class]="groupTone(item)">{{ groupStatus(item) }}</span>
+      <ng-template st-row="descriptionRender" let-item>
+        <div>{{ item.description || '-' }}</div>
+        <span class="muted">{{ item.remark || '-' }}</span>
+        <div class="muted">同步 {{ formatTime(item.summarySyncedAt) }}</div>
       </ng-template>
 
-      <ng-template st-row="actionRender" let-item>
-        <div class="action-row">
-          @if (item.guid) {
-            <button nz-button nzType="link" (click)="openEdit(item)">编辑</button>
-          }
-          <button nz-button nzType="link" (click)="createAccount(item.name)">新增账号</button>
-          <button nz-button nzType="link" (click)="createModel(item.name)">新增模型</button>
-          @if (item.guid) {
-            <button nz-button nzType="link" class="danger-link" (click)="delete(item)">删除</button>
-          }
-        </div>
-      </ng-template>
     </st>
   </nz-card>
 </section>

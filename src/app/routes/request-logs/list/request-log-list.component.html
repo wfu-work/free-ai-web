@@ -5,14 +5,7 @@
       description="追踪 /v1 代理调用、命中账号、路由切换、错误分类、Token 用量和延迟表现。"
     />
     <div class="header-actions">
-      <nz-input-number
-        class="limit-input"
-        [nzMin]="1"
-        [nzMax]="1000"
-        [nzStep]="50"
-        [formControl]="filterForm.controls.limit"
-      />
-      <button nz-button (click)="load()">
+      <button nz-button (click)="q.page = 1; getData()">
         <i nz-icon nzType="reload"></i>
         刷新
       </button>
@@ -42,56 +35,60 @@
     </article>
   </div>
 
-  <nz-card class="filter-card" [nzBordered]="false">
-    <form nz-form [formGroup]="filterForm" class="filter-row">
-      <nz-form-item>
-        <nz-form-label nzFor="provider">供应商</nz-form-label>
-        <nz-form-control>
-          <nz-select id="provider" formControlName="provider" nzAllowClear nzPlaceHolder="全部供应商">
-            @for (provider of providerOptions; track provider) {
-              <nz-option [nzValue]="provider" [nzLabel]="provider" />
-            }
-          </nz-select>
-        </nz-form-control>
-      </nz-form-item>
-
-      <nz-form-item>
-        <nz-form-label nzFor="model">模型</nz-form-label>
-        <nz-form-control>
-          <nz-select id="model" formControlName="model" nzAllowClear nzPlaceHolder="全部模型">
-            @for (model of modelOptions; track model) {
-              <nz-option [nzValue]="model" [nzLabel]="model" />
-            }
-          </nz-select>
-        </nz-form-control>
-      </nz-form-item>
-
-      <nz-form-item>
-        <nz-form-label nzFor="keyword">关键字</nz-form-label>
-        <nz-form-control>
-          <input
-            id="keyword"
-            nz-input
-            formControlName="keyword"
-            placeholder="requestId / accountGuid / errorType"
-          />
-        </nz-form-control>
-      </nz-form-item>
-
-      <div class="filter-actions">
-        <label nz-checkbox formControlName="failuresOnly">仅失败请求</label>
-        <button nz-button type="button" (click)="resetFilters()">清空筛选</button>
-      </div>
-    </form>
-    <div class="filter-summary">当前展示 {{ filteredCount }} / {{ items.length }} 条日志</div>
-  </nz-card>
-
   <nz-card class="log-card" [nzBordered]="false">
+    <div class="d-flex justify-content-between mb-md">
+      <h2>{{ '请求日志' }}</h2>
+      <div class=" d-flex text-right">
+        <nz-select
+          [(ngModel)]="q.provider"
+          placeholder="全部供应商"
+          (ngModelChange)="q.page = 1; getData()"
+        >
+          <nz-option [nzValue]="''" [nzLabel]="'全部供应商'" />
+          @for (provider of providerOptions; track provider) {
+            <nz-option [nzValue]="provider" [nzLabel]="provider" />
+          }
+        </nz-select>
+        <nz-select
+          class="ml-lg"
+          [(ngModel)]="q.model"
+          placeholder="全部模型"
+          (ngModelChange)="q.page = 1; getData()"
+        >
+          <nz-option [nzValue]="''" [nzLabel]="'全部模型'" />
+          @for (model of modelOptions; track model) {
+            <nz-option [nzValue]="model" [nzLabel]="model" />
+          }
+        </nz-select>
+        <nz-input-wrapper class="ml-lg">
+          <nz-icon nzInputPrefix nzType="search" />
+          <input
+            nz-input
+            [(ngModel)]="q.content"
+            name="content"
+            [placeholder]="'请输入搜索内容'"
+            (keydown.enter)="q.page = 1; getData()"
+          />
+        </nz-input-wrapper>
+        <div class="d-flex ml-lg">
+          <button nz-button (click)="q.page = 1; getData()" nzType="primary">
+            {{ '搜索' }}
+          </button>
+          <button nz-button (click)="resetFilters()">
+            {{ '重置' }}
+          </button>
+        </div>
+      </div>
+    </div>
+
     <st
-      [data]="filteredItems"
+      [data]="data"
       [columns]="columns"
       [loading]="loading"
-      [page]="{ front: true, showSize: true, pageSizes: [10, 20, 50], showQuickJumper: true }"
+      [pi]="q.page"
+      [ps]="q.size"
+      [total]="totalCount"
+      (change)="tableChange($event)"
     >
       <ng-template st-row="requestRender" let-item>
         <button
@@ -134,9 +131,6 @@
         {{ formatTime(item.createdAtUnix) }}
       </ng-template>
 
-      <ng-template st-row="actionRender" let-item>
-        <button nz-button nzType="link" nzSize="small" (click)="openDetail(item)">详情</button>
-      </ng-template>
     </st>
   </nz-card>
 </section>
@@ -149,50 +143,50 @@
   (nzOnCancel)="closeDetail()"
 >
   <ng-container *nzModalContent>
-    @if (detail) {
+    @if (detailRecord) {
       <nz-spin [nzSpinning]="detailLoading">
         <div class="detail-grid">
           <div>
             <span>requestId</span>
-            <code>{{ detail.requestId || '-' }}</code>
+            <code>{{ detailRecord.requestId || '-' }}</code>
           </div>
           <div>
             <span>模型</span>
-            <strong>{{ detail.model || '-' }}</strong>
-            <small>{{ detail.upstreamModel || '-' }}</small>
+            <strong>{{ detailRecord.model || '-' }}</strong>
+            <small>{{ detailRecord.upstreamModel || '-' }}</small>
           </div>
           <div>
             <span>供应商</span>
-            <strong>{{ detail.provider || '-' }}</strong>
-            <small>{{ detail.accountGuid || '-' }}</small>
+            <strong>{{ detailRecord.provider || '-' }}</strong>
+            <small>{{ detailRecord.accountGuid || '-' }}</small>
           </div>
           <div>
             <span>平台密钥</span>
-            <strong>{{ detail.platformKeyId || '-' }}</strong>
+            <strong>{{ detailRecord.platformKeyId || '-' }}</strong>
           </div>
           <div>
             <span>状态</span>
-            <strong>{{ detail.statusCode || '-' }}</strong>
-            <small>{{ detail.errorType || '无错误类型' }}</small>
+            <strong>{{ detailRecord.statusCode || '-' }}</strong>
+            <small>{{ detailRecord.errorType || '无错误类型' }}</small>
           </div>
           <div>
             <span>路由切换</span>
-            <strong>{{ detail.switched ? '已切换' : '未切换' }}</strong>
-            <small>{{ detail.switchCount || 0 }} 次 · {{ detail.switchReason || '无原因' }}</small>
+            <strong>{{ detailRecord.switched ? '已切换' : '未切换' }}</strong>
+            <small>{{ detailRecord.switchCount || 0 }} 次 · {{ detailRecord.switchReason || '无原因' }}</small>
           </div>
           <div>
             <span>延迟</span>
-            <strong>{{ formatMs(detail.latencyMs) }}</strong>
-            <small>首 Token {{ formatMs(detail.firstTokenMs) }}</small>
+            <strong>{{ formatMs(detailRecord.latencyMs) }}</strong>
+            <small>首 Token {{ formatMs(detailRecord.firstTokenMs) }}</small>
           </div>
           <div>
             <span>Token</span>
-            <strong>{{ tokenTotal(detail) }}</strong>
-            <small>input {{ detail.inputTokens || 0 }} / output {{ detail.outputTokens || 0 }}</small>
+            <strong>{{ tokenTotal(detailRecord) }}</strong>
+            <small>input {{ detailRecord.inputTokens || 0 }} / output {{ detailRecord.outputTokens || 0 }}</small>
           </div>
           <div>
             <span>创建时间</span>
-            <strong>{{ formatTime(detail.createdAtUnix) }}</strong>
+            <strong>{{ formatTime(detailRecord.createdAtUnix) }}</strong>
           </div>
         </div>
       </nz-spin>

@@ -10,14 +10,11 @@ import {
 import { FormBuilder, Validators } from '@angular/forms';
 import { SHARED_IMPORTS } from '@shared';
 import { NzMessageService } from 'ng-zorro-antd/message';
-import { finalize } from 'rxjs';
+import { finalize, Observable, throwError } from 'rxjs';
 
-import {
-  CreatePlatformKeyResult,
-  PlatformKey,
-  PlatformKeyPayload,
-} from '../platform-key.model';
+import { CreatePlatformKeyResult, PlatformKey, PlatformKeyPayload } from '../platform-key.model';
 import { PlatformKeysService } from '../platform-keys.service';
+import { NZ_MODAL_DATA } from 'ng-zorro-antd/modal';
 
 type PlatformKeyFormMode = 'create' | 'edit';
 
@@ -34,13 +31,10 @@ export class PlatformKeyEditComponent {
   private readonly cdr = inject(ChangeDetectorRef);
   private readonly fb = inject(FormBuilder);
 
-  @Output() readonly saved = new EventEmitter<CreatePlatformKeyResult | null>();
-  @Output() readonly closed = new EventEmitter<void>();
+  @Input() guid: string = inject(NZ_MODAL_DATA);
 
-  protected visible = false;
-  protected saving = false;
-  protected formMode: PlatformKeyFormMode = 'create';
-  protected editing: PlatformKey | null = null;
+  protected loading = false;
+  protected platformKey: PlatformKey | null = null;
 
   protected readonly form = this.fb.nonNullable.group({
     name: ['', [Validators.required]],
@@ -49,73 +43,47 @@ export class PlatformKeyEditComponent {
     remark: [''],
   });
 
-  @Input()
-  set nzVisible(value: boolean) {
-    this.visible = value;
-    if (!value) this.saving = false;
+  ngOnInit(): void {
+    this.getData();
   }
 
-  @Input()
-  set platformKey(value: PlatformKey | null) {
-    this.editing = value;
-    this.formMode = value ? 'edit' : 'create';
-    this.form.reset({
-      name: value?.name ?? '',
-      allowedModels: value?.allowedModels ?? '',
-      rateLimitPerMinute: value?.rateLimitPerMinute ?? 0,
-      remark: value?.remark ?? '',
-    });
+  getData(): void {
+    if (this.guid && this.guid !== 'new') {
+      this.loading = true;
+      this.platformKeysService.get(this.guid).subscribe({
+        next: (r) => {
+          this.platformKey = r;
+          this.loading = false;
+          this.form.patchValue(r);
+        },
+        error: (e) => {
+          this.loading = false;
+          this.message.error(e || '接口错误');
+        },
+      });
+    }
   }
 
-  protected close(): void {
-    this.visible = false;
-    this.saving = false;
-    this.closed.emit();
-  }
-
-  protected save(): void {
+  public submit(): Observable<any> {
     Object.values(this.form.controls).forEach((control) => {
       control.markAsDirty();
       control.updateValueAndValidity();
     });
-    if (this.form.invalid) return;
+    if (this.form.invalid) {
+      return throwError(() => new Error('数据验证失败'));
+    }
 
     const value = this.form.getRawValue();
     const payload: PlatformKeyPayload = {
+      ...this.platformKey,
       ...value,
       rateLimitPerMinute: Math.max(Number(value.rateLimitPerMinute || 0), 0),
     };
-
-    this.saving = true;
-    if (this.formMode === 'create') {
-      this.platformKeysService
-        .create(payload)
-        .pipe(
-          finalize(() => {
-            this.saving = false;
-            this.cdr.markForCheck();
-          }),
-        )
-        .subscribe((result) => {
-          this.visible = false;
-          this.message.success('密钥已创建');
-          this.saved.emit(result);
-        });
-      return;
+    this.loading = true;
+    if (!this.guid || this.guid === 'new') {
+      return this.platformKeysService.create(payload);
+    } else {
+      return this.platformKeysService.update(this.guid, payload);
     }
-
-    this.platformKeysService
-      .update(this.editing!.guid, payload)
-      .pipe(
-        finalize(() => {
-          this.saving = false;
-          this.cdr.markForCheck();
-        }),
-      )
-      .subscribe(() => {
-        this.visible = false;
-        this.message.success('密钥已更新');
-        this.saved.emit(null);
-      });
   }
 }

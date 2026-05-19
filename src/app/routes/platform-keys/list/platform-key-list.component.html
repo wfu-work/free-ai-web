@@ -5,11 +5,11 @@
       description="管理业务客户端访问 /v1 代理入口使用的本地平台密钥。"
     />
     <div class="header-actions">
-      <button nz-button (click)="load()">
+      <button nz-button (click)="q.page = 1; getData()">
         <i nz-icon nzType="reload"></i>
         刷新
       </button>
-      <button nz-button nzType="primary" (click)="openCreate()">
+      <button nz-button nzType="primary" (click)="add()">
         <i nz-icon nzType="plus"></i>
         创建密钥
       </button>
@@ -23,11 +23,47 @@
   />
 
   <nz-card class="key-card" [nzBordered]="false">
+    <div class="d-flex justify-content-between mb-md">
+      <h2>{{ '平台密钥' }}</h2>
+      <div class=" d-flex text-right">
+        <nz-select
+          [(ngModel)]="q.enabled"
+          placeholder="启用状态"
+          (ngModelChange)="q.page = 1; getData()"
+        >
+          <nz-option [nzValue]="''" [nzLabel]="'全部'" />
+          <nz-option [nzValue]="1" [nzLabel]="'启用'" />
+          <nz-option [nzValue]="0" [nzLabel]="'禁用'" />
+        </nz-select>
+        <nz-input-wrapper class="ml-lg">
+          <nz-icon nzInputPrefix nzType="search" />
+          <input
+            nz-input
+            [(ngModel)]="q.content"
+            name="content"
+            [placeholder]="'请输入搜索内容'"
+            (keydown.enter)="q.page = 1; getData()"
+          />
+        </nz-input-wrapper>
+        <div class="d-flex ml-lg">
+          <button nz-button (click)="q.page = 1; getData()" nzType="primary">
+            {{ '搜索' }}
+          </button>
+          <button nz-button (click)="q.page = 1; q.content = ''; q.enabled = ''; getData()">
+            {{ '重置' }}
+          </button>
+        </div>
+      </div>
+    </div>
+
     <st
-      [data]="items"
+      [data]="data"
       [columns]="columns"
       [loading]="loading"
-      [page]="{ front: true, showSize: true, pageSizes: [10, 20, 50], showQuickJumper: true }"
+      [pi]="q.page"
+      [ps]="q.size"
+      [total]="totalCount"
+      (change)="tableChange($event)"
     >
       <ng-template st-row="nameRender" let-item>
         <div class="key-name">{{ item.name || '-' }}</div>
@@ -58,33 +94,9 @@
         <span class="muted">{{ item.remark || '-' }}</span>
       </ng-template>
 
-      <ng-template st-row="actionRender" let-item>
-        <div class="row-actions">
-          <button nz-button nzType="link" nzSize="small" (click)="openEdit(item)">编辑</button>
-          @if (item.enabled) {
-            <button nz-button nzType="link" nzSize="small" (click)="setEnabled(item, false)">
-              禁用
-            </button>
-          } @else {
-            <button nz-button nzType="link" nzSize="small" (click)="setEnabled(item, true)">
-              启用
-            </button>
-          }
-          <button nz-button nzType="link" nzSize="small" class="danger-link" (click)="delete(item)">
-            删除
-          </button>
-        </div>
-      </ng-template>
     </st>
   </nz-card>
 </section>
-
-<app-platform-key-edit
-  [nzVisible]="formVisible"
-  [platformKey]="editing"
-  (saved)="handleSaved($event)"
-  (closed)="closeForm()"
-/>
 
 <nz-modal
   nzTitle="平台密钥已创建"

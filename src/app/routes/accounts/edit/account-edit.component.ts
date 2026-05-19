@@ -2,6 +2,7 @@ import {
   ChangeDetectionStrategy,
   ChangeDetectorRef,
   Component,
+  OnDestroy,
   OnInit,
   inject,
 } from '@angular/core';
@@ -9,7 +10,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { FormBuilder, Validators } from '@angular/forms';
 import { SHARED_IMPORTS, TitleLabelComponent } from '@shared';
 import { NzMessageService } from 'ng-zorro-antd/message';
-import { finalize, forkJoin } from 'rxjs';
+import { catchError, finalize, forkJoin, of } from 'rxjs';
 
 import {
   AccountSelectOption,
@@ -27,6 +28,11 @@ import { AccountsService } from '../accounts.service';
 type AccountFormMode = 'create' | 'edit';
 
 const CODEXZH_USAGE_API_URL = 'https://codexzh.com/api/v1/usage/stats';
+const OPENAI_OAUTH_AUTHORIZE_URL = 'https://auth.openai.com/oauth/authorize';
+const OPENAI_OAUTH_CLIENT_ID = 'app_EMoamEEZ73f0CkXaXp7hrann';
+const OPENAI_OAUTH_REDIRECT_URI = 'http://localhost:1455/auth/callback';
+const OPENAI_OAUTH_SCOPE = 'openid profile email offline_access api.connectors.read api.connectors.invoke';
+const OPENAI_OAUTH_VERIFIER_STORAGE_KEY = 'freeai.openai.oauth.codeVerifier';
 
 @Component({
   selector: 'app-account-edit',
@@ -35,7 +41,7 @@ const CODEXZH_USAGE_API_URL = 'https://codexzh.com/api/v1/usage/stats';
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [SHARED_IMPORTS, TitleLabelComponent],
 })
-export class AccountEditComponent implements OnInit {
+export class AccountEditComponent implements OnInit, OnDestroy {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly accountsService = inject(AccountsService);
@@ -53,6 +59,9 @@ export class AccountEditComponent implements OnInit {
   protected accountTypeOptions: AccountSelectOption[] = mergeAccountTypeOptions([]);
   protected modelOptions: string[] = [];
   protected fetchingModels = false;
+  protected parsingCallback = false;
+  protected loginCallbackHint = '';
+  protected openAIAuthorizeUrl = '';
   protected readonly usageQueryOptions = DEFAULT_USAGE_QUERY_OPTIONS;
 
   protected readonly form = this.fb.nonNullable.group({
@@ -67,6 +76,7 @@ export class AccountEditComponent implements OnInit {
     accountType: [''],
     authType: ['bearer_token', [Validators.required]],
     secret: [''],
+    callbackUrl: [''],
     supportedModels: [''],
     accountGroup: [''],
     priority: [0],
@@ -75,7 +85,23 @@ export class AccountEditComponent implements OnInit {
     remark: [''],
   });
 
+  private readonly handleOAuthCallbackMessage = (event: MessageEvent): void => {
+    if (!this.isOpenAICallbackOrigin(event.origin)) {
+      return;
+    }
+    const data = event.data as Partial<{ type: string; callbackUrl: string }> | null;
+    if (data?.type !== 'freeai.openai.oauth.callback' || !data.callbackUrl) {
+      return;
+    }
+    this.form.controls.authType.setValue('login_callback');
+    this.form.controls.callbackUrl.setValue(data.callbackUrl);
+    this.loginCallbackHint = '已收到 OpenAI 本地回调，正在解析认证信息。';
+    this.parseLoginCallback();
+    this.cdr.markForCheck();
+  };
+
   ngOnInit(): void {
+    window.addEventListener('message', this.handleOAuthCallbackMessage);
     this.form.controls.provider.valueChanges.subscribe((provider) => {
       this.syncUsageConfigWithProvider(provider);
       this.syncCustomProviderValidators();
@@ -83,6 +109,10 @@ export class AccountEditComponent implements OnInit {
     });
     this.form.controls.usageQueryType.valueChanges.subscribe(() => {
       this.syncUsageApiUrlValidators();
+      this.cdr.markForCheck();
+    });
+    this.form.controls.authType.valueChanges.subscribe(() => {
+      this.syncSecretValidators();
       this.cdr.markForCheck();
     });
     this.syncCustomProviderValidators();
@@ -94,6 +124,10 @@ export class AccountEditComponent implements OnInit {
       return;
     }
     this.enterCreateMode();
+  }
+
+  ngOnDestroy(): void {
+    window.removeEventListener('message', this.handleOAuthCallbackMessage);
   }
 
   protected save(): void {
@@ -171,6 +205,7 @@ export class AccountEditComponent implements OnInit {
 
   protected get authTypeLabel(): string {
     const authType = this.form.controls.authType.value;
+    if (authType === 'login_callback') return '登录回调';
     return authType === 'api_key' ? 'API Key' : 'Bearer Token';
   }
 
@@ -207,6 +242,84 @@ export class AccountEditComponent implements OnInit {
 
   protected get isCodexZHUsageQuery(): boolean {
     return this.form.controls.usageQueryType.value === 'codexzh';
+  }
+
+  protected get isLoginCallbackAuth(): boolean {
+    return this.form.controls.authType.value === 'login_callback';
+  }
+
+  protected get canOpenLoginAuth(): boolean {
+    return this.form.controls.provider.value === 'openai';
+  }
+
+  protected async openLoginAuth(): Promise<void> {
+    if (!this.canOpenLoginAuth) {
+      this.message.warning('当前只支持 OpenAI 登录授权入口');
+      return;
+    }
+    try {
+      const state = this.randomBase64Url(32);
+      const codeVerifier = this.randomBase64Url(64);
+      const codeChallenge = await this.sha256Base64Url(codeVerifier);
+      sessionStorage.setItem(this.oauthVerifierStorageKey(state), codeVerifier);
+      this.openAIAuthorizeUrl = this.buildOpenAIAuthorizeUrl(state, codeChallenge);
+      this.loginCallbackHint = `已打开 OpenAI OAuth 授权页；回调地址为 ${OPENAI_OAUTH_REDIRECT_URI}，登录后请复制浏览器地址栏中的完整回调 URL 到下方解析。`;
+      const authWindow = window.open(this.openAIAuthorizeUrl, '_blank', 'noopener,noreferrer');
+      if (!authWindow) {
+        this.message.warning('浏览器拦截了登录授权窗口，请允许弹出窗口后重试');
+        return;
+      }
+      this.cdr.markForCheck();
+    } catch {
+      this.message.error('生成 OpenAI OAuth 授权地址失败');
+    }
+  }
+
+  protected copyOpenAIAuthorizeUrl(): void {
+    if (!this.openAIAuthorizeUrl) {
+      this.message.warning('请先点击登录授权生成授权链接');
+      return;
+    }
+    navigator.clipboard
+      .writeText(this.openAIAuthorizeUrl)
+      .then(() => this.message.success('授权链接已复制'))
+      .catch(() => this.message.error('复制失败，请手动选择链接复制'));
+  }
+
+  protected parseLoginCallback(): void {
+    const callbackUrl = this.form.controls.callbackUrl.value.trim();
+    if (!callbackUrl) {
+      this.message.warning('请先粘贴浏览器跳转后的完整回调 URL');
+      return;
+    }
+    this.parsingCallback = true;
+    this.accountsService
+      .parseLoginCallback({
+        provider: this.form.controls.provider.value,
+        callbackUrl,
+        codeVerifier: this.getCodeVerifierFromCallback(callbackUrl),
+        redirectUri: OPENAI_OAUTH_REDIRECT_URI,
+      })
+      .pipe(
+        finalize(() => {
+          this.parsingCallback = false;
+          this.cdr.markForCheck();
+        }),
+      )
+      .subscribe((result) => {
+        this.form.controls.authType.setValue(result.authType || 'login_callback');
+        this.form.controls.secret.setValue(result.secret || '');
+        this.loginCallbackHint = result.hasAccessToken
+          ? `已解析 access_token，Secret 提示：${result.secretHint || '-'}`
+          : result.exchangeError
+            ? `已解析 code/state，但换取 access_token 失败：${result.exchangeError}`
+            : '已解析 code/state，但没有 access_token；请确认这是当前页面点击登录授权后生成的回调 URL。';
+        if (result.hasAccessToken) {
+          this.message.success('登录回调已解析');
+        } else {
+          this.message.warning('已解析回调，但未发现 access_token');
+        }
+      });
   }
 
   protected fetchModels(): void {
@@ -276,6 +389,7 @@ export class AccountEditComponent implements OnInit {
       accountType: 'manual',
       authType: 'bearer_token',
       secret: '',
+      callbackUrl: '',
       supportedModels: '',
       accountGroup: queryGroup,
       priority: 0,
@@ -285,6 +399,7 @@ export class AccountEditComponent implements OnInit {
     });
     this.form.controls.secret.setValidators([Validators.required]);
     this.form.controls.secret.updateValueAndValidity();
+    this.tryParseLoginCallbackFromLocation();
     this.cdr.markForCheck();
   }
 
@@ -319,6 +434,7 @@ export class AccountEditComponent implements OnInit {
           accountType: account.accountType ?? '',
           authType: account.authType || 'bearer_token',
           secret: '',
+          callbackUrl: '',
           supportedModels: this.firstSupportedModel(account.supportedModels),
           accountGroup: account.accountGroup ?? '',
           priority: account.priority ?? 0,
@@ -326,13 +442,14 @@ export class AccountEditComponent implements OnInit {
           subscriptionExpiredAt: account.subscriptionExpiredAt ?? 0,
           remark: account.remark ?? '',
         });
+        this.tryParseLoginCallbackFromLocation();
       });
   }
 
   private loadSelectOptions(): void {
     forkJoin({
-      accounts: this.accountsService.list(),
-      groups: this.accountsService.listGroups(),
+      accounts: this.accountsService.listAll().pipe(catchError(() => of([]))),
+      groups: this.accountsService.listGroups().pipe(catchError(() => of([]))),
     }).subscribe({
       next: ({ accounts, groups }) => {
         this.mergeSelectOptions(
@@ -388,6 +505,15 @@ export class AccountEditComponent implements OnInit {
     controls.forEach((control) => control.updateValueAndValidity({ emitEvent: false }));
   }
 
+  private syncSecretValidators(): void {
+    if (this.formMode === 'create') {
+      this.form.controls.secret.setValidators([Validators.required]);
+    } else {
+      this.form.controls.secret.clearValidators();
+    }
+    this.form.controls.secret.updateValueAndValidity({ emitEvent: false });
+  }
+
   private syncUsageConfigWithProvider(provider: string): void {
     const usageTypeControl = this.form.controls.usageQueryType;
     const usageUrlControl = this.form.controls.usageApiUrl;
@@ -414,5 +540,102 @@ export class AccountEditComponent implements OnInit {
       control.clearValidators();
     }
     control.updateValueAndValidity({ emitEvent: false });
+  }
+
+  private tryParseLoginCallbackFromLocation(): void {
+    const callbackUrl = window.location.href;
+    if (!this.hasLoginCallbackParams(callbackUrl) || this.form.controls.callbackUrl.value) {
+      return;
+    }
+    this.form.controls.authType.setValue('login_callback');
+    this.form.controls.callbackUrl.setValue(callbackUrl);
+    this.parseLoginCallback();
+  }
+
+  private hasLoginCallbackParams(rawUrl: string): boolean {
+    try {
+      const parsed = new URL(rawUrl);
+      const keys = ['access_token', 'token', 'id_token', 'code', 'state'];
+      if (keys.some((key) => parsed.searchParams.has(key))) {
+        return true;
+      }
+      const fragment = parsed.hash.replace(/^#/, '');
+      if (!fragment) {
+        return false;
+      }
+      const fragmentParams = new URLSearchParams(fragment);
+      return keys.some((key) => fragmentParams.has(key));
+    } catch {
+      return false;
+    }
+  }
+
+  private buildOpenAIAuthorizeUrl(state: string, codeChallenge: string): string {
+    const params = new URLSearchParams({
+      response_type: 'code',
+      client_id: OPENAI_OAUTH_CLIENT_ID,
+      redirect_uri: OPENAI_OAUTH_REDIRECT_URI,
+      scope: OPENAI_OAUTH_SCOPE,
+      code_challenge: codeChallenge,
+      code_challenge_method: 'S256',
+      id_token_add_organizations: 'true',
+      codex_cli_simplified_flow: 'true',
+      state,
+      originator: 'codex_cli_rs',
+    });
+    return `${OPENAI_OAUTH_AUTHORIZE_URL}?${params.toString()}`;
+  }
+
+  private getCodeVerifierFromCallback(rawUrl: string): string {
+    const state = this.getCallbackParam(rawUrl, 'state');
+    if (!state) {
+      return '';
+    }
+    return sessionStorage.getItem(this.oauthVerifierStorageKey(state)) || '';
+  }
+
+  private getCallbackParam(rawUrl: string, key: string): string {
+    try {
+      const parsed = new URL(rawUrl);
+      const value = parsed.searchParams.get(key);
+      if (value) {
+        return value;
+      }
+      const fragment = parsed.hash.replace(/^#/, '');
+      if (!fragment) {
+        return '';
+      }
+      return new URLSearchParams(fragment).get(key) || '';
+    } catch {
+      return '';
+    }
+  }
+
+  private oauthVerifierStorageKey(state: string): string {
+    return `${OPENAI_OAUTH_VERIFIER_STORAGE_KEY}.${state}`;
+  }
+
+  private isOpenAICallbackOrigin(origin: string): boolean {
+    return origin === 'http://localhost:1455' || origin === 'http://127.0.0.1:1455';
+  }
+
+  private randomBase64Url(byteLength: number): string {
+    const bytes = new Uint8Array(byteLength);
+    crypto.getRandomValues(bytes);
+    return this.bytesToBase64Url(bytes);
+  }
+
+  private async sha256Base64Url(value: string): Promise<string> {
+    const bytes = new TextEncoder().encode(value);
+    const digest = await crypto.subtle.digest('SHA-256', bytes);
+    return this.bytesToBase64Url(new Uint8Array(digest));
+  }
+
+  private bytesToBase64Url(bytes: Uint8Array): string {
+    let binary = '';
+    bytes.forEach((byte) => {
+      binary += String.fromCharCode(byte);
+    });
+    return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
   }
 }

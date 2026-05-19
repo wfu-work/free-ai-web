@@ -3,13 +3,18 @@ import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 
 import { ModelMapping, ModelPayload, ModelRouteState } from './model.model';
+import { PageEntity } from '@shared';
 
 @Injectable({ providedIn: 'root' })
 export class ModelsService {
   private readonly http = inject(HttpClient);
 
-  list(): Observable<ModelMapping[]> {
-    return this.http.get<ModelMapping[]>('/models');
+  list(params: any): Observable<PageEntity<ModelMapping>> {
+    return this.http.get<PageEntity<ModelMapping>>('/models/list', { params });
+  }
+
+  listAll(): Observable<ModelMapping[]> {
+    return this.http.get<ModelMapping[]>('/models/list/all');
   }
 
   routeStates(): Observable<ModelRouteState[]> {

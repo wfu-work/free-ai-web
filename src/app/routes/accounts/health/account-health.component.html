@@ -5,7 +5,7 @@
       description="集中查看账号状态、失败次数、冷却时间、订阅过期时间和额度窗口，辅助判断代理池是否可用。"
     />
     <div class="header-actions">
-      <button nz-button (click)="load()">
+      <button nz-button (click)="q.page = 1; getData()">
         <i nz-icon nzType="reload"></i>
         刷新
       </button>
@@ -38,11 +38,47 @@
   />
 
   <nz-card class="health-card" [nzBordered]="false">
+    <div class="d-flex justify-content-between mb-md">
+      <h2>{{ '账号健康' }}</h2>
+      <div class=" d-flex text-right">
+        <nz-select
+          [(ngModel)]="q.enabled"
+          placeholder="启用状态"
+          (ngModelChange)="q.page = 1; applyTableFilters()"
+        >
+          <nz-option [nzValue]="''" [nzLabel]="'全部'" />
+          <nz-option [nzValue]="1" [nzLabel]="'启用'" />
+          <nz-option [nzValue]="0" [nzLabel]="'禁用'" />
+        </nz-select>
+        <nz-input-wrapper class="ml-lg">
+          <nz-icon nzInputPrefix nzType="search" />
+          <input
+            nz-input
+            [(ngModel)]="q.content"
+            name="content"
+            [placeholder]="'请输入搜索内容'"
+            (keydown.enter)="q.page = 1; applyTableFilters()"
+          />
+        </nz-input-wrapper>
+        <div class="d-flex ml-lg">
+          <button nz-button (click)="q.page = 1; applyTableFilters()" nzType="primary">
+            {{ '搜索' }}
+          </button>
+          <button nz-button (click)="q.page = 1; q.content = ''; q.enabled = ''; applyTableFilters()">
+            {{ '重置' }}
+          </button>
+        </div>
+      </div>
+    </div>
+
     <st
-      [data]="items"
+      [data]="data"
       [columns]="columns"
       [loading]="loading"
-      [page]="{ front: true, showSize: true, pageSizes: [10, 20, 50], showQuickJumper: true }"
+      [pi]="q.page"
+      [ps]="q.size"
+      [total]="totalCount"
+      (change)="tableChange($event)"
     >
       <ng-template st-row="nameRender" let-item>
         <div class="account-name">{{ item.name || '-' }}</div>
@@ -79,20 +115,6 @@
         <span class="muted">失败 {{ item.failureCount || 0 }} 次</span>
       </ng-template>
 
-      <ng-template st-row="actionRender" let-item>
-        <button
-          nz-button
-          nzType="link"
-          nzSize="small"
-          [nzLoading]="syncingGuid === item.guid"
-          [disabled]="!canRefreshUsage(item)"
-          nz-tooltip
-          [nzTooltipTitle]="canRefreshUsage(item) ? '同步额度' : '请先在账号编辑中配置额度查询方式'"
-          (click)="refreshUsage(item)"
-        >
-          同步额度
-        </button>
-      </ng-template>
     </st>
   </nz-card>
 </section>

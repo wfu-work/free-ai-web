@@ -6,7 +6,7 @@ import {
   inject,
 } from '@angular/core';
 import { FormBuilder, Validators } from '@angular/forms';
-import { STColumn, STColumnTag } from '@delon/abc/st';
+import { STChange, STColumn, STColumnTag } from '@delon/abc/st';
 import { SHARED_IMPORTS, TitleLabelComponent } from '@shared';
 import { NzMessageService } from 'ng-zorro-antd/message';
 import { finalize, forkJoin } from 'rxjs';
@@ -29,18 +29,22 @@ export class AccountQuotasComponent implements OnInit {
   private readonly cdr = inject(ChangeDetectorRef);
   private readonly fb = inject(FormBuilder);
 
-  protected items: AccountQuota[] = [];
+  q = {
+    page: 1,
+    size: 10,
+    accountGuid: '',
+    status: '',
+    content: '',
+  };
+
+  protected data: AccountQuota[] = [];
   protected accounts: Account[] = [];
   protected loading = false;
+  totalCount = 0;
   protected formVisible = false;
   protected saving = false;
   protected formMode: QuotaFormMode = 'create';
   protected editing: AccountQuota | null = null;
-
-  protected readonly filterForm = this.fb.nonNullable.group({
-    accountGuid: [''],
-    status: [''],
-  });
 
   protected readonly form = this.fb.nonNullable.group({
     accountGuid: ['', [Validators.required]],
@@ -67,19 +71,32 @@ export class AccountQuotasComponent implements OnInit {
     { title: '剩余 / 总量', render: 'tokenRender', width: 170 },
     { title: '重置时间', render: 'resetRender', width: 180 },
     { title: '下次刷新', render: 'refreshRender', width: 180 },
-    { title: '操作', render: 'actionRender', width: 90, fixed: 'right' },
+    {
+      title: '操作',
+      width: 90,
+      fixed: 'right',
+      buttons: [
+        {
+          text: '编辑',
+          click: (item: AccountQuota) => this.edit(item),
+        },
+      ],
+    },
   ];
 
   ngOnInit(): void {
-    this.load();
+    this.getData();
   }
 
-  protected load(): void {
-    const accountGuid = this.filterForm.controls.accountGuid.value || undefined;
+  protected getData(): void {
     this.loading = true;
+    const params = {
+      ...this.q,
+      windowType: this.q.content,
+    };
     forkJoin({
-      accounts: this.accountsService.list(),
-      quotas: this.accountsService.quotas(accountGuid),
+      accounts: this.accountsService.listAll(),
+      quotas: this.accountsService.quotaList(params),
     })
       .pipe(
         finalize(() => {
@@ -89,19 +106,21 @@ export class AccountQuotasComponent implements OnInit {
       )
       .subscribe(({ accounts, quotas }) => {
         this.accounts = accounts ?? [];
-        this.items = this.applyStatusFilter(quotas ?? []);
+        this.data = quotas.data ?? [];
+        this.totalCount = quotas.total ?? 0;
       });
   }
 
   protected applyFilters(): void {
-    this.load();
+    this.q.page = 1;
+    this.getData();
   }
 
-  protected openCreate(): void {
+  protected add(): void {
     this.formMode = 'create';
     this.editing = null;
     this.form.reset({
-      accountGuid: this.filterForm.controls.accountGuid.value || '',
+      accountGuid: this.q.accountGuid || '',
       windowType: '',
       totalTokens: 0,
       remainingTokens: 0,
@@ -112,7 +131,7 @@ export class AccountQuotasComponent implements OnInit {
     this.formVisible = true;
   }
 
-  protected openEdit(item: AccountQuota): void {
+  protected edit(item: AccountQuota): void {
     this.formMode = 'edit';
     this.editing = item;
     this.form.reset({
@@ -165,24 +184,20 @@ export class AccountQuotasComponent implements OnInit {
       .subscribe(() => {
         this.formVisible = false;
         this.message.success(this.formMode === 'create' ? '额度窗口已创建' : '额度窗口已更新');
-        this.load();
+        this.getData();
       });
   }
 
-  protected get totalCount(): number {
-    return this.items.length;
-  }
-
   protected get availableCount(): number {
-    return this.items.filter((item) => item.status === 'available').length;
+    return this.data.filter((item) => item.status === 'available').length;
   }
 
   protected get limitedCount(): number {
-    return this.items.filter((item) => item.status === 'limited').length;
+    return this.data.filter((item) => item.status === 'limited').length;
   }
 
   protected get exhaustedCount(): number {
-    return this.items.filter((item) => item.status === 'exhausted').length;
+    return this.data.filter((item) => item.status === 'exhausted').length;
   }
 
   protected accountName(guid: string): string {
@@ -228,9 +243,18 @@ export class AccountQuotasComponent implements OnInit {
     });
   }
 
-  private applyStatusFilter(items: AccountQuota[]): AccountQuota[] {
-    const status = this.filterForm.controls.status.value;
-    if (!status) return items;
-    return items.filter((item) => item.status === status);
+  tableChange(event: STChange): void {
+    switch (event.type) {
+      case 'pi':
+      case 'ps':
+      case 'filter':
+      case 'sort':
+        this.q.page = event.pi;
+        this.q.size = event.ps;
+        this.getData();
+        break;
+      default:
+        break;
+    }
   }
 }

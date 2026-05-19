@@ -3,13 +3,18 @@ import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 
 import { OpsStats, RequestLog } from './request-log.model';
+import { PageEntity } from '@shared';
 
 @Injectable({ providedIn: 'root' })
 export class RequestLogsService {
   private readonly http = inject(HttpClient);
 
   list(limit = 200): Observable<RequestLog[]> {
-    return this.http.get<RequestLog[]>('/request-logs', { params: { limit } });
+    return this.http.get<RequestLog[]>('/request-logs/list/all', { params: { limit } });
+  }
+
+  pageList(params: any): Observable<PageEntity<RequestLog>> {
+    return this.http.get<PageEntity<RequestLog>>('/request-logs/list', { params });
   }
 
   get(guid: string): Observable<RequestLog> {

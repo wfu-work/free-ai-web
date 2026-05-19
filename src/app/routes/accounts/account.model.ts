@@ -9,7 +9,7 @@ export type AccountStatus =
   | 'unknown'
   | string;
 
-export type AccountAuthType = 'api_key' | 'bearer_token' | string;
+export type AccountAuthType = 'api_key' | 'bearer_token' | 'login_callback' | string;
 
 export interface Account {
   guid: string;
@@ -79,6 +79,15 @@ export interface AccountGroup {
   description: string;
   sort: number;
   enabled: boolean;
+  providerSummary: string;
+  accountTypeSummary: string;
+  modelSummary: string;
+  accountCount: number;
+  enabledAccountCount: number;
+  availableAccountCount: number;
+  modelCount: number;
+  enabledModelCount: number;
+  summarySyncedAt: number;
   remark: string;
 }
 
@@ -160,6 +169,32 @@ export interface AccountModelFetchPayload {
 
 export interface AccountModelFetchResult {
   models: string[];
+}
+
+export interface AccountLoginCallbackParsePayload {
+  provider: string;
+  callbackUrl: string;
+  codeVerifier?: string;
+  redirectUri?: string;
+}
+
+export interface AccountLoginCallbackParseResult {
+  provider: string;
+  authType: AccountAuthType;
+  secret: string;
+  secretHint: string;
+  accessToken?: string;
+  code?: string;
+  state?: string;
+  codeVerifier?: string;
+  refreshToken?: string;
+  idToken?: string;
+  tokenType?: string;
+  expiresIn?: string;
+  scope?: string;
+  exchangeError?: string;
+  hasAccessToken: boolean;
+  params: Record<string, string>;
 }
 
 export interface AccountUsageRefreshResult {

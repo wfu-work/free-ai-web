@@ -5,7 +5,7 @@ import {
   OnInit,
   inject,
 } from '@angular/core';
-import { STColumn, STColumnTag } from '@delon/abc/st';
+import { STChange, STColumn, STColumnTag } from '@delon/abc/st';
 import { SHARED_IMPORTS, TitleLabelComponent } from '@shared';
 import { finalize } from 'rxjs';
 
@@ -23,9 +23,18 @@ export class AccountHealthComponent implements OnInit {
   private readonly accountsService = inject(AccountsService);
   private readonly cdr = inject(ChangeDetectorRef);
 
-  protected items: AccountHealthItem[] = [];
+  q = {
+    page: 1,
+    size: 10,
+    enabled: '',
+    content: '',
+  };
+
+  protected rawData: AccountHealthItem[] = [];
+  protected data: AccountHealthItem[] = [];
   protected loading = false;
   protected syncingGuid = '';
+  totalCount = 0;
 
   protected readonly statusTag: STColumnTag = {
     available: { text: '可用', color: 'green' },
@@ -52,14 +61,25 @@ export class AccountHealthComponent implements OnInit {
     { title: '额度窗口', render: 'quotaRender', width: 280 },
     { title: '冷却 / 过期', render: 'cooldownRender', width: 190 },
     { title: '最近使用', render: 'activityRender', width: 180 },
-    { title: '操作', render: 'actionRender', width: 140, fixed: 'right' },
+    {
+      title: '操作',
+      width: 140,
+      fixed: 'right',
+      buttons: [
+        {
+          text: '同步额度',
+          click: (item: AccountHealthItem) => this.refreshUsage(item),
+          iif: (item: AccountHealthItem) => this.canRefreshUsage(item),
+        },
+      ],
+    },
   ];
 
   ngOnInit(): void {
-    this.load();
+    this.getData();
   }
 
-  protected load(): void {
+  protected getData(): void {
     this.loading = true;
     this.accountsService
       .health()
@@ -70,26 +90,27 @@ export class AccountHealthComponent implements OnInit {
         }),
       )
       .subscribe((items) => {
-        this.items = items ?? [];
+        this.rawData = items ?? [];
+        this.applyTableFilters();
       });
   }
 
   protected get healthyCount(): number {
-    return this.items.filter((item) => item.enabled && item.status === 'available').length;
+    return this.data.filter((item) => item.enabled && item.status === 'available').length;
   }
 
   protected get limitedCount(): number {
-    return this.items.filter((item) => item.status === 'limited').length;
+    return this.data.filter((item) => item.status === 'limited').length;
   }
 
   protected get cooldownCount(): number {
-    return this.items.filter(
+    return this.data.filter(
       (item) => item.status === 'cooldown' || Boolean(item.cooldownUntil && item.cooldownUntil > Date.now()),
     ).length;
   }
 
   protected get abnormalCount(): number {
-    return this.items.filter((item) =>
+    return this.data.filter((item) =>
       ['exhausted', 'disabled', 'expired', 'invalid', 'unknown'].includes(item.status),
     ).length;
   }
@@ -111,7 +132,7 @@ export class AccountHealthComponent implements OnInit {
         }),
       )
       .subscribe(() => {
-        this.load();
+        this.getData();
       });
   }
 
@@ -167,5 +188,42 @@ export class AccountHealthComponent implements OnInit {
       hour: '2-digit',
       minute: '2-digit',
     });
+  }
+
+  protected applyTableFilters(): void {
+    const enabled = this.q.enabled;
+    const content = this.q.content.trim().toLowerCase();
+    this.data = this.rawData.filter((item) => {
+      if (enabled !== '' && Number(item.enabled) !== Number(enabled)) return false;
+      if (!content) return true;
+      return [
+        item.name,
+        item.guid,
+        item.provider,
+        item.supplierName,
+        item.accountGroup,
+        item.status,
+        item.usageQueryType,
+      ]
+        .filter(Boolean)
+        .some((value) => String(value).toLowerCase().includes(content));
+    });
+    this.totalCount = this.data.length;
+    this.cdr.markForCheck();
+  }
+
+  tableChange(event: STChange): void {
+    switch (event.type) {
+      case 'pi':
+      case 'ps':
+      case 'filter':
+      case 'sort':
+        this.q.page = event.pi;
+        this.q.size = event.ps;
+        this.getData();
+        break;
+      default:
+        break;
+    }
   }
 }

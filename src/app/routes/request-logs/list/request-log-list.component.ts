@@ -5,8 +5,7 @@ import {
   OnInit,
   inject,
 } from '@angular/core';
-import { FormBuilder } from '@angular/forms';
-import { STColumn, STColumnTag } from '@delon/abc/st';
+import { STChange, STColumn, STColumnTag } from '@delon/abc/st';
 import { SHARED_IMPORTS, TitleLabelComponent } from '@shared';
 import { NzMessageService } from 'ng-zorro-antd/message';
 import { NzModalService } from 'ng-zorro-antd/modal';
@@ -27,22 +26,22 @@ export class RequestLogListComponent implements OnInit {
   private readonly message = inject(NzMessageService);
   private readonly modal = inject(NzModalService);
   private readonly cdr = inject(ChangeDetectorRef);
-  private readonly fb = inject(FormBuilder);
 
-  protected items: RequestLog[] = [];
+  q = {
+    page: 1,
+    size: 10,
+    provider: '',
+    model: '',
+    content: '',
+  };
+
+  protected data: RequestLog[] = [];
   protected stats: OpsStats = { total: 0, success: 0, failures: 0, avgLatencyMs: 0 };
   protected loading = false;
+  totalCount = 0;
   protected detailVisible = false;
   protected detailLoading = false;
-  protected detail: RequestLog | null = null;
-
-  protected readonly filterForm = this.fb.nonNullable.group({
-    limit: [200],
-    provider: [''],
-    model: [''],
-    keyword: [''],
-    failuresOnly: [false],
-  });
+  protected detailRecord: RequestLog | null = null;
 
   protected readonly statusTag: STColumnTag = {
     200: { text: '200', color: 'green' },
@@ -71,18 +70,27 @@ export class RequestLogListComponent implements OnInit {
     { title: '延迟', index: 'latencyMs', render: 'latencyRender', width: 120 },
     { title: 'Token', index: 'inputTokens', render: 'tokenRender', width: 120 },
     { title: '时间', index: 'createdAtUnix', render: 'timeRender', width: 170 },
-    { title: '操作', render: 'actionRender', width: 80, fixed: 'right' },
+    {
+      title: '操作',
+      width: 80,
+      fixed: 'right',
+      buttons: [
+        {
+          text: '详情',
+          click: (item: RequestLog) => this.detail(item),
+        },
+      ],
+    },
   ];
 
   ngOnInit(): void {
-    this.load();
+    this.getData();
   }
 
-  protected load(): void {
-    const limit = Number(this.filterForm.controls.limit.value || 200);
+  protected getData(): void {
     this.loading = true;
     forkJoin({
-      items: this.requestLogsService.list(limit),
+      items: this.requestLogsService.pageList(this.q),
       stats: this.requestLogsService.stats(),
     })
       .pipe(
@@ -92,24 +100,24 @@ export class RequestLogListComponent implements OnInit {
         }),
       )
       .subscribe(({ items, stats }) => {
-        this.items = items ?? [];
+        this.data = items.data ?? [];
+        this.totalCount = items.total ?? 0;
         this.stats = stats ?? { total: 0, success: 0, failures: 0, avgLatencyMs: 0 };
       });
   }
 
   protected resetFilters(): void {
-    this.filterForm.patchValue({
-      provider: '',
-      model: '',
-      keyword: '',
-      failuresOnly: false,
-    });
+    this.q.page = 1;
+    this.q.provider = '';
+    this.q.model = '';
+    this.q.content = '';
+    this.getData();
   }
 
-  protected openDetail(item: RequestLog): void {
+  protected detail(item: RequestLog): void {
     this.detailVisible = true;
     this.detailLoading = true;
-    this.detail = item;
+    this.detailRecord = item;
     this.requestLogsService
       .get(item.guid)
       .pipe(
@@ -119,13 +127,13 @@ export class RequestLogListComponent implements OnInit {
         }),
       )
       .subscribe((detail) => {
-        this.detail = detail;
+        this.detailRecord = detail;
       });
   }
 
   protected closeDetail(): void {
     this.detailVisible = false;
-    this.detail = null;
+    this.detailRecord = null;
   }
 
   protected clearRetention(days: number): void {
@@ -138,7 +146,7 @@ export class RequestLogListComponent implements OnInit {
           this.requestLogsService.clearByRetention(days).subscribe({
             next: () => {
               this.message.success('请求日志已清理');
-              this.load();
+              this.getData();
               resolve();
             },
             error: reject,
@@ -152,45 +160,16 @@ export class RequestLogListComponent implements OnInit {
     return `${((this.stats.success / this.stats.total) * 100).toFixed(1)}%`;
   }
 
-  protected get filteredItems(): RequestLog[] {
-    const provider = (this.filterForm.controls.provider.value || '').trim();
-    const model = (this.filterForm.controls.model.value || '').trim();
-    const keyword = (this.filterForm.controls.keyword.value || '').trim().toLowerCase();
-    const failuresOnly = this.filterForm.controls.failuresOnly.value;
-
-    return this.items.filter((item) => {
-      if (provider && item.provider !== provider) return false;
-      if (model && item.model !== model) return false;
-      if (failuresOnly && !this.isFailure(item)) return false;
-      if (!keyword) return true;
-
-      const haystacks = [
-        item.requestId,
-        item.platformKeyId,
-        item.accountGuid,
-        item.model,
-        item.upstreamModel,
-        item.provider,
-        item.errorType,
-        item.switchReason,
-      ]
-        .filter(Boolean)
-        .map((value) => String(value).toLowerCase());
-
-      return haystacks.some((value) => value.includes(keyword));
-    });
-  }
-
   protected get providerOptions(): string[] {
-    return Array.from(new Set(this.items.map((item) => item.provider).filter(Boolean))).sort();
+    return Array.from(new Set(this.data.map((item) => item.provider).filter(Boolean))).sort();
   }
 
   protected get modelOptions(): string[] {
-    return Array.from(new Set(this.items.map((item) => item.model).filter(Boolean))).sort();
+    return Array.from(new Set(this.data.map((item) => item.model).filter(Boolean))).sort();
   }
 
   protected get filteredCount(): number {
-    return this.filteredItems.length;
+    return this.data.length;
   }
 
   protected isFailure(item: RequestLog): boolean {
@@ -228,6 +207,21 @@ export class RequestLogListComponent implements OnInit {
       this.message.success(`${label}已复制`);
     } catch {
       this.message.warning('当前浏览器不允许自动复制，请手动选择文本');
+    }
+  }
+
+  tableChange(event: STChange): void {
+    switch (event.type) {
+      case 'pi':
+      case 'ps':
+      case 'filter':
+      case 'sort':
+        this.q.page = event.pi;
+        this.q.size = event.ps;
+        this.getData();
+        break;
+      default:
+        break;
     }
   }
 }

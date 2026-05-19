@@ -7,6 +7,8 @@ import {
   AccountGroup,
   AccountGroupPayload,
   AccountHealthItem,
+  AccountLoginCallbackParsePayload,
+  AccountLoginCallbackParseResult,
   AccountModelFetchPayload,
   AccountModelFetchResult,
   AccountPayload,
@@ -17,13 +19,18 @@ import {
   AccountUsageRefreshResult,
   ReorderAccountItem,
 } from './account.model';
+import { PageEntity } from '@shared';
 
 @Injectable({ providedIn: 'root' })
 export class AccountsService {
   private readonly http = inject(HttpClient);
 
-  list(): Observable<Account[]> {
-    return this.http.get<Account[]>('/accounts');
+  list(params: any): Observable<PageEntity<Account>> {
+    return this.http.get<PageEntity<Account>>('/accounts/list', { params });
+  }
+
+  listAll(): Observable<Account[]> {
+    return this.http.get<Account[]>('/accounts/list/all');
   }
 
   health(): Observable<AccountHealthItem[]> {
@@ -32,7 +39,11 @@ export class AccountsService {
 
   quotas(accountGuid?: string): Observable<AccountQuota[]> {
     const params = accountGuid ? { accountGuid } : undefined;
-    return this.http.get<AccountQuota[]>('/quotas', { params });
+    return this.http.get<AccountQuota[]>('/quotas/list/all', { params });
+  }
+
+  quotaList(params: any): Observable<PageEntity<AccountQuota>> {
+    return this.http.get<PageEntity<AccountQuota>>('/quotas/list', { params });
   }
 
   upsertQuota(accountGuid: string, payload: AccountQuotaPayload): Observable<AccountQuota> {
@@ -83,8 +94,16 @@ export class AccountsService {
     return this.http.post<AccountModelFetchResult>('/accounts/fetch-models', payload);
   }
 
+  parseLoginCallback(payload: AccountLoginCallbackParsePayload): Observable<AccountLoginCallbackParseResult> {
+    return this.http.post<AccountLoginCallbackParseResult>('/accounts/parse-login-callback', payload);
+  }
+
   listGroups(): Observable<AccountGroup[]> {
-    return this.http.get<AccountGroup[]>('/account-groups');
+    return this.http.get<AccountGroup[]>('/account-groups/list/all');
+  }
+
+  listGroupsPage(params: any): Observable<PageEntity<AccountGroup>> {
+    return this.http.get<PageEntity<AccountGroup>>('/account-groups/list', { params });
   }
 
   createGroup(payload: AccountGroupPayload): Observable<AccountGroup> {

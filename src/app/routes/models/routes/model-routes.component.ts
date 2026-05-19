@@ -5,7 +5,7 @@ import {
   OnInit,
   inject,
 } from '@angular/core';
-import { STColumn } from '@delon/abc/st';
+import { STChange, STColumn } from '@delon/abc/st';
 import { SHARED_IMPORTS, TitleLabelComponent } from '@shared';
 import { NzMessageService } from 'ng-zorro-antd/message';
 import { finalize, forkJoin } from 'rxjs';
@@ -28,9 +28,18 @@ export class ModelRoutesComponent implements OnInit {
   private readonly message = inject(NzMessageService);
   private readonly cdr = inject(ChangeDetectorRef);
 
-  protected items: ModelRouteState[] = [];
+  q = {
+    page: 1,
+    size: 10,
+    linked: '',
+    content: '',
+  };
+
+  protected rawData: ModelRouteState[] = [];
+  protected data: ModelRouteState[] = [];
   protected loading = false;
   protected accountMap = new Map<string, Account>();
+  totalCount = 0;
 
   protected readonly columns: Array<STColumn<ModelRouteState>> = [
     { title: '路由键', index: 'routeKey', render: 'routeKeyRender', width: 280 },
@@ -40,14 +49,14 @@ export class ModelRoutesComponent implements OnInit {
   ];
 
   ngOnInit(): void {
-    this.load();
+    this.getData();
   }
 
-  protected load(): void {
+  protected getData(): void {
     this.loading = true;
     forkJoin({
       states: this.modelsService.routeStates(),
-      accounts: this.accountsService.list(),
+      accounts: this.accountsService.listAll(),
     })
       .pipe(
         finalize(() => {
@@ -56,27 +65,28 @@ export class ModelRoutesComponent implements OnInit {
         }),
       )
       .subscribe(({ states, accounts }) => {
-        this.items = states ?? [];
+        this.rawData = states ?? [];
         this.accountMap = new Map((accounts ?? []).map((item) => [item.guid, item]));
+        this.applyTableFilters();
       });
   }
 
   protected get routeCount(): number {
-    return this.items.length;
+    return this.data.length;
   }
 
   protected get linkedCount(): number {
-    return this.items.filter((item) => Boolean(item.lastAccountGuid)).length;
+    return this.data.filter((item) => Boolean(item.lastAccountGuid)).length;
   }
 
   protected get staleCount(): number {
     const oneDayMs = 24 * 60 * 60 * 1000;
     const now = Date.now();
-    return this.items.filter((item) => !item.updatedAtUnix || now - item.updatedAtUnix > oneDayMs).length;
+    return this.data.filter((item) => !item.updatedAtUnix || now - item.updatedAtUnix > oneDayMs).length;
   }
 
   protected get latestUpdateLabel(): string {
-    const latest = this.items.reduce((max, item) => Math.max(max, item.updatedAtUnix || 0), 0);
+    const latest = this.data.reduce((max, item) => Math.max(max, item.updatedAtUnix || 0), 0);
     return this.formatTime(latest);
   }
 
@@ -113,6 +123,38 @@ export class ModelRoutesComponent implements OnInit {
       this.message.success(`${label}已复制`);
     } catch {
       this.message.warning('当前浏览器不允许自动复制，请手动选择文本');
+    }
+  }
+
+  protected applyTableFilters(): void {
+    const linked = this.q.linked;
+    const content = this.q.content.trim().toLowerCase();
+    this.data = this.rawData.filter((item) => {
+      if (linked !== '') {
+        const hasAccount = Boolean(item.lastAccountGuid);
+        if (Number(linked) !== Number(hasAccount)) return false;
+      }
+      if (!content) return true;
+      return [item.routeKey, item.guid, item.lastAccountGuid, this.accountName(item.lastAccountGuid)]
+        .filter(Boolean)
+        .some((value) => String(value).toLowerCase().includes(content));
+    });
+    this.totalCount = this.data.length;
+    this.cdr.markForCheck();
+  }
+
+  tableChange(event: STChange): void {
+    switch (event.type) {
+      case 'pi':
+      case 'ps':
+      case 'filter':
+      case 'sort':
+        this.q.page = event.pi;
+        this.q.size = event.ps;
+        this.getData();
+        break;
+      default:
+        break;
     }
   }
 }
