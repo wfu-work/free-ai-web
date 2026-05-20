@@ -129,6 +129,10 @@ export class PlatformKeyListComponent implements OnInit {
     this.router.navigateByUrl('/platform-keys/edit');
   }
 
+  protected openCodexConfig(): void {
+    this.router.navigateByUrl('/platform-keys/codex-config');
+  }
+
   protected edit(guid: string): void {
     this.router.navigate(['/platform-keys/edit', guid]);
   }

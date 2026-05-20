@@ -94,6 +94,20 @@
         <span class="muted">刷新 {{ formatTime(item.lastRefreshedAt) }}</span>
       </ng-template>
 
+      <ng-template st-row="quotaRender" let-item>
+        <div class="quota-list">
+          @for (quota of item.quotas || []; track quota.guid) {
+            <span class="quota-chip" [class]="quotaTone(quota)">
+              {{ quota.windowType || 'window' }} · {{ quotaPercent(quota) }} ·
+              {{ formatQuotaValue(quota) }}
+            </span>
+          }
+          @if (!item.quotas?.length) {
+            <span class="muted">无额度窗口</span>
+          }
+        </div>
+      </ng-template>
+
       <ng-template st-row="secretRender" let-item>
         <div>{{ item.secretHint || '-' }}</div>
         <span class="muted">{{ modelCount(item.supportedModels) }}</span>
@@ -116,8 +130,18 @@
     <form nz-form [formGroup]="testForm" class="account-form">
       <nz-form-item>
         <nz-form-label nzFor="testModel" nzLabelAlign="right" [nzSm]="4" [nzXs]="24">模型</nz-form-label>
-        <nz-form-control [nzSm]="20" [nzXs]="24" nzExtra="留空只检查 Secret 解密和账号基础状态；填写模型会优先按模型映射测试，未配置映射时会直接按账号支持的上游模型测试。">
-          <input id="testModel" nz-input formControlName="model" placeholder="例如 gpt-5.5" />
+        <nz-form-control [nzSm]="20" [nzXs]="24" [nzExtra]="testModelExtra">
+          <nz-select
+            id="testModel"
+            formControlName="model"
+            nzShowSearch
+            nzAllowClear
+            nzPlaceHolder="请选择测试模型"
+          >
+            @for (model of testModelOptions; track model) {
+              <nz-option [nzValue]="model" [nzLabel]="model" />
+            }
+          </nz-select>
         </nz-form-control>
       </nz-form-item>
       <nz-form-item>
@@ -135,12 +159,24 @@
           <strong>{{ testResult.ok ? '通过' : '未通过' }}</strong>
         </div>
         <div>
+          <span>检查方式</span>
+          <strong>{{ modeText(testResult.mode) }}</strong>
+        </div>
+        <div>
           <span>供应商</span>
           <strong>{{ testResult.provider || '-' }}</strong>
         </div>
         <div>
           <span>状态</span>
-          <strong>{{ testResult.status || '-' }}</strong>
+          <strong>{{ statusText(testResult.status) }}</strong>
+        </div>
+        <div>
+          <span>模型</span>
+          <strong>{{ testResult.model || '-' }}</strong>
+        </div>
+        <div>
+          <span>上游模型</span>
+          <strong>{{ testResult.upstreamModel || '-' }}</strong>
         </div>
         <div>
           <span>延迟</span>
@@ -152,7 +188,11 @@
         </div>
         <div>
           <span>错误类型</span>
-          <strong>{{ testResult.upstreamErrorType || '-' }}</strong>
+          <strong>{{ errorText(testResult.upstreamErrorType) }}</strong>
+        </div>
+        <div class="test-message">
+          <span>说明</span>
+          <strong>{{ testResult.message || '-' }}</strong>
         </div>
       </div>
     }

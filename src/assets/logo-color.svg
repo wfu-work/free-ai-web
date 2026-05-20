@@ -23,7 +23,19 @@
   <g filter="url(#bubbleShadow)" transform="translate(512 512) scale(1.32) translate(-512 -512)">
     <rect x="230" y="222" width="592" height="562" rx="188" fill="url(#bubble)"/>
     <ellipse cx="526" cy="292" rx="226" ry="98" fill="#ffffff" fill-opacity=".2"/>
-    <path d="M366 444 466 546 366 648" fill="none" stroke="#edf6ff" stroke-width="52" stroke-linecap="round" stroke-linejoin="round"/>
-    <path d="M552 660h166" fill="none" stroke="#edf6ff" stroke-width="52" stroke-linecap="round"/>
+    <g fill="none" stroke="#edf6ff" stroke-width="28" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M512 396C512 432 512 462 512 494"/>
+      <path d="M512 494C474 508 448 524 414 546"/>
+      <path d="M512 494C550 508 576 524 610 546"/>
+      <path d="M414 546C448 584 478 612 512 636"/>
+      <path d="M610 546C576 584 546 612 512 636"/>
+    </g>
+    <g fill="#edf6ff">
+      <circle cx="512" cy="396" r="36"/>
+      <circle cx="512" cy="494" r="30"/>
+      <circle cx="414" cy="546" r="34"/>
+      <circle cx="610" cy="546" r="34"/>
+      <circle cx="512" cy="636" r="36"/>
+    </g>
   </g>
 </svg>

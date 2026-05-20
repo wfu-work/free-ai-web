@@ -2,7 +2,7 @@
   <div class="d-flex justify-content-between header-row">
     <title-label
       title="安全设置"
-      description="查看主密钥加载状态、平台密钥安全边界、上游 Secret 加密存储和管理 API 鉴权约束。"
+      description="查看主密钥、代理边界、平台密钥和上游安全姿态，帮助你判断当前部署是否适合对外提供服务。"
     />
     <div class="header-actions">
       <button nz-button (click)="load()">
@@ -13,57 +13,119 @@
   </div>
 
   <nz-spin [nzSpinning]="loading">
-    <div class="metric-grid">
-      <article class="metric-card" [class]="statusTone">
-        <span>主密钥状态</span>
-        <strong>{{ statusLabel }}</strong>
+    <div class="status-strip">
+      <article class="status-card" [class]="postureTone">
+        <span>安全姿态</span>
+        <strong>{{ postureLabel }}</strong>
+        <small>{{ masterKey?.loaded ? '主密钥已就绪' : '主密钥异常时请优先处理' }}</small>
       </article>
-      <article class="metric-card">
-        <span>主密钥文件</span>
-        <strong>{{ masterKey?.path || '-' }}</strong>
+      <article class="status-card">
+        <span>平台密钥</span>
+        <strong>{{ enabledKeysLabel }}</strong>
+        <small>当前启用的业务侧访问密钥</small>
       </article>
-      <article class="metric-card">
-        <span>密钥大小</span>
-        <strong>{{ formatBytes(masterKey?.size) }}</strong>
+      <article class="status-card">
+        <span>可用账号</span>
+        <strong>{{ availableAccountsLabel }}</strong>
+        <small>可用于代理转发的账号池</small>
       </article>
-      <article class="metric-card">
-        <span>更新时间</span>
-        <strong>{{ formatTime(masterKey?.updatedAt) }}</strong>
+      <article class="status-card">
+        <span>代理前缀</span>
+        <strong>{{ proxyPrefixLabel }}</strong>
+        <small>业务请求统一入口</small>
       </article>
     </div>
 
-    <div class="content-grid mt-lg">
-      <nz-card class="panel-card" [nzBordered]="false">
-        <div class="panel-title">主密钥状态</div>
-        <div class="detail-grid">
-          <div>
-            <span>文件路径</span>
-            <strong>{{ masterKey?.path || '-' }}</strong>
+    <div class="security-layout mt-lg">
+      <div class="security-column">
+        <nz-card class="panel-card panel-card-wide" [nzBordered]="false">
+          <div class="panel-title">主密钥与访问边界</div>
+          <div class="detail-grid">
+            <div>
+              <span>文件路径</span>
+              <strong>{{ masterKey?.path || '-' }}</strong>
+            </div>
+            <div>
+              <span>加载状态</span>
+              <strong>{{ statusLabel }}</strong>
+            </div>
+            <div>
+              <span>文件大小</span>
+              <strong>{{ formatBytes(masterKey?.size) }}</strong>
+            </div>
+            <div>
+              <span>更新时间</span>
+              <strong>{{ formatTime(masterKey?.updatedAt) }}</strong>
+            </div>
+            <div>
+              <span>监听模式</span>
+              <strong>{{ listenLabel }}</strong>
+            </div>
+            <div>
+              <span>上游代理</span>
+              <strong>{{ upstreamProxyLabel }}</strong>
+            </div>
+            <div class="span-2">
+              <span>代理目标</span>
+              <strong>{{ proxyTargetLabel }}</strong>
+            </div>
+            <div class="span-2">
+              <span>错误信息</span>
+              <strong class="danger-text">{{ masterKey?.error || '无' }}</strong>
+            </div>
           </div>
-          <div>
-            <span>文件存在</span>
-            <strong>{{ masterKey?.exists ? '是' : '否' }}</strong>
-          </div>
-          <div>
-            <span>加载成功</span>
-            <strong>{{ masterKey?.loaded ? '是' : '否' }}</strong>
-          </div>
-          <div>
-            <span>错误信息</span>
-            <strong class="danger-text">{{ masterKey?.error || '无' }}</strong>
-          </div>
-        </div>
-      </nz-card>
+        </nz-card>
 
-      <nz-card class="panel-card" [nzBordered]="false">
-        <div class="panel-title">安全边界说明</div>
-        <ul class="note-list">
-          <li>上游账号 Secret 只在后端落库时加密保存，前端只能看到 `secretHint`，不会回显原始值。</li>
-          <li>平台密钥用于业务侧访问 `/v1/*` 代理接口，和后台管理接口的登录鉴权是两条边界。</li>
-          <li>主密钥文件异常时，新增账号、刷新账号和解密已有 Secret 都会受影响，应优先修复。</li>
-          <li>建议把主密钥文件放在持久化目录，并限制为当前服务用户可读写。</li>
-        </ul>
-      </nz-card>
+        <nz-card class="panel-card" [nzBordered]="false">
+          <div class="panel-title">密钥保护建议</div>
+          <div class="detail-grid compact-grid">
+            <div>
+              <span>平台密钥数量</span>
+              <strong>{{ enabledKeysLabel }}</strong>
+            </div>
+            <div>
+              <span>是否建议开放局域网</span>
+              <strong>{{ isLanExposed ? '不建议' : '较安全' }}</strong>
+            </div>
+            <div>
+              <span>账号池健康度</span>
+              <strong>{{ availableAccountsLabel }}</strong>
+            </div>
+            <div>
+              <span>主密钥文件风险</span>
+              <strong>{{ masterKey?.loaded ? '正常' : '高' }}</strong>
+            </div>
+          </div>
+        </nz-card>
+      </div>
+
+      <div class="security-column">
+        <nz-card class="panel-card" [nzBordered]="false">
+          <div class="panel-title">安全边界</div>
+          <ul class="note-list">
+            <li>上游账号 Secret 只在后端落库时加密保存，前端只能看到 `secretHint`，不会回显原始值。</li>
+            <li>平台密钥用于业务侧访问 `/v1/*` 代理接口，和后台管理登录鉴权是两条独立边界。</li>
+            <li>主密钥文件异常时，新增账号、刷新账号、解密 Secret 和导入备份都会受影响。</li>
+            <li>开启上游代理后，OpenAI 登录、模型拉取与转发请求都会优先走代理地址。</li>
+            <li>仅本机监听更适合单机部署；若暴露到局域网，建议叠加防火墙或反向代理鉴权。</li>
+          </ul>
+        </nz-card>
+
+        <nz-card class="panel-card" [nzBordered]="false">
+          <div class="panel-title">运维检查清单</div>
+          <div class="check-list">
+            @for (item of checklist; track item.title) {
+              <article class="check-item" [class]="checklistTone(item)">
+                <div class="check-head">
+                  <strong>{{ item.title }}</strong>
+                  <span>{{ item.ok ? '通过' : item.warn ? '需关注' : '未通过' }}</span>
+                </div>
+                <p>{{ item.desc }}</p>
+              </article>
+            }
+          </div>
+        </nz-card>
+      </div>
     </div>
   </nz-spin>
 </section>

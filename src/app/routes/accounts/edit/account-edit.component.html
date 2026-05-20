@@ -220,16 +220,16 @@
                       <nz-option [nzValue]="option.value" [nzLabel]="option.label" />
                     }
                   </nz-select>
-                  <div class="field-extra">自定义 CodexZH 中转账号需要选择 CodexZH，才可以同步额度。</div>
+                  <div class="field-extra">{{ usageQueryExtra }}</div>
                 </se>
 
-                @if (isCodexZHUsageQuery) {
+                @if (needsUsageApiUrl) {
                   <se label="额度接口地址" required error="请输入额度接口地址">
                     <input
                       id="usageApiUrl"
                       nz-input
                       formControlName="usageApiUrl"
-                      placeholder="https://codexzh.com/api/v1/usage/stats"
+                      [placeholder]="usageApiUrlPlaceholder"
                     />
                     <div class="field-extra">同步时会使用当前 Secret 作为 key 参数请求该地址。</div>
                   </se>
@@ -304,7 +304,7 @@
 
         <div class="section-title">填写建议</div>
         <ul class="note-list">
-          <li>供应商建议与后端路由配置保持一致，目前支持 OpenAI、CodexZH 和自定义供应商。</li>
+          <li>供应商建议与后端路由配置保持一致，目前支持 OpenAI、CodexZH、FreeModel、Aiok、Tokeni 和自定义供应商。</li>
           <li>支持模型可留空表示不限制；如果填了列表，请确保模型映射中的 public model 能匹配到这里。</li>
           <li>登录回调会解析回调 URL 中的 token 或 code/state；只有 access_token 可以直接用于代理请求。</li>
           <li>权重越高越容易被选中，优先级用于做更粗粒度的先后顺序控制。</li>

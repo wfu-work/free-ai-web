@@ -12,6 +12,8 @@ import { finalize } from 'rxjs';
 import { AccountHealthItem, AccountQuota } from '../account.model';
 import { AccountsService } from '../accounts.service';
 
+const QUOTA_EXHAUSTED_PERCENT_THRESHOLD = 99.5;
+
 @Component({
   selector: 'app-account-health',
   templateUrl: './account-health.component.html',
@@ -134,13 +136,20 @@ export class AccountHealthComponent implements OnInit {
 
   protected canRefreshUsage(item: AccountHealthItem): boolean {
     if (item.usageQueryType === 'codexzh' || item.provider === 'codexzh') return true;
+    if (item.usageQueryType === 'freemodel' || item.provider === 'freemodel') return true;
+    if (item.usageQueryType === 'tokeni' || item.provider === 'tokeni') return true;
     if (item.usageQueryType) return false;
     return [item.supplierName, item.usageApiUrl]
       .filter(Boolean)
-      .some((value) => String(value).toLowerCase().includes('codexzh'));
+      .some((value) => {
+        const text = String(value).toLowerCase();
+        return text.includes('codexzh') || text.includes('freemodel') || text.includes('tokeni');
+      });
   }
 
   protected usageQueryLabel(item: AccountHealthItem): string {
+    if (item.usageQueryType === 'tokeni' || item.provider === 'tokeni') return 'Tokeni 额度';
+    if (item.usageQueryType === 'freemodel' || item.provider === 'freemodel') return 'FreeModel 额度';
     if (this.canRefreshUsage(item)) return 'CodexZH 额度';
     return '未配置额度查询';
   }
@@ -152,6 +161,7 @@ export class AccountHealthComponent implements OnInit {
   }
 
   protected quotaTone(quota: AccountQuota): string {
+    if (this.isQuotaExhausted(quota)) return 'quota-danger';
     switch (quota.status) {
       case 'available':
         return 'quota-success';
@@ -162,6 +172,17 @@ export class AccountHealthComponent implements OnInit {
       default:
         return '';
     }
+  }
+
+  protected isQuotaExhausted(quota: AccountQuota): boolean {
+    const usedPercent = Number(quota.usedPercent || 0);
+    const totalAmount = Number(quota.totalAmount || 0);
+    const remainingAmount = Number(quota.remainingAmount || 0);
+    const totalTokens = Number(quota.totalTokens || 0);
+    const remainingTokens = Number(quota.remainingTokens || 0);
+    if (quota.status === 'exhausted') return true;
+    if (totalAmount > 0 && (remainingAmount <= 0 || usedPercent >= QUOTA_EXHAUSTED_PERCENT_THRESHOLD)) return true;
+    return totalTokens > 0 && (remainingTokens <= 0 || usedPercent >= QUOTA_EXHAUSTED_PERCENT_THRESHOLD);
   }
 
   protected quotaPercent(quota: AccountQuota): string {

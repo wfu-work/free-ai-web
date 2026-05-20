@@ -27,7 +27,7 @@ export const routes: Routes = [
       },
       { path: 'ops', loadChildren: () => import('./ops/routes').then((m) => m.routes) },
       { path: 'settings', loadChildren: () => import('./settings/routes').then((m) => m.routes) },
-      { path: 'help', redirectTo: 'settings/guide' },
+      { path: 'help', redirectTo: 'settings/guide', pathMatch: 'full' },
     ],
   },
   { path: '', loadChildren: () => import('./passport/routes').then((m) => m.routes) },

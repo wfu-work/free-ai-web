@@ -44,3 +44,26 @@ export interface PlatformKeyStats {
   totalTokens: number;
   totalAmount: number;
 }
+
+export interface CodexConfigPayload {
+  platformKeyGuid: string;
+  apiBaseUrl: string;
+  model: string;
+  providerName: string;
+  reasoningEffort?: string;
+  writeGlobal: boolean;
+}
+
+export interface CodexConfigPreview {
+  authPath: string;
+  configPath: string;
+  authJson: string;
+  configToml: string;
+  model: string;
+  providerName: string;
+  apiBaseUrl: string;
+  platformKey: string;
+  platformKeyId: string;
+  platformKeyName: string;
+  appliedAt?: number;
+}

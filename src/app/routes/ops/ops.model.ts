@@ -39,6 +39,8 @@ export interface CoreBackupImportResult {
   failedPlatformKeys: number;
   routeStates: number;
   failedRouteStates: number;
+  systemConfigs: number;
+  failedSystemConfigs: number;
   gatewayConfig: number;
   failedGatewayConfig: number;
   errors?: string[];

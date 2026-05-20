@@ -102,10 +102,7 @@ export class SettingsGatewayComponent implements OnInit {
     this.form.patchValue(payload);
     this.saving = true;
     this.http
-      .put<Partial<GatewayConfig>>('/ops/gateway-config', {
-        upstreamProxyEnabled: payload.upstreamProxyEnabled,
-        upstreamProxyUrl: payload.upstreamProxyUrl,
-      })
+      .put<Partial<GatewayConfig>>('/ops/gateway-config', payload)
       .pipe(
         finalize(() => {
           this.saving = false;

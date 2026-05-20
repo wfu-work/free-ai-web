@@ -13,7 +13,9 @@ import { NzMessageService } from 'ng-zorro-antd/message';
 import { NzModalService } from 'ng-zorro-antd/modal';
 import { finalize } from 'rxjs';
 
-import { Account, AccountTestResult } from '../account.model';
+import { ModelMapping } from '../../models/model.model';
+import { ModelsService } from '../../models/models.service';
+import { Account, AccountQuota, AccountTestResult } from '../account.model';
 import { AccountsService } from '../accounts.service';
 
 @Component({
@@ -26,6 +28,7 @@ import { AccountsService } from '../accounts.service';
 export class AccountListComponent implements OnInit {
   private readonly router = inject(Router);
   private readonly accountsService = inject(AccountsService);
+  private readonly modelsService = inject(ModelsService);
   private readonly message = inject(NzMessageService);
   private readonly modal = inject(NzModalService);
   private readonly cdr = inject(ChangeDetectorRef);
@@ -45,6 +48,9 @@ export class AccountListComponent implements OnInit {
   protected testing = false;
   protected testTarget: Account | null = null;
   protected testResult: AccountTestResult | null = null;
+  protected modelMappings: ModelMapping[] = [];
+  protected testModelOptions: string[] = [];
+  protected testModelSource: 'account' | 'global' | 'empty' = 'empty';
 
   protected readonly testForm = this.fb.nonNullable.group({
     model: [''],
@@ -67,6 +73,28 @@ export class AccountListComponent implements OnInit {
     false: { text: '停用', color: 'red' },
   };
 
+  private readonly statusTextMap: Record<string, string> = {
+    available: '可用',
+    limited: '限流',
+    cooldown: '冷却',
+    exhausted: '耗尽',
+    disabled: '禁用',
+    expired: '过期',
+    invalid: '失效',
+    unknown: '未知',
+  };
+
+  private readonly errorTextMap: Record<string, string> = {
+    auth_failed: '认证失败',
+    rate_limited: '限流',
+    quota_exhausted: '额度耗尽',
+    upstream_timeout: '上游超时',
+    upstream_5xx: '上游服务错误',
+    network_error: '网络错误',
+    model_not_supported: '模型不支持',
+    no_available_account: '无可用账号',
+  };
+
   protected readonly columns: Array<STColumn<Account>> = [
     { title: '账号', index: 'name', render: 'nameRender', width: 200, fixed: 'left' },
     { title: '供应商 / 分组', index: 'provider', render: 'providerRender', width: 150 },
@@ -74,6 +102,7 @@ export class AccountListComponent implements OnInit {
     { title: '启用', index: 'enabled', type: 'tag', tag: this.enabledTag, width: 86 },
     { title: '权重', index: 'weight', render: 'weightRender', width: 92 },
     { title: '失败', index: 'failureCount', width: 72 },
+    { title: '额度窗口', render: 'quotaRender', width: 280 },
     { title: '最近使用', index: 'lastUsedAt', render: 'lastUsedRender', width: 170 },
     { title: 'Secret', index: 'secretHint', render: 'secretRender', width: 180 },
     {
@@ -129,6 +158,7 @@ export class AccountListComponent implements OnInit {
   ];
 
   ngOnInit(): void {
+    this.loadModelMappings();
     this.getData();
   }
 
@@ -209,7 +239,8 @@ export class AccountListComponent implements OnInit {
   protected openTest(item: Account): void {
     this.testTarget = item;
     this.testResult = null;
-    this.testForm.reset({ model: this.firstSupportedModel(item.supportedModels), prompt: 'ping' });
+    this.syncTestModelOptions(item);
+    this.testForm.reset({ model: this.testModelOptions[0] || '', prompt: 'ping' });
     this.testVisible = true;
   }
 
@@ -243,6 +274,77 @@ export class AccountListComponent implements OnInit {
       });
   }
 
+  protected statusText(status?: string): string {
+    const value = (status || '').trim();
+    if (!value) return '-';
+    return this.statusTextMap[value] || value;
+  }
+
+  protected errorText(errorType?: string): string {
+    const value = (errorType || '').trim();
+    if (!value) return '-';
+    return this.errorTextMap[value] || value;
+  }
+
+  protected modeText(mode?: string): string {
+    return mode === 'upstream' ? '上游请求' : '基础检查';
+  }
+
+  protected get testModelExtra(): string {
+    switch (this.testModelSource) {
+      case 'account':
+        return '当前账号已配置支持模型，测试时优先使用账号设置的模型。';
+      case 'global':
+        return '当前账号未单独设置模型，测试时使用全局模型映射。';
+      default:
+        return '暂无可选模型，留空只检查 Secret 解密和账号基础状态。';
+    }
+  }
+
+  protected quotaTone(quota: AccountQuota): string {
+    if (this.isQuotaExhausted(quota)) return 'quota-danger';
+    switch (quota.status) {
+      case 'available':
+        return 'quota-success';
+      case 'limited':
+        return 'quota-warning';
+      case 'exhausted':
+        return 'quota-danger';
+      default:
+        return '';
+    }
+  }
+
+  protected isQuotaExhausted(quota: AccountQuota): boolean {
+    const usedPercent = Number(quota.usedPercent || 0);
+    const totalAmount = Number(quota.totalAmount || 0);
+    const remainingAmount = Number(quota.remainingAmount || 0);
+    const totalTokens = Number(quota.totalTokens || 0);
+    const remainingTokens = Number(quota.remainingTokens || 0);
+    if (quota.status === 'exhausted') return true;
+    if (totalAmount > 0 && (remainingAmount <= 0 || usedPercent >= 99.5)) return true;
+    return totalTokens > 0 && (remainingTokens <= 0 || usedPercent >= 99.5);
+  }
+
+  protected quotaPercent(quota: AccountQuota): string {
+    return `${Number(quota.usedPercent || 0).toFixed(0)}%`;
+  }
+
+  protected formatTokens(value?: number): string {
+    const count = Number(value || 0);
+    if (!count) return '0';
+    if (count >= 1_000_000) return `${(count / 1_000_000).toFixed(1)}M`;
+    if (count >= 1_000) return `${(count / 1_000).toFixed(1)}K`;
+    return `${count}`;
+  }
+
+  protected formatQuotaValue(quota: AccountQuota): string {
+    if (quota.unit === 'usd') {
+      return `$${Number(quota.remainingAmount || 0).toFixed(2)}/$${Number(quota.totalAmount || 0).toFixed(2)}`;
+    }
+    return `${this.formatTokens(quota.remainingTokens)}/${this.formatTokens(quota.totalTokens)}`;
+  }
+
   protected formatTime(value?: number): string {
     if (!value) return '-';
     const date = new Date(value);
@@ -270,14 +372,61 @@ export class AccountListComponent implements OnInit {
   }
 
   protected firstSupportedModel(value?: string): string {
-    if (!value) return '';
+    return this.parseModelList(value)[0] || '';
+  }
+
+  private loadModelMappings(): void {
+    this.modelsService.listAll().subscribe({
+      next: (models) => {
+        this.modelMappings = models ?? [];
+        if (this.testTarget) {
+          this.syncTestModelOptions(this.testTarget);
+          if (!this.testModelOptions.includes(this.testForm.controls.model.value)) {
+            this.testForm.controls.model.setValue(this.testModelOptions[0] || '');
+          }
+        }
+        this.cdr.markForCheck();
+      },
+      error: () => {
+        this.modelMappings = [];
+      },
+    });
+  }
+
+  private syncTestModelOptions(account: Account): void {
+    const accountModels = this.parseModelList(account.supportedModels);
+    if (accountModels.length) {
+      this.testModelOptions = accountModels;
+      this.testModelSource = 'account';
+      return;
+    }
+
+    this.testModelOptions = Array.from(
+      new Set(
+        this.modelMappings
+          .filter((item) => item.enabled !== false && !item.provider && !item.accountGroup)
+          .flatMap((item) => [item.publicModel, ...this.parseModelList(item.aliases)])
+          .map((item) => item.trim())
+          .filter(Boolean),
+      ),
+    );
+    this.testModelSource = this.testModelOptions.length ? 'global' : 'empty';
+  }
+
+  private parseModelList(value?: string): string[] {
+    if (!value) return [];
     try {
       const parsed = JSON.parse(value);
-      if (Array.isArray(parsed)) return String(parsed[0] || '');
+      if (Array.isArray(parsed)) {
+        return parsed.map((item) => String(item).trim()).filter(Boolean);
+      }
     } catch {
-      return value.split(',').map((item) => item.trim()).filter(Boolean)[0] || '';
+      return value
+        .split(',')
+        .map((item) => item.trim())
+        .filter(Boolean);
     }
-    return '';
+    return [];
   }
 
   protected async copy(value: string, label: string): Promise<void> {

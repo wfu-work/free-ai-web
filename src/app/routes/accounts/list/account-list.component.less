@@ -85,6 +85,41 @@
   font-size: 12px;
 }
 
+.quota-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.quota-chip {
+  display: inline-flex;
+  max-width: 100%;
+  padding: 2px 8px;
+  overflow: hidden;
+  border-radius: 999px;
+  color: #526174;
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  background: #eef2f7;
+}
+
+.quota-success {
+  color: #14856e;
+  background: #e8f7f0;
+}
+
+.quota-warning {
+  color: #b7791f;
+  background: #fff6df;
+}
+
+.quota-danger {
+  color: #c24141;
+  background: #fdecec;
+}
+
 .row-actions {
   display: flex;
   flex-wrap: wrap;
@@ -136,6 +171,10 @@
   color: #213149;
   font-size: 14px;
   font-weight: 800;
+}
+
+.test-message {
+  grid-column: 1 / -1;
 }
 
 @media (max-width: 767px) {

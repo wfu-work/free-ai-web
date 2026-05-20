@@ -123,6 +123,49 @@
             </div>
           </div>
         </nz-card>
+
+        <nz-card class="detail-card cost-card" [nzBordered]="false">
+          <div class="cost-title">
+            <div>
+              <span>费用明细</span>
+              <em>{{ costPricing(record).modelLabel }} 每百万 Token 定价</em>
+            </div>
+            @if (isEstimatedCost(record)) {
+              <strong>估算</strong>
+            }
+          </div>
+
+          <div class="cost-layout">
+            <div class="cost-table">
+              <div class="cost-table-head">
+                <span>类型</span>
+                <span>Token</span>
+                <span>单价</span>
+                <span>金额</span>
+              </div>
+              @for (row of costRows(record); track row.label) {
+                <div class="cost-row">
+                  <span class="cost-label">{{ row.label }}</span>
+                  <span class="cost-tokens">{{ formatNumber(row.tokens) }}</span>
+                  <span class="cost-price">{{ formatPrice(row.pricePerMillion) }}</span>
+                  <span class="cost-amount">{{ formatMoney(row.amount) }}</span>
+                </div>
+              }
+            </div>
+
+            <div class="cost-summary">
+              <div>
+                <span>小计</span>
+                <strong>{{ formatMoney(subtotalCost(record)) }}</strong>
+              </div>
+              <div class="charged-line">
+                <span>已收费</span>
+                <strong class="charged">{{ formatMoney(chargedCost(record), 2) }}</strong>
+              </div>
+              <small>{{ isEstimatedCost(record) ? '按当前内置定价估算，实际扣费以后端或上游返回为准' : '已使用日志中的费用字段' }}</small>
+            </div>
+          </div>
+        </nz-card>
       </div>
     } @else if (!loading) {
       <div class="empty-state">请求日志不存在或已被清理</div>

@@ -1,0 +1,178 @@
+<section class="codex-page">
+  <div class="d-flex justify-content-between header-row">
+    <title-label
+      title="Codex 配置"
+      description="将启用的 OpenAI Compat 平台密钥写入本机 Codex auth.json 与 config.toml。"
+      [showBack]="true"
+    />
+    <div class="header-actions">
+      <button nz-button (click)="goList()">返回列表</button>
+      <button nz-button [nzLoading]="previewing" (click)="previewConfig()">
+        <i nz-icon nzType="reload"></i>
+        预览
+      </button>
+      <button nz-button nzType="primary" [nzLoading]="saving" (click)="save()">
+        <i nz-icon nzType="save"></i>
+        保存
+      </button>
+    </div>
+  </div>
+
+  <nz-spin [nzSpinning]="loading">
+    <div class="codex-layout">
+      <nz-card class="config-card" [nzBordered]="false">
+        <form nz-form [formGroup]="form" nzLayout="vertical" class="codex-form">
+          <se-container col="2" nzLayout="vertical">
+            <se label="平台密钥" required error="请选择平台密钥">
+              <nz-select
+                formControlName="platformKeyGuid"
+                nzShowSearch
+                nzPlaceHolder="选择启用的 OpenAI Compat 密钥"
+                (ngModelChange)="onKeyChange($event)"
+              >
+                @for (item of platformKeys; track item.guid) {
+                  <nz-option
+                    [nzValue]="item.guid"
+                    [nzLabel]="item.name + ' · ' + (item.keyPrefix || '')"
+                  />
+                }
+              </nz-select>
+            </se>
+
+            <se label="模型名称" required>
+              <nz-select
+                formControlName="model"
+                nzShowSearch
+                nzPlaceHolder="例如 gpt-5.5"
+                (ngModelChange)="previewConfig()"
+              >
+                @for (model of modelOptions; track model) {
+                  <nz-option [nzValue]="model" [nzLabel]="model" />
+                }
+              </nz-select>
+              <div class="field-extra">会写入 config.toml 的 model 字段。</div>
+            </se>
+
+            <se class="span-2" label="API Key">
+              <div class="secret-field">
+                <input nz-input [value]="maskedKey" readonly />
+                <button nz-button nzType="text" type="button" (click)="showSecret = !showSecret">
+                  <i nz-icon [nzType]="showSecret ? 'eye-invisible' : 'eye'"></i>
+                </button>
+                <button nz-button nzType="text" type="button" (click)="copy(preview?.platformKey || '', 'API Key')">
+                  <i nz-icon nzType="copy"></i>
+                </button>
+              </div>
+            </se>
+
+            <se class="span-2 endpoint-row" label="API 请求地址">
+              <div class="endpoint-actions">
+                <button nz-button type="button" (click)="resetEndpoint()">
+                  <i nz-icon nzType="link"></i>
+                  使用当前网关
+                </button>
+                <button nz-button nzType="link" type="button" routerLink="/settings/guide">
+                  <i nz-icon nzType="thunderbolt"></i>
+                  管理与测速
+                </button>
+              </div>
+              <input
+                nz-input
+                formControlName="apiBaseUrl"
+                placeholder="例如 http://localhost:8787/v1"
+                (blur)="previewConfig()"
+                (keydown.enter)="previewConfig()"
+              />
+              <nz-alert
+                nzType="warning"
+                nzShowIcon
+                nzMessage="填写兼容 OpenAI Responses 格式的服务端点地址，通常使用本地网关 /v1。"
+              />
+            </se>
+
+            <se label="Provider 名称">
+              <input nz-input formControlName="providerName" (blur)="previewConfig()" />
+            </se>
+
+            <se label="推理等级">
+              <nz-select formControlName="reasoningEffort" nzAllowClear (ngModelChange)="previewConfig()">
+                <nz-option nzValue="minimal" nzLabel="Minimal" />
+                <nz-option nzValue="low" nzLabel="Low" />
+                <nz-option nzValue="medium" nzLabel="Medium" />
+                <nz-option nzValue="high" nzLabel="High" />
+              </nz-select>
+            </se>
+
+            <se class="span-2">
+              <label nz-checkbox formControlName="writeGlobal" (ngModelChange)="previewConfig()">
+                写入通用配置
+              </label>
+              <div class="field-extra">开启后会同步写入 model_provider、model、disable_response_storage 和 model_reasoning_effort。</div>
+            </se>
+          </se-container>
+        </form>
+      </nz-card>
+
+      <nz-card class="summary-card" [nzBordered]="false">
+        <div class="summary-item">
+          <span>auth.json</span>
+          <strong>{{ preview?.authPath || '~/.codex/auth.json' }}</strong>
+        </div>
+        <div class="summary-item">
+          <span>config.toml</span>
+          <strong>{{ preview?.configPath || '~/.codex/config.toml' }}</strong>
+        </div>
+        <div class="summary-item">
+          <span>最近写入</span>
+          <strong>{{ formatTime(preview?.appliedAt) }}</strong>
+        </div>
+      </nz-card>
+    </div>
+
+    @if (!platformKeys.length && !loading) {
+      <nz-empty nzNotFoundContent="暂无启用的 OpenAI Compat 平台密钥，请先创建或启用平台密钥。" />
+    }
+
+    @if (preview) {
+      <div class="preview-grid">
+        <section class="code-section">
+          <div class="code-title">
+            <strong>auth.json (JSON)</strong>
+            <button nz-button nzType="link" (click)="copy(showSecret ? preview.authJson : maskedAuthJson(), 'auth.json 内容')">
+              <i nz-icon nzType="copy"></i>
+              复制
+            </button>
+          </div>
+          <div class="code-box">
+            @for (line of codeLines(maskedAuthJson()); track $index) {
+              <div class="code-line">
+                <span class="line-no">{{ $index + 1 }}</span>
+                <code>{{ line }}</code>
+              </div>
+            }
+          </div>
+          <p class="code-help">Codex auth.json 配置内容。保存时会合并写入 OPENAI_API_KEY，并保留已有 token 字段。</p>
+        </section>
+
+        <section class="code-section">
+          <div class="code-title">
+            <strong>config.toml (TOML)</strong>
+            <button nz-button nzType="link" (click)="copy(preview.configToml, 'config.toml 内容')">
+              <i nz-icon nzType="copy"></i>
+              复制
+            </button>
+          </div>
+          <div class="code-box code-box-toml">
+            @for (line of codeLines(preview.configToml); track $index) {
+              <div class="code-line">
+                <span class="line-no">{{ $index + 1 }}</span>
+                <code>{{ line }}</code>
+              </div>
+            }
+          </div>
+          <p class="code-help">会更新 model_providers.{{ preview.providerName }}，并把 base_url 指向 {{ preview.apiBaseUrl }}。</p>
+        </section>
+      </div>
+    }
+  </nz-spin>
+</section>

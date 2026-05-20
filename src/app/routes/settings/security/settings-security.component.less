@@ -4,7 +4,7 @@
 
 .settings-page {
   display: grid;
-  gap: 20px;
+  gap: 16px;
   min-width: 0;
 }
 
@@ -21,39 +21,40 @@
   gap: 10px;
 }
 
-.metric-grid,
-.content-grid,
+.status-strip,
+.security-layout,
+.security-column,
 .detail-grid {
   display: grid;
-  gap: 18px;
+  gap: 14px;
 }
 
-.metric-grid {
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+.status-strip {
+  grid-template-columns: 1.25fr repeat(3, minmax(0, 1fr));
+}
+
+.security-layout {
+  grid-template-columns: minmax(0, 1.08fr) minmax(360px, 0.92fr);
+  align-items: start;
 }
 
 .detail-grid {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
-.content-grid {
-  grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
-  align-items: start;
-}
-
-.metric-card,
+.status-card,
 .panel-card {
   min-width: 0;
   border: 1px solid rgb(var(--nm-primary-rgb) / 10%);
   border-radius: 8px;
-  background: rgb(255 255 255 / 92%);
+  background: rgb(255 255 255 / 94%);
 }
 
-.metric-card {
-  padding: 18px 20px;
+.status-card {
+  padding: 16px 18px;
 }
 
-.metric-card span,
+.status-card span,
 .detail-grid span {
   display: block;
   color: #697684;
@@ -61,15 +62,25 @@
   font-weight: 700;
 }
 
-.metric-card strong,
+.status-card strong,
 .detail-grid strong {
+  display: block;
+  margin-top: 6px;
+  overflow: hidden;
+  color: #1f3148;
+  font-size: 20px;
+  font-weight: 850;
+  line-height: 1.25;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.status-card small {
   display: block;
   margin-top: 8px;
   overflow: hidden;
-  color: #1f3148;
-  font-size: 22px;
-  font-weight: 850;
-  line-height: 1.2;
+  color: #7b8794;
+  font-size: 12px;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -93,19 +104,23 @@
 
 .panel-card ::ng-deep .ant-card-body {
   display: grid;
-  gap: 20px;
-  padding: 24px;
+  gap: 14px;
+  padding: 20px;
+}
+
+.panel-card-wide .detail-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
 .panel-title {
   color: #213149;
   font-size: 16px;
-  font-weight: 800;
+  font-weight: 850;
 }
 
 .detail-grid div {
   min-width: 0;
-  padding: 16px;
+  padding: 12px 14px;
   border: 1px solid rgb(var(--nm-primary-rgb) / 10%);
   border-radius: 8px;
   background: #f8fafc;
@@ -116,35 +131,128 @@
   font-size: 14px;
 }
 
+.span-2 {
+  grid-column: 1 / -1;
+}
+
+.detail-grid .span-2 {
+  padding-block: 10px;
+}
+
+.compact-grid div {
+  padding: 11px 14px;
+}
+
 .note-list {
   display: grid;
-  gap: 14px;
+  gap: 9px;
   margin: 0;
   padding-left: 18px;
   color: #526174;
   font-size: 14px;
-  line-height: 1.7;
+  line-height: 1.62;
+}
+
+.check-list {
+  display: grid;
+  gap: 9px;
+}
+
+.check-item {
+  min-width: 0;
+  padding: 12px 14px;
+  border: 1px solid #dfe7f3;
+  border-radius: 8px;
+  background: #f8fafc;
+}
+
+.check-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.check-head strong {
+  color: #1f3148;
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.check-head span {
+  flex: 0 0 auto;
+  padding: 2px 8px;
+  border-radius: 999px;
+  color: #526174;
+  font-size: 12px;
+  font-weight: 800;
+  background: #eef2f7;
+}
+
+.check-item p {
+  margin: 6px 0 0;
+  color: #697684;
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.check-ok {
+  border-color: #ccebdc;
+  background: #f4fbf7;
+}
+
+.check-ok .check-head span {
+  color: #14856e;
+  background: #e8f7f0;
+}
+
+.check-warn {
+  border-color: #ffe5ad;
+  background: #fffaf0;
+}
+
+.check-warn .check-head span {
+  color: #b7791f;
+  background: #fff1c7;
+}
+
+.check-danger {
+  border-color: #ffd8d8;
+  background: #fff7f7;
+}
+
+.check-danger .check-head span {
+  color: #c24141;
+  background: #fdecec;
 }
 
 @media (max-width: 1200px) {
-  .content-grid {
-    grid-template-columns: 1fr;
+  .status-strip {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
-}
 
-@media (max-width: 960px) {
-  .metric-grid,
-  .detail-grid {
+  .security-layout {
     grid-template-columns: 1fr;
   }
 }
 
 @media (max-width: 767px) {
+  .header-row,
+  .status-strip,
+  .detail-grid,
+  .panel-card-wide .detail-grid {
+    grid-template-columns: 1fr;
+  }
+
   .header-row {
     display: grid;
   }
 
   .header-actions {
     width: 100%;
+  }
+
+  .span-2 {
+    grid-column: auto;
   }
 }

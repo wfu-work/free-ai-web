@@ -158,9 +158,9 @@ import { ThemeColorComponent } from './theme-color';
       }
 
       .gateway-status-ok {
-        border-color: rgb(20 148 112 / 18%);
-        color: #14856e;
-        background: rgb(20 148 112 / 8%);
+        border-color: rgb(var(--nm-primary-rgb) / 18%);
+        color: var(--nm-primary);
+        background: rgb(var(--nm-primary-rgb) / 8%);
       }
 
       .gateway-status-error {

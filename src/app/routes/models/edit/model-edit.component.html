@@ -38,7 +38,22 @@
               </se>
 
               <se label="上游模型" required error="请输入上游模型名">
-                <input id="upstreamModel" nz-input formControlName="upstreamModel" placeholder="gpt-4.1-mini" />
+                @if (hasScopedRoute && upstreamModelOptions.length) {
+                  <nz-select
+                    id="upstreamModel"
+                    formControlName="upstreamModel"
+                    nzShowSearch
+                    nzAllowClear
+                    nzPlaceHolder="请选择上游模型"
+                  >
+                    @for (model of upstreamModelOptions; track model) {
+                      <nz-option [nzValue]="model" [nzLabel]="model" />
+                    }
+                  </nz-select>
+                } @else {
+                  <input id="upstreamModel" nz-input formControlName="upstreamModel" placeholder="gpt-4.1-mini" />
+                }
+                <div class="field-extra">{{ modelOptionHint }}</div>
               </se>
 
               <se class="span-2" label="模型别名">
@@ -57,12 +72,19 @@
           <section class="form-section">
             <div class="section-title">路由绑定</div>
             <se-container col="2" nzLayout="vertical">
-              <se label="供应商" required error="请选择供应商">
-                <nz-select id="provider" formControlName="provider" nzShowSearch nzPlaceHolder="请选择供应商">
+              <se label="供应商">
+                <nz-select
+                  id="provider"
+                  formControlName="provider"
+                  nzShowSearch
+                  nzAllowClear
+                  nzPlaceHolder="不限制供应商"
+                >
                   @for (provider of providerOptions; track provider) {
                     <nz-option [nzValue]="provider.value" [nzLabel]="provider.label" />
                   }
                 </nz-select>
+                <div class="field-extra">留空表示全局供应商；选择后上游模型会优先展示该供应商账号支持的模型。</div>
               </se>
 
               <se label="账号组">
@@ -70,12 +92,14 @@
                   id="accountGroup"
                   formControlName="accountGroup"
                   nzShowSearch
-                  nzPlaceHolder="请选择账号组"
+                  nzAllowClear
+                  nzPlaceHolder="不限制账号组"
                 >
                   @for (group of accountGroupOptions; track group) {
                     <nz-option [nzValue]="group" [nzLabel]="group" />
                   }
                 </nz-select>
+                <div class="field-extra">留空表示全局账号组；选择后只展示该账号组内账号支持的模型。</div>
               </se>
 
               <se label="超时秒数">
@@ -93,10 +117,14 @@
       <nz-card class="side-card" [nzBordered]="false">
         <div class="aside-intro">
           <strong>路由提示</strong>
-          <p>模型映射会按供应商和账号组落到对应账号池，保存后新的 publicModel 会立即参与代理路由。</p>
+          <p>模型映射可以是全局模型，也可以绑定供应商或账号组。保存后新的 publicModel 会立即参与代理路由。</p>
         </div>
 
         <div class="quick-grid">
+          <div class="quick-item">
+            <span>路由范围</span>
+            <strong>{{ routeScopeLabel }}</strong>
+          </div>
           <div class="quick-item">
             <span>匹配账号数</span>
             <strong>{{ relatedAccountCount }}</strong>
@@ -118,7 +146,7 @@
         <div class="section-title">填写建议</div>
         <ul class="note-list">
           <li>对外模型建议与业务侧实际传入的 `model` 完全一致，避免多余兼容逻辑。</li>
-          <li>如果某个供应商下有多组账号池，请明确指定账号组，避免请求落到错误的上游账户。</li>
+          <li>不选择供应商和账号组时会保存为全局模型；只选择其中一个时会按当前范围过滤账号池。</li>
           <li>超时秒数应与上游模型响应时长匹配，长上下文或推理模型通常需要更高超时。</li>
           <li>流式能力关闭后，请确认客户端不会再以 SSE/stream 模式调用这个模型。</li>
         </ul>

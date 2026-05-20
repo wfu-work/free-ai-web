@@ -36,6 +36,7 @@ export interface Account {
   failureCount: number;
   cooldownUntil: number;
   remark: string;
+  quotas?: AccountQuota[];
 }
 
 export interface AccountQuota {
@@ -139,12 +140,17 @@ export interface AccountTestResult {
   enabled: boolean;
   modelCount: number;
   checkedAtMs: number;
+  mode?: string;
+  message?: string;
+  model?: string;
+  upstreamModel?: string;
   upstreamStatusCode?: number;
   upstreamErrorType?: string;
   latencyMs?: number;
 }
 
 export interface AccountModelFetchPayload {
+  guid?: string;
   provider?: string;
   apiBaseUrl?: string;
   authType?: AccountAuthType;

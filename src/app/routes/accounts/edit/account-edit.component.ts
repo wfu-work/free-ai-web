@@ -30,8 +30,15 @@ type AccountFormMode = 'create' | 'edit';
 const PROVIDER_API_BASE_URLS: Record<string, string> = {
   openai: 'https://api.openai.com/v1',
   codexzh: 'https://api.codexzh.com/v1',
+  freemodel: 'https://api.freemodel.dev',
+  aiok: 'https://aiok.club/v1',
+  tokeni: 'https://api.tokeni.top',
 };
-const CODEXZH_USAGE_API_URL = 'https://codexzh.com/api/v1/usage/stats';
+const USAGE_API_URLS: Record<string, string> = {
+  codexzh: 'https://codexzh.com/api/v1/usage/stats',
+  freemodel: 'https://freemodel.dev/api/usage',
+  tokeni: 'https://api.tokeni.top/v1/usage',
+};
 const OPENAI_OAUTH_AUTHORIZE_URL = 'https://auth.openai.com/oauth/authorize';
 const OPENAI_OAUTH_CLIENT_ID = 'app_EMoamEEZ73f0CkXaXp7hrann';
 const OPENAI_OAUTH_REDIRECT_URI = 'http://localhost:1455/auth/callback';
@@ -78,7 +85,7 @@ export class AccountEditComponent implements OnInit, OnDestroy {
     usageQueryType: [''],
     usageApiUrl: [''],
     accountType: [''],
-    authType: ['bearer_token', [Validators.required]],
+    authType: ['api_key', [Validators.required]],
     secret: [''],
     callbackUrl: [''],
     supportedModels: [''],
@@ -149,7 +156,7 @@ export class AccountEditComponent implements OnInit, OnDestroy {
       supplierName: value.provider === 'custom' ? value.supplierName.trim() : '',
       officialUrl: value.provider === 'custom' ? value.officialUrl.trim() : '',
       usageQueryType: value.usageQueryType,
-      usageApiUrl: value.usageQueryType === 'codexzh' ? value.usageApiUrl.trim() || CODEXZH_USAGE_API_URL : '',
+      usageApiUrl: this.resolveUsageApiUrl(value.usageQueryType, value.usageApiUrl),
       supportedModels: value.supportedModels ? JSON.stringify([value.supportedModels]) : '',
       priority: Number(value.priority || 0),
       weight: Math.max(Number(value.weight || 1), 1),
@@ -195,7 +202,8 @@ export class AccountEditComponent implements OnInit, OnDestroy {
   }
 
   protected get statusLabel(): string {
-    return this.account?.status || (this.formMode === 'create' ? '待创建' : '--');
+    if (this.formMode === 'create') return '待创建';
+    return this.statusText(this.account?.status);
   }
 
   protected get enabledLabel(): string {
@@ -246,11 +254,27 @@ export class AccountEditComponent implements OnInit, OnDestroy {
 
   protected get showUsageConfig(): boolean {
     const provider = this.form.controls.provider.value;
-    return provider === 'custom' || provider === 'codexzh';
+    return provider === 'custom' || provider === 'codexzh' || provider === 'freemodel' || provider === 'tokeni';
   }
 
   protected get isCodexZHUsageQuery(): boolean {
     return this.form.controls.usageQueryType.value === 'codexzh';
+  }
+
+  protected get needsUsageApiUrl(): boolean {
+    return ['codexzh', 'freemodel', 'tokeni'].includes(this.form.controls.usageQueryType.value);
+  }
+
+  protected get usageApiUrlPlaceholder(): string {
+    return this.defaultUsageApiUrl(this.form.controls.usageQueryType.value) || 'https://example.com/api/usage';
+  }
+
+  protected get usageQueryExtra(): string {
+    const provider = this.form.controls.provider.value;
+    if (provider === 'tokeni') return 'Tokeni 中转账号会默认使用 Tokeni 额度接口同步额度。';
+    if (provider === 'freemodel') return 'FreeModel 中转账号会默认使用 FreeModel 额度接口同步额度。';
+    if (provider === 'codexzh') return 'CodexZH 中转账号会默认使用 CodexZH 额度接口同步额度。';
+    return '自定义中转账号需要选择对应的额度查询方式，才可以同步额度。';
   }
 
   protected get isLoginCallbackAuth(): boolean {
@@ -343,13 +367,14 @@ export class AccountEditComponent implements OnInit, OnDestroy {
       this.message.warning('请先填写 API 请求地址');
       return;
     }
-    if (!value.secret.trim()) {
+    if (!value.secret.trim() && this.formMode === 'create') {
       this.message.warning('请先填写 Secret，拉取模型列表需要上游鉴权');
       return;
     }
     this.fetchingModels = true;
     this.accountsService
       .fetchModels({
+        guid: this.formMode === 'edit' ? this.accountGuid : '',
         provider: value.provider,
         apiBaseUrl: this.resolveApiBaseUrl(value.provider, value.apiBaseUrl),
         authType: value.authType,
@@ -385,6 +410,22 @@ export class AccountEditComponent implements OnInit, OnDestroy {
     });
   }
 
+  protected statusText(status?: string): string {
+    const map: Record<string, string> = {
+      available: '可用',
+      limited: '限流',
+      cooldown: '冷却',
+      exhausted: '耗尽',
+      disabled: '禁用',
+      expired: '过期',
+      invalid: '失效',
+      unknown: '未知',
+    };
+    const value = (status || '').trim();
+    if (!value) return '--';
+    return map[value] || value;
+  }
+
   private enterCreateMode(): void {
     const queryGroup = (this.route.snapshot.queryParamMap.get('group') || '').trim();
     this.mergeSelectOptions([], queryGroup ? [queryGroup] : [], []);
@@ -402,7 +443,7 @@ export class AccountEditComponent implements OnInit, OnDestroy {
       usageQueryType: '',
       usageApiUrl: '',
       accountType: 'manual',
-      authType: 'bearer_token',
+      authType: 'api_key',
       secret: '',
       callbackUrl: '',
       supportedModels: '',
@@ -447,7 +488,7 @@ export class AccountEditComponent implements OnInit, OnDestroy {
           usageQueryType: account.usageQueryType ?? '',
           usageApiUrl: account.usageApiUrl ?? '',
           accountType: account.accountType ?? '',
-          authType: account.authType || 'bearer_token',
+          authType: account.authType || 'api_key',
           secret: '',
           callbackUrl: '',
           supportedModels: this.firstSupportedModel(account.supportedModels),
@@ -469,7 +510,7 @@ export class AccountEditComponent implements OnInit, OnDestroy {
       next: ({ accounts, groups }) => {
         this.mergeSelectOptions(
           accounts.map((item) => item.provider),
-          groups.filter((item) => item.enabled).map((item) => item.name),
+          groups.map((item) => item.name),
           accounts.map((item) => item.accountType),
         );
         this.cdr.markForCheck();
@@ -554,7 +595,19 @@ export class AccountEditComponent implements OnInit, OnDestroy {
     if (provider === 'codexzh') {
       usageTypeControl.setValue('codexzh', { emitEvent: false });
       if (!usageUrlControl.value.trim()) {
-        usageUrlControl.setValue(CODEXZH_USAGE_API_URL, { emitEvent: false });
+        usageUrlControl.setValue(this.defaultUsageApiUrl('codexzh'), { emitEvent: false });
+      }
+    } else if (provider === 'freemodel') {
+      usageTypeControl.setValue('freemodel', { emitEvent: false });
+      const current = usageUrlControl.value.trim();
+      if (!current || current === this.defaultUsageApiUrl('codexzh')) {
+        usageUrlControl.setValue(this.defaultUsageApiUrl('freemodel'), { emitEvent: false });
+      }
+    } else if (provider === 'tokeni') {
+      usageTypeControl.setValue('tokeni', { emitEvent: false });
+      const current = usageUrlControl.value.trim();
+      if (!current || current === this.defaultUsageApiUrl('codexzh') || current === this.defaultUsageApiUrl('freemodel')) {
+        usageUrlControl.setValue(this.defaultUsageApiUrl('tokeni'), { emitEvent: false });
       }
     } else if (provider !== 'custom') {
       usageTypeControl.setValue('', { emitEvent: false });
@@ -565,15 +618,25 @@ export class AccountEditComponent implements OnInit, OnDestroy {
 
   private syncUsageApiUrlValidators(): void {
     const control = this.form.controls.usageApiUrl;
-    if (this.isCodexZHUsageQuery) {
+    if (this.needsUsageApiUrl) {
       control.setValidators([Validators.required]);
       if (!control.value.trim()) {
-        control.setValue(CODEXZH_USAGE_API_URL, { emitEvent: false });
+        control.setValue(this.defaultUsageApiUrl(this.form.controls.usageQueryType.value), { emitEvent: false });
       }
     } else {
       control.clearValidators();
     }
     control.updateValueAndValidity({ emitEvent: false });
+  }
+
+  private defaultUsageApiUrl(type: string): string {
+    return USAGE_API_URLS[(type || '').trim()] || '';
+  }
+
+  private resolveUsageApiUrl(type: string, value: string): string {
+    const usageType = (type || '').trim();
+    if (!usageType) return '';
+    return value.trim() || this.defaultUsageApiUrl(usageType);
   }
 
   private tryParseLoginCallbackFromLocation(): void {

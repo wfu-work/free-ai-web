@@ -2,7 +2,14 @@ import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 
-import { CreatePlatformKeyResult, PlatformKey, PlatformKeyPayload, PlatformKeyStats } from './platform-key.model';
+import {
+  CodexConfigPayload,
+  CodexConfigPreview,
+  CreatePlatformKeyResult,
+  PlatformKey,
+  PlatformKeyPayload,
+  PlatformKeyStats,
+} from './platform-key.model';
 import { PageEntity } from '@shared';
 
 @Injectable({ providedIn: 'root' })
@@ -43,5 +50,13 @@ export class PlatformKeysService {
 
   disable(guid: string): Observable<boolean> {
     return this.http.post<boolean>(`/platform-keys/${guid}/disable`, {});
+  }
+
+  codexConfigPreview(payload: CodexConfigPayload): Observable<CodexConfigPreview> {
+    return this.http.post<CodexConfigPreview>('/platform-keys/codex-config/preview', payload);
+  }
+
+  applyCodexConfig(payload: CodexConfigPayload): Observable<CodexConfigPreview> {
+    return this.http.post<CodexConfigPreview>('/platform-keys/codex-config/apply', payload);
   }
 }

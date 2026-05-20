@@ -82,7 +82,7 @@ import { NzMenuModule } from 'ng-zorro-antd/menu';
           </li>
           <li nz-submenu nzTitle="系统设置" nzIcon="setting">
             <ul>
-              <li nz-menu-item nzMatchRouter routerLink="/settings/integration">
+              <li nz-menu-item nzMatchRouter routerLink="/settings/gateway">
                 <span>网关配置</span>
               </li>
               <li nz-menu-item nzMatchRouter routerLink="/settings/security">
@@ -97,7 +97,7 @@ import { NzMenuModule } from 'ng-zorro-antd/menu';
       </div>
 
       <div class="sidebar-bottom">
-        <a class="sidebar-bottom-item" routerLink="/help">
+        <a class="sidebar-bottom-item" routerLink="/settings/guide">
           <i nz-icon nzType="question-circle"></i>
           @if (!isCollapsed) {
             <span>接入指南</span>

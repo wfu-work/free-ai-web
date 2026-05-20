@@ -255,6 +255,7 @@ export class SettingsRetentionComponent implements OnInit {
       `平台密钥 ${count('platformKeys')}`,
       `额度 ${count('accountQuotas')}`,
       `路由状态 ${count('routeStates')}`,
+      `系统配置 ${count('systemConfigs')}`,
     ].join('、');
   }
 
@@ -272,6 +273,7 @@ export class SettingsRetentionComponent implements OnInit {
       Number(result.modelMappings || 0) +
       Number(result.platformKeys || 0) +
       Number(result.routeStates || 0) +
+      Number(result.systemConfigs || 0) +
       Number(result.gatewayConfig || 0)
     );
   }
@@ -284,6 +286,7 @@ export class SettingsRetentionComponent implements OnInit {
       Number(result.failedModelMappings || 0) +
       Number(result.failedPlatformKeys || 0) +
       Number(result.failedRouteStates || 0) +
+      Number(result.failedSystemConfigs || 0) +
       Number(result.failedGatewayConfig || 0)
     );
   }

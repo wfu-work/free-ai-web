@@ -22,6 +22,15 @@ export interface RequestLog {
   firstTokenMs: number;
   inputTokens: number;
   outputTokens: number;
+  cacheReadTokens?: number;
+  cachedInputTokens?: number;
+  cacheWriteTokens?: number;
+  inputCost?: number;
+  outputCost?: number;
+  cacheReadCost?: number;
+  cacheWriteCost?: number;
+  totalCost?: number;
+  chargedAmount?: number;
   createdAtUnix: number;
   createTime?: number;
 }

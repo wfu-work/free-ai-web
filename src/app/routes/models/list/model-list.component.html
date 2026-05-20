@@ -84,8 +84,8 @@
       </ng-template>
 
       <ng-template st-row="providerRender" let-item>
-        <div class="provider-line">{{ item.provider || '-' }}</div>
-        <span class="muted">{{ item.accountGroup || '默认账号组' }}</span>
+        <div class="provider-line">{{ item.provider || '全局供应商' }}</div>
+        <span class="muted">{{ item.accountGroup || '全局账号组' }}</span>
       </ng-template>
 
       <ng-template st-row="timeoutRender" let-item> {{ item.timeoutSec || 120 }}s </ng-template>

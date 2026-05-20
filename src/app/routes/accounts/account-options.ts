@@ -5,8 +5,11 @@ export interface AccountSelectOption {
 
 export const DEFAULT_PROVIDER_OPTIONS: AccountSelectOption[] = [
   { value: 'openai', label: 'OpenAI' },
-  { value: 'codexzh', label: 'CodexZH 中转站' },
-  { value: 'custom', label: '自定义供应商' },
+  { value: 'codexzh', label: 'CodexZh' },
+  { value: 'freemodel', label: 'FreeModel' },
+  { value: 'aiok', label: 'Aiok' },
+  { value: 'tokeni', label: 'Tokeni' },
+  { value: 'custom', label: 'Custom' },
 ];
 
 export const DEFAULT_PROVIDER_VALUES = DEFAULT_PROVIDER_OPTIONS.map((item) => item.value);
@@ -22,7 +25,10 @@ export const DEFAULT_ACCOUNT_TYPE_OPTIONS: AccountSelectOption[] = [
 
 export const DEFAULT_USAGE_QUERY_OPTIONS: AccountSelectOption[] = [
   { value: '', label: '不启用' },
-  { value: 'codexzh', label: 'CodexZH 额度查询' },
+  { value: 'codexzh', label: 'CodexZh 额度查询' },
+  { value: 'freemodel', label: 'FreeModel 额度查询' },
+  { value: 'aiok', label: 'Aiok 额度查询' },
+  { value: 'tokeni', label: 'Tokeni 额度查询' },
 ];
 
 export function mergeStringOptions(defaults: string[], values: Array<string | null | undefined>): string[] {

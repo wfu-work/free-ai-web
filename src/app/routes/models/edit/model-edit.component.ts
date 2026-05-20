@@ -49,18 +49,21 @@ export class ModelEditComponent implements OnInit {
   protected providerOptions: AccountSelectOption[] = mergeProviderOptions([]);
   protected accountGroupOptions = [...DEFAULT_ACCOUNT_GROUP_OPTIONS];
   protected relatedAccounts: Account[] = [];
+  protected upstreamModelOptions: string[] = [];
 
   protected readonly form = this.fb.nonNullable.group({
     publicModel: ['', [Validators.required]],
     aliases: [''],
     upstreamModel: ['', [Validators.required]],
-    provider: ['openai', [Validators.required]],
+    provider: [''],
     accountGroup: [''],
     stream: [true],
     timeoutSec: [120],
   });
 
   ngOnInit(): void {
+    this.form.controls.provider.valueChanges.subscribe(() => this.syncUpstreamModelOptions());
+    this.form.controls.accountGroup.valueChanges.subscribe(() => this.syncUpstreamModelOptions());
     this.loadSelectOptions();
     const guid = this.route.snapshot.paramMap.get('guid');
     if (guid) {
@@ -80,6 +83,8 @@ export class ModelEditComponent implements OnInit {
     const value = this.form.getRawValue();
     const payload: ModelPayload = {
       ...value,
+      provider: value.provider || '',
+      accountGroup: value.accountGroup || '',
       timeoutSec: Math.max(Number(value.timeoutSec || 0), 1),
     };
 
@@ -113,8 +118,8 @@ export class ModelEditComponent implements OnInit {
 
   protected get pageDescription(): string {
     return this.formMode === 'create'
-      ? '配置 publicModel、上游模型、供应商、账号组与超时策略，建立新的代理路由映射。'
-      : '更新已有模型映射的目标模型、账号组和流式能力，保存后立即影响后端路由。';
+      ? '配置 publicModel、上游模型和可选的供应商、账号组，留空时作为全局模型参与代理路由。'
+      : '更新已有模型映射的目标模型、路由范围和流式能力，保存后立即影响后端路由。';
   }
 
   protected get streamLabel(): string {
@@ -126,20 +131,46 @@ export class ModelEditComponent implements OnInit {
   }
 
   protected get groupLabel(): string {
-    return this.form.controls.accountGroup.value || '默认账号组';
+    return this.form.controls.accountGroup.value || '全局账号组';
   }
 
   protected get providerLabel(): string {
-    return getProviderLabel(this.form.controls.provider.value);
+    return this.form.controls.provider.value ? getProviderLabel(this.form.controls.provider.value) : '全局供应商';
   }
 
   protected get relatedAccountCount(): number {
+    return this.matchedAccounts.length;
+  }
+
+  protected get routeScopeLabel(): string {
+    const provider = this.form.controls.provider.value;
+    const group = this.form.controls.accountGroup.value;
+    if (!provider && !group) return '全局模型';
+    if (provider && group) return `${getProviderLabel(provider)} / ${group}`;
+    if (provider) return `${getProviderLabel(provider)} 全部账号组`;
+    return `全部供应商 / ${group}`;
+  }
+
+  protected get hasScopedRoute(): boolean {
+    return Boolean(this.form.controls.provider.value || this.form.controls.accountGroup.value);
+  }
+
+  protected get modelOptionHint(): string {
+    const provider = this.form.controls.provider.value;
+    const group = this.form.controls.accountGroup.value;
+    if (!provider && !group) return '未选择供应商或账号组时保存为全局模型，可手动输入上游模型名。';
+    if (this.upstreamModelOptions.length) return '已按当前供应商或账号组筛选可用模型，请从候选模型中选择。';
+    return '当前范围下没有账号支持模型记录，请手动输入上游模型名。';
+  }
+
+  private get matchedAccounts(): Account[] {
     const provider = this.form.controls.provider.value;
     const group = this.form.controls.accountGroup.value;
     return this.relatedAccounts.filter((item) => {
       if (provider && item.provider !== provider) return false;
-      return (item.accountGroup || '') === (group || '');
-    }).length;
+      if (group && (item.accountGroup || '') !== group) return false;
+      return true;
+    });
   }
 
   private enterCreateMode(): void {
@@ -153,11 +184,12 @@ export class ModelEditComponent implements OnInit {
       publicModel: '',
       aliases: '',
       upstreamModel: '',
-      provider: queryProvider || 'openai',
+      provider: queryProvider,
       accountGroup: queryGroup,
       stream: true,
       timeoutSec: 120,
     });
+    this.syncUpstreamModelOptions();
     this.cdr.markForCheck();
   }
 
@@ -180,11 +212,12 @@ export class ModelEditComponent implements OnInit {
           publicModel: model.publicModel ?? '',
           aliases: model.aliases ?? '',
           upstreamModel: model.upstreamModel ?? '',
-          provider: model.provider ?? 'openai',
+          provider: model.provider ?? '',
           accountGroup: model.accountGroup ?? '',
           stream: Boolean(model.stream),
           timeoutSec: model.timeoutSec || 120,
         });
+        this.syncUpstreamModelOptions();
       });
   }
 
@@ -203,6 +236,7 @@ export class ModelEditComponent implements OnInit {
           ],
           groups.filter((item) => item.enabled).map((item) => item.name),
         );
+        this.syncUpstreamModelOptions();
         this.cdr.markForCheck();
       },
       error: () => undefined,
@@ -212,5 +246,31 @@ export class ModelEditComponent implements OnInit {
   private mergeSelectOptions(providers: string[], accountGroups: string[]): void {
     this.providerOptions = mergeProviderOptions(providers);
     this.accountGroupOptions = mergeStringOptions(DEFAULT_ACCOUNT_GROUP_OPTIONS, accountGroups);
+  }
+
+  private syncUpstreamModelOptions(): void {
+    this.upstreamModelOptions = Array.from(
+      new Set(
+        this.matchedAccounts
+          .flatMap((account) => this.parseSupportedModels(account.supportedModels))
+          .map((item) => item.trim())
+          .filter(Boolean),
+      ),
+    ).sort((a, b) => a.localeCompare(b));
+    this.cdr.markForCheck();
+  }
+
+  private parseSupportedModels(value?: string): string[] {
+    if (!value) return [];
+    try {
+      const parsed = JSON.parse(value);
+      if (Array.isArray(parsed)) return parsed.map((item) => String(item)).filter(Boolean);
+    } catch {
+      return value
+        .split(',')
+        .map((item) => item.trim())
+        .filter(Boolean);
+    }
+    return [];
   }
 }

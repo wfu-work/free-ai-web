@@ -60,6 +60,10 @@
   gap: 16px;
 }
 
+.cost-card {
+  grid-column: 1 / -1;
+}
+
 .section-title {
   margin-bottom: 14px;
   color: #1f3148;
@@ -118,6 +122,163 @@
   color: #c24141 !important;
 }
 
+.cost-title {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+
+.cost-title span {
+  display: block;
+  color: #1f3148;
+  font-size: 16px;
+  font-weight: 850;
+  line-height: 1.2;
+}
+
+.cost-title em {
+  display: block;
+  margin-top: 5px;
+  color: #7b8794;
+  font-size: 12px;
+  font-weight: 700;
+  font-style: normal;
+  letter-spacing: 0;
+}
+
+.cost-title strong {
+  flex: 0 0 auto;
+  padding: 3px 10px;
+  border-radius: 999px;
+  color: #7a5a1a;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0;
+  background: #fff5d6;
+}
+
+.cost-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(260px, 340px);
+  gap: 18px;
+  align-items: stretch;
+}
+
+.cost-table {
+  display: grid;
+  overflow: hidden;
+  border: 1px solid #e8edf4;
+  border-radius: 8px;
+  background: #fff;
+}
+
+.cost-table-head,
+.cost-row {
+  display: grid;
+  grid-template-columns: minmax(96px, 1fr) minmax(96px, 0.9fr) minmax(112px, 1fr) minmax(128px, 1fr);
+  gap: 14px;
+  align-items: center;
+}
+
+.cost-table-head {
+  padding: 10px 14px;
+  border-bottom: 1px solid #e8edf4;
+  color: #7b8794;
+  font-size: 12px;
+  font-weight: 800;
+  background: #f8fafc;
+}
+
+.cost-row {
+  min-height: 48px;
+  padding: 11px 14px;
+  border-bottom: 1px solid #edf1f6;
+  color: #0f1720;
+  font-size: 14px;
+  line-height: 1.35;
+}
+
+.cost-row:last-child {
+  border-bottom: 0;
+}
+
+.cost-label {
+  color: #23344d;
+  font-weight: 800;
+}
+
+.cost-tokens,
+.cost-price,
+.cost-amount {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 14px;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.cost-price {
+  color: #a2abba;
+}
+
+.cost-amount {
+  color: #111827;
+  font-weight: 850;
+}
+
+.cost-summary {
+  display: grid;
+  align-content: space-between;
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid rgb(var(--nm-primary-rgb) / 12%);
+  border-radius: 8px;
+  background: linear-gradient(180deg, rgb(var(--nm-primary-rgb) / 5%), #fff 58%);
+}
+
+.cost-summary div {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.cost-summary span {
+  color: #536174;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.cost-summary strong {
+  color: #111827;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 16px;
+  font-weight: 850;
+  text-align: right;
+}
+
+.cost-summary .charged-line {
+  margin-top: 2px;
+  padding-top: 12px;
+  border-top: 1px solid rgb(var(--nm-primary-rgb) / 12%);
+}
+
+.cost-summary .charged {
+  color: var(--nm-primary);
+  font-size: 24px;
+  font-weight: 900;
+}
+
+.cost-summary small {
+  align-self: end;
+  color: #8a95a5;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.6;
+  text-align: left;
+}
+
 .empty-state {
   padding: 44px 24px;
   border: 1px solid rgb(var(--nm-primary-rgb) / 10%);
@@ -137,6 +298,10 @@
   .detail-grid {
     grid-template-columns: 1fr;
   }
+
+  .cost-layout {
+    grid-template-columns: 1fr;
+  }
 }
 
 @media (max-width: 767px) {
@@ -147,5 +312,53 @@
   .metric-grid,
   .content-grid {
     grid-template-columns: 1fr;
+  }
+
+  .cost-title {
+    display: grid;
+  }
+
+  .cost-table {
+    border-radius: 8px;
+  }
+
+  .cost-table-head {
+    display: none;
+  }
+
+  .cost-row {
+    grid-template-columns: 1fr;
+    gap: 6px;
+    min-height: 0;
+    padding: 14px;
+    font-size: 14px;
+  }
+
+  .cost-tokens,
+  .cost-price,
+  .cost-amount,
+  .cost-summary strong,
+  .cost-summary small {
+    text-align: left;
+  }
+
+  .cost-tokens::before {
+    content: 'Token：';
+  }
+
+  .cost-price::before {
+    content: '单价：';
+  }
+
+  .cost-amount::before {
+    content: '金额：';
+  }
+
+  .cost-tokens::before,
+  .cost-price::before,
+  .cost-amount::before {
+    color: #7b8794;
+    font-family: initial;
+    font-weight: 700;
   }
 }

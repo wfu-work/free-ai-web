@@ -6,11 +6,16 @@ import { SettingsRetentionComponent } from './retention/settings-retention.compo
 import { SettingsSecurityComponent } from './security/settings-security.component';
 
 export const routes: Routes = [
-  { path: '', redirectTo: 'integration', pathMatch: 'full' },
+  { path: '', redirectTo: 'gateway', pathMatch: 'full' },
   {
-    path: 'integration',
+    path: 'gateway',
     component: SettingsGatewayComponent,
     data: { title: '网关配置' },
+  },
+  {
+    path: 'integration',
+    redirectTo: 'gateway',
+    pathMatch: 'full',
   },
   {
     path: 'guide',
