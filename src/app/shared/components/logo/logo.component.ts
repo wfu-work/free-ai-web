@@ -3,72 +3,76 @@ import { ChangeDetectionStrategy, Component } from '@angular/core';
 @Component({
   selector: 'logo',
   template: `
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" role="img" aria-label="FreeAi logo">
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 1024 1024"
+      role="img"
+      aria-label="Recodex Relay logo"
+    >
       <defs>
-        <linearGradient [attr.id]="ids.core" x1="196" y1="142" x2="842" y2="888" gradientUnits="userSpaceOnUse">
-          <stop offset="0" style="stop-color: var(--nm-primary-hover)" />
-          <stop offset=".46" style="stop-color: var(--nm-primary)" />
-          <stop offset="1" style="stop-color: var(--nm-primary-active)" />
+        <linearGradient
+          id="recodexLogoPaper"
+          x1="210"
+          y1="128"
+          x2="814"
+          y2="896"
+          gradientUnits="userSpaceOnUse"
+        >
+          <stop offset="0" stop-color="#ffffff" />
+          <stop offset="1" stop-color="var(--nm-primary-soft)" />
         </linearGradient>
-        <linearGradient [attr.id]="ids.ai" x1="394" y1="418" x2="610" y2="644" gradientUnits="userSpaceOnUse">
-          <stop offset="0" style="stop-color: var(--nm-primary-hover)" />
-          <stop offset=".5" style="stop-color: var(--nm-primary)" />
-          <stop offset="1" style="stop-color: var(--nm-primary-active)" />
+        <linearGradient
+          id="recodexLogoBubble"
+          x1="312"
+          y1="280"
+          x2="700"
+          y2="724"
+          gradientUnits="userSpaceOnUse"
+        >
+          <stop offset="0" stop-color="var(--nm-primary-hover)" />
+          <stop offset=".42" stop-color="var(--nm-primary)" />
+          <stop offset="1" stop-color="var(--nm-primary-active)" />
         </linearGradient>
-        <radialGradient [attr.id]="ids.glow" cx="36%" cy="24%" r="76%">
-          <stop offset="0" stop-color="#ffffff" stop-opacity=".34" />
-          <stop offset=".56" stop-color="#ffffff" stop-opacity=".11" />
-          <stop offset="1" stop-color="#ffffff" stop-opacity="0" />
-        </radialGradient>
         <filter
-          [attr.id]="ids.shadow"
+          id="recodexLogoBubbleShadow"
           x="-30%"
           y="-30%"
           width="160%"
           height="160%"
           color-interpolation-filters="sRGB"
         >
-          <feDropShadow dx="0" dy="24" stdDeviation="28" flood-color="var(--nm-primary-active)" flood-opacity=".22" />
+          <feDropShadow
+            dx="0"
+            dy="18"
+            stdDeviation="20"
+            flood-color="var(--nm-primary-active)"
+            flood-opacity=".42"
+          />
         </filter>
       </defs>
 
-      <g [attr.filter]="'url(#' + ids.shadow + ')'">
-        <rect x="132" y="132" width="760" height="760" rx="228" [attr.fill]="'url(#' + ids.core + ')'" />
-        <rect
-          x="146"
-          y="146"
-          width="732"
-          height="732"
-          rx="214"
-          fill="none"
-          stroke="#dbe4ff"
-          stroke-opacity=".22"
-          stroke-width="12"
-        />
-        <ellipse cx="432" cy="254" rx="280" ry="132" [attr.fill]="'url(#' + ids.glow + ')'" />
-      </g>
-
-      <path
-        fill="#f5f8ff"
-        d="M350 678c-72 0-128-52-128-118 0-55 40-101 95-113 16-98 99-170 205-170 92 0 172 56 199 137 69 2 125 54 125 116 0 82-69 148-154 148H350z"
-      />
-
+      <rect width="1024" height="1024" rx="230" fill="url(#recodexLogoPaper)" />
       <g
-        fill="none"
-        [attr.stroke]="'url(#' + ids.ai + ')'"
-        stroke-width="42"
-        stroke-linecap="round"
-        stroke-linejoin="round"
+        filter="url(#recodexLogoBubbleShadow)"
+        transform="translate(512 512) scale(1.32) translate(-512 -512)"
       >
-        <path d="M420 550 512 474 604 550" />
-        <path d="M512 474v102" />
-      </g>
-
-      <g [attr.fill]="'url(#' + ids.ai + ')'">
-        <circle cx="420" cy="550" r="32" />
-        <circle cx="512" cy="474" r="38" />
-        <circle cx="604" cy="550" r="32" />
-        <circle cx="512" cy="592" r="28" />
+        <rect x="230" y="222" width="592" height="562" rx="188" fill="url(#recodexLogoBubble)" />
+        <ellipse cx="526" cy="292" rx="226" ry="98" fill="#ffffff" fill-opacity=".2" />
+        <path
+          d="M366 444 466 546 366 648"
+          fill="none"
+          stroke="#edf6ff"
+          stroke-width="52"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        />
+        <path
+          d="M552 660h166"
+          fill="none"
+          stroke="#edf6ff"
+          stroke-width="52"
+          stroke-linecap="round"
+        />
       </g>
     </svg>
   `,
@@ -89,14 +93,4 @@ import { ChangeDetectionStrategy, Component } from '@angular/core';
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class LogoComponent {
-  protected readonly ids = (() => {
-    const suffix = Math.random().toString(36).slice(2, 9);
-    return {
-      core: `freeai-logo-core-${suffix}`,
-      ai: `freeai-logo-ai-${suffix}`,
-      glow: `freeai-logo-glow-${suffix}`,
-      shadow: `freeai-logo-shadow-${suffix}`,
-    };
-  })();
-}
+export class LogoComponent {}

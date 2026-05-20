@@ -1,40 +1,26 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" role="img" aria-label="FreeAi logo">
   <defs>
-    <linearGradient id="cloudCore" x1="38" y1="34" x2="208" y2="226" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#6a92ff"/>
-      <stop offset=".46" stop-color="#3c52f2"/>
-      <stop offset="1" stop-color="#2739bb"/>
-    </linearGradient>
-    <linearGradient id="cloudAi" x1="98" y1="104" x2="158" y2="170" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#6a92ff"/>
-      <stop offset=".5" stop-color="#3448f4"/>
-      <stop offset="1" stop-color="#2031ac"/>
-    </linearGradient>
-    <radialGradient id="cloudGlow" cx="36%" cy="24%" r="76%">
-      <stop offset="0" stop-color="#ffffff" stop-opacity=".34"/>
-      <stop offset=".56" stop-color="#ffffff" stop-opacity=".11"/>
-      <stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
-    </radialGradient>
+    <clipPath id="freeaiCloudClip">
+      <path d="M80 165c-19 0-34-13-34-29 0-15 11-26 26-29 7-23 27-39 52-39 21 0 39 11 49 27 4-2 9-2 14-2 14 0 26 13 26 30 0 23-18 42-41 42H80z"/>
+    </clipPath>
   </defs>
 
-  <rect width="256" height="256" rx="64" fill="url(#cloudCore)"/>
-  <rect x="4" y="4" width="248" height="248" rx="60" fill="none" stroke="#dbe4ff" stroke-opacity=".22" stroke-width="4"/>
-  <ellipse cx="110" cy="62" rx="90" ry="40" fill="url(#cloudGlow)"/>
-
-  <path
-    fill="#f5f8ff"
-    d="M90 176c-18 0-32-13-32-29 0-14 10-25 24-29 4-25 26-44 54-44 24 0 46 15 53 35 18 1 32 14 32 29 0 20-17 38-39 38H90z"
-  />
-
-  <g fill="none" stroke="url(#cloudAi)" stroke-width="10" stroke-linecap="round" stroke-linejoin="round">
-    <path d="M104 136 128 116 152 136"/>
-    <path d="M128 116v28"/>
+  <rect x="8" y="8" width="240" height="240" rx="54" fill="#3d5af6"/>
+  <rect x="14" y="14" width="228" height="228" rx="48" fill="none" stroke="#dbe4ff" stroke-opacity=".26" stroke-width="4"/>
+  <path fill="none" stroke="#ffffff" stroke-opacity=".34" stroke-width="11" stroke-linecap="round" d="M56 131h29M171 131h29"/>
+  <path fill="#f8fbff" d="M80 165c-19 0-34-13-34-29 0-15 11-26 26-29 7-23 27-39 52-39 21 0 39 11 49 27 4-2 9-2 14-2 14 0 26 13 26 30 0 23-18 42-41 42H80z"/>
+  <g clip-path="url(#freeaiCloudClip)">
+    <path fill="#3d5af6" fill-opacity=".08" d="M48 146h176v23H48z"/>
   </g>
-
-  <g fill="url(#cloudAi)">
-    <circle cx="104" cy="136" r="9"/>
-    <circle cx="128" cy="114" r="11"/>
-    <circle cx="152" cy="136" r="9"/>
-    <circle cx="128" cy="150" r="7"/>
+  <g fill="none" stroke="#2644bf" stroke-width="8" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M105 137 128 118 152 137"/>
+    <path d="M128 118v30"/>
+    <path d="M112 152h32"/>
+  </g>
+  <g fill="#2644bf">
+    <circle cx="105" cy="137" r="7"/>
+    <circle cx="128" cy="118" r="9"/>
+    <circle cx="152" cy="137" r="7"/>
+    <circle cx="128" cy="152" r="8"/>
   </g>
 </svg>
