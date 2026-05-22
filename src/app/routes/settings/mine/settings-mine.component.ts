@@ -31,6 +31,25 @@ export class SettingsMineComponent {
 
   protected saving = false;
   protected readonly user = this.settingsService.user as User & { username?: string; email?: string };
+  protected readonly passwordRules = [
+    '建议至少 8 位，并混合大小写字母、数字或符号。',
+    '不要复用平台密钥、上游账号 Secret 或其他系统密码。',
+    '修改密码后会清除当前登录态，需要立即重新登录。',
+  ];
+  protected readonly securityTips = [
+    {
+      title: '后台登录密码',
+      desc: '用于进入 FreeAi 管理台，和平台密钥不是同一套鉴权。',
+    },
+    {
+      title: '平台密钥',
+      desc: '用于业务客户端访问 /v1 网关，不应该作为后台登录密码使用。',
+    },
+    {
+      title: '上游账号 Secret',
+      desc: '只保存在后端加密字段中，前端不会回显原始 Secret。',
+    },
+  ];
 
   protected readonly form = this.fb.nonNullable.group({
     oldPassword: ['', [Validators.required]],
@@ -45,6 +64,10 @@ export class SettingsMineComponent {
 
   protected get userEmail(): string {
     return this.user.email || '-';
+  }
+
+  protected get accountInitial(): string {
+    return this.username.slice(0, 1).toUpperCase();
   }
 
   protected savePassword(): void {
