@@ -1,11 +1,11 @@
 <form nz-form [formGroup]="form" (ngSubmit)="submit()" role="form">
   <nz-tabs [nzAnimated]="false" class="tabs" (nzSelectChange)="switch($event)">
-    <nz-tab [nzTitle]="'管理员账号'">
+    <nz-tab [nzTitle]="'账号密码'">
       @if (error) {
         <nz-alert [nzType]="'error'" [nzMessage]="error" [nzShowIcon]="true" class="mb-lg" />
       }
       <nz-form-item>
-        <nz-form-control nzErrorTip="请输入管理员用户名">
+        <nz-form-control nzErrorTip="请输入用户名">
           <nz-input-wrapper>
             <nz-icon nzInputPrefix nzType="user" />
             <input
@@ -13,18 +13,18 @@
               nzSize="large"
               formControlName="username"
               autocomplete="username"
-              placeholder="管理员用户名"
+              placeholder="用户名: admin"
             />
           </nz-input-wrapper>
         </nz-form-control>
       </nz-form-item>
       <nz-form-item>
         <nz-form-control nzErrorTip="请输入登录密码">
-          <app-password-input formControlName="password" />
+          <app-password-input formControlName="password" placeholder="登录密码: navfirst.com" />
         </nz-form-control>
       </nz-form-item>
     </nz-tab>
-    <nz-tab [nzTitle]="'快速进入'">
+    <nz-tab *ngIf="false" [nzTitle]="'快速进入'">
       <nz-form-item>
         <nz-form-control [nzErrorTip]="emailErrorTip">
           <nz-input-wrapper>

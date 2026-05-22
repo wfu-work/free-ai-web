@@ -21,7 +21,7 @@ import { NzIconModule } from 'ng-zorro-antd/icon';
         <global-footer [links]="links">
           Copyright
           <i class="anticon anticon-copyright"></i> 2020-{{ year }}
-          <a href="//www.github.com" target="_blank">武汉小兮科技</a>
+          <a href="//www.github.com" target="_blank">小兮科技</a>
         </global-footer>
       </div>
     </div>
