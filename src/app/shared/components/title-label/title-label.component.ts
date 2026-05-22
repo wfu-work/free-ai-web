@@ -30,6 +30,7 @@ import { NzIconModule } from 'ng-zorro-antd/icon';
     `
       :host {
         display: block;
+        min-width: 0;
       }
 
       .title-label {
@@ -72,6 +73,7 @@ import { NzIconModule } from 'ng-zorro-antd/icon';
 
       .title-label-title {
         margin: 0;
+        overflow-wrap: anywhere;
         color: #172235;
         font-size: 26px;
         font-weight: 800;
@@ -81,6 +83,8 @@ import { NzIconModule } from 'ng-zorro-antd/icon';
 
       .title-label-description {
         margin: 8px 0 0;
+        max-width: 760px;
+        overflow-wrap: anywhere;
         color: #65727f;
         font-size: 14px;
         font-weight: 600;

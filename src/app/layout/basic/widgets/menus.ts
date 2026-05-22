@@ -421,6 +421,15 @@ import { NzMenuModule } from 'ng-zorro-antd/menu';
         .menu-list.ant-menu-inline-collapsed {
           width: 52px;
           margin-inline: auto;
+          border-right: 0 !important;
+          border-inline-end: 0 !important;
+        }
+
+        .menu-list.ant-menu-root,
+        .menu-list.ant-menu-inline,
+        .menu-list.ant-menu-inline-collapsed {
+          border-right: 0 !important;
+          border-inline-end: 0 !important;
         }
 
         .menu-list .ant-menu-item,
