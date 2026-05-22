@@ -1,0 +1,93 @@
+<section class="mine-page">
+  <div class="d-flex justify-content-between header-row">
+    <title-label
+      title="个人中心"
+      description="管理当前后台账号的基础信息与登录密码。"
+    />
+  </div>
+
+  <div class="mine-layout">
+    <nz-card class="profile-card" [nzBordered]="false">
+      <div class="profile-head">
+        <nz-avatar
+          [nzSrc]="user.avatar || 'assets/avatar.gif'"
+          nzSize="large"
+          nzShape="circle"
+        />
+        <div>
+          <span>当前账号</span>
+          <strong>{{ username }}</strong>
+          <small>{{ userEmail }}</small>
+        </div>
+      </div>
+      <div class="profile-grid">
+        <div>
+          <span>登录身份</span>
+          <strong>后台管理员</strong>
+        </div>
+        <div>
+          <span>安全建议</span>
+          <strong>定期更新密码</strong>
+        </div>
+      </div>
+    </nz-card>
+
+    <nz-card class="password-card" [nzBordered]="false">
+      <div class="panel-title">
+        <div>
+          <strong>修改密码</strong>
+          <span>修改后当前登录会失效，需要使用新密码重新登录。</span>
+        </div>
+      </div>
+
+      <form nz-form [formGroup]="form" nzLayout="vertical" class="password-form" (ngSubmit)="savePassword()">
+        <nz-form-item>
+          <nz-form-label nzRequired>当前密码</nz-form-label>
+          <nz-form-control nzErrorTip="请输入当前密码">
+            <app-password-input
+              formControlName="oldPassword"
+              placeholder="请输入当前密码"
+              autocomplete="current-password"
+            />
+          </nz-form-control>
+        </nz-form-item>
+
+        <nz-form-item>
+          <nz-form-label nzRequired>新密码</nz-form-label>
+          <nz-form-control nzErrorTip="请输入至少 6 位的新密码">
+            <app-password-input
+              formControlName="newPassword"
+              placeholder="请输入新密码"
+              autocomplete="new-password"
+            />
+          </nz-form-control>
+        </nz-form-item>
+
+        <nz-form-item>
+          <nz-form-label nzRequired>确认新密码</nz-form-label>
+          <nz-form-control [nzErrorTip]="confirmError">
+            <app-password-input
+              formControlName="confirmPassword"
+              placeholder="请再次输入新密码"
+              autocomplete="new-password"
+            />
+          </nz-form-control>
+        </nz-form-item>
+
+        <ng-template #confirmError let-control>
+          @if (control.hasError('mismatch')) {
+            两次输入的新密码不一致
+          } @else {
+            请再次输入新密码
+          }
+        </ng-template>
+
+        <div class="form-actions">
+          <button nz-button nzType="primary" [nzLoading]="saving" htmlType="submit">
+            保存新密码
+          </button>
+        </div>
+      </form>
+    </nz-card>
+  </div>
+</section>

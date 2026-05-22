@@ -2,6 +2,7 @@ import { Routes } from '@angular/router';
 
 import { SettingsGatewayComponent } from './gateway/settings-gateway.component';
 import { SettingsIntegrationComponent } from './integration/settings-integration.component';
+import { SettingsMineComponent } from './mine/settings-mine.component';
 import { SettingsRetentionComponent } from './retention/settings-retention.component';
 import { SettingsSecurityComponent } from './security/settings-security.component';
 
@@ -21,6 +22,11 @@ export const routes: Routes = [
     path: 'guide',
     component: SettingsIntegrationComponent,
     data: { title: '接入指南' },
+  },
+  {
+    path: 'mine',
+    component: SettingsMineComponent,
+    data: { title: '个人中心' },
   },
   {
     path: 'security',

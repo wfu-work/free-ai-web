@@ -26,6 +26,10 @@ import { NzMenuModule } from 'ng-zorro-antd/menu';
     </div>
     <nz-dropdown-menu #userMenu="nzDropdownMenu">
       <div nz-menu class="width-sm">
+        <div nz-menu-item routerLink="/settings/mine">
+          <i nz-icon nzType="user" class="mr-sm"></i>
+          个人中心
+        </div>
         <div nz-menu-item routerLink="/settings/security">
           <i nz-icon nzType="safety-certificate" class="mr-sm"></i>
           安全设置

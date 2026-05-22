@@ -85,6 +85,9 @@ import { NzMenuModule } from 'ng-zorro-antd/menu';
               <li nz-menu-item nzMatchRouter routerLink="/settings/gateway">
                 <span>网关配置</span>
               </li>
+              <li nz-menu-item nzMatchRouter routerLink="/settings/mine">
+                <span>个人中心</span>
+              </li>
               <li nz-menu-item nzMatchRouter routerLink="/settings/security">
                 <span>安全设置</span>
               </li>
