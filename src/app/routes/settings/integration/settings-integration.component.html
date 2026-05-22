@@ -68,7 +68,7 @@
         </div>
         <ul class="note-list">
           <li>业务侧统一访问 `/v1/*`，不要直接把前端管理端的登录状态拿来调用代理接口。</li>
-          <li>平台密钥本身是不带 `Bearer` 的原始值；放到 HTTP 请求头时直接使用 `Authorization: 平台密钥`。</li>
+          <li>平台密钥本身是不带 `Bearer` 的原始值；放到 HTTP 请求头时使用 `Authorization: Bearer 平台密钥`。</li>
           <li>如果某个平台密钥限制了允许模型，请求里的模型必须在允许列表内。</li>
         </ul>
       </nz-card>

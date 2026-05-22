@@ -109,7 +109,7 @@ export class SettingsIntegrationComponent implements OnInit {
   }
 
   protected get authHeaderPreview(): string {
-    return `Authorization: ${this.sampleKey}`;
+    return `Authorization: Bearer ${this.sampleKey}`;
   }
 
   protected get curlModelsExample(): string {
