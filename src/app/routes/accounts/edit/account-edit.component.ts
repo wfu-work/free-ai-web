@@ -303,7 +303,7 @@ export class AccountEditComponent implements OnInit, OnDestroy {
       sessionStorage.setItem(this.oauthVerifierStorageKey(state), codeVerifier);
       this.openAIAuthorizeUrl = this.buildOpenAIAuthorizeUrl(state, codeChallenge);
       this.loginCallbackHint = `已打开 OpenAI OAuth 授权页；回调地址为 ${OPENAI_OAUTH_REDIRECT_URI}，登录后请复制浏览器地址栏中的完整回调 URL 到下方解析。`;
-      const authWindow = window.open(this.openAIAuthorizeUrl, '_blank', 'noopener,noreferrer');
+      const authWindow = window.open(this.openAIAuthorizeUrl, '_blank');
       if (!authWindow) {
         this.message.warning('浏览器拦截了登录授权窗口，请允许弹出窗口后重试');
         return;
@@ -348,12 +348,16 @@ export class AccountEditComponent implements OnInit, OnDestroy {
       .subscribe((result) => {
         this.form.controls.authType.setValue(result.authType || 'login_callback');
         this.form.controls.secret.setValue(result.secret || '');
-        this.loginCallbackHint = result.hasAccessToken
-          ? `已解析 access_token，Secret 提示：${result.secretHint || '-'}`
-          : result.exchangeError
-            ? `已解析 code/state，但换取 access_token 失败：${result.exchangeError}`
-            : '已解析 code/state，但没有 access_token；请确认这是当前页面点击登录授权后生成的回调 URL。';
-        if (result.hasAccessToken) {
+        this.loginCallbackHint = result.hasApiKeyToken
+          ? `已解析最终可用 token，Secret 提示：${result.secretHint || '-'}`
+          : result.hasAccessToken
+            ? result.apiKeyError
+              ? `已解析 OAuth access_token，但换取最终可用 token 失败：${result.apiKeyError}`
+              : '已解析 OAuth access_token，但没有拿到最终可用 token。'
+            : result.exchangeError
+              ? `已解析 code/state，但换取 access_token 失败：${result.exchangeError}`
+              : '已解析 code/state，但没有 access_token；请确认这是当前页面点击登录授权后生成的回调 URL。';
+        if (result.hasApiKeyToken || result.hasAccessToken) {
           this.message.success('登录回调已解析');
         } else {
           this.message.warning('已解析回调，但未发现 access_token');

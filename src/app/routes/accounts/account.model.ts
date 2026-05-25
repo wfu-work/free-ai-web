@@ -174,6 +174,7 @@ export interface AccountLoginCallbackParseResult {
   secret: string;
   secretHint: string;
   accessToken?: string;
+  apiKeyToken?: string;
   code?: string;
   state?: string;
   codeVerifier?: string;
@@ -183,7 +184,9 @@ export interface AccountLoginCallbackParseResult {
   expiresIn?: string;
   scope?: string;
   exchangeError?: string;
+  apiKeyError?: string;
   hasAccessToken: boolean;
+  hasApiKeyToken?: boolean;
   params: Record<string, string>;
 }
 
