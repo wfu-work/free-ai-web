@@ -38,43 +38,23 @@
               </se>
 
               <se label="供应商" required error="请选择供应商">
-                <nz-select id="provider" formControlName="provider" nzShowSearch nzPlaceHolder="请选择供应商">
+                <nz-select id="provider" formControlName="provider" [nzDisabled]="true">
                   @for (provider of providerOptions; track provider) {
                     <nz-option [nzValue]="provider.value" [nzLabel]="provider.label" />
                   }
                 </nz-select>
               </se>
 
-              <se label="API 请求地址" [required]="isCustomProvider" error="请输入 API 请求地址">
+              <se label="API 请求地址">
                 <input
                   id="apiBaseUrl"
                   nz-input
                   formControlName="apiBaseUrl"
-                  [readOnly]="apiBaseUrlReadonly"
-                  placeholder="https://api.example.com/v1"
+                  [readOnly]="true"
+                  placeholder="https://api.openai.com/v1"
                 />
                 <div class="field-extra">{{ apiBaseUrlHint }}</div>
               </se>
-
-              @if (isCustomProvider) {
-                <se label="供应商名称" required error="请输入供应商名称">
-                  <input
-                    id="supplierName"
-                    nz-input
-                    formControlName="supplierName"
-                    placeholder="例如：Acme AI"
-                  />
-                </se>
-
-                <se label="官网链接" required error="请输入官网链接">
-                  <input
-                    id="officialUrl"
-                    nz-input
-                    formControlName="officialUrl"
-                    placeholder="https://example.com"
-                  />
-                </se>
-              }
 
               <se label="账号组">
                 <nz-select
@@ -90,7 +70,12 @@
               </se>
 
               <se label="邮箱或备注名">
-                <input id="email" nz-input formControlName="email" placeholder="可填写邮箱、租户或用途" />
+                <input
+                  id="email"
+                  nz-input
+                  formControlName="email"
+                  placeholder="可填写邮箱、租户或用途"
+                />
               </se>
 
               <se label="账号类型">
@@ -124,9 +109,19 @@
                 [required]="formMode === 'create'"
                 [error]="formMode === 'create' ? '新增账号时 Secret 必填' : ''"
               >
-                <input id="secret" nz-input type="password" formControlName="secret" autocomplete="off" />
+                <input
+                  id="secret"
+                  nz-input
+                  type="password"
+                  formControlName="secret"
+                  autocomplete="off"
+                />
                 <div class="field-extra">
-                  {{ formMode === 'edit' ? '留空表示保留当前 Secret。' : 'Secret 只会写入后端加密存储。' }}
+                  {{
+                    formMode === 'edit'
+                      ? '留空表示保留当前 Secret。'
+                      : 'Secret 只会写入后端加密存储。'
+                  }}
                 </div>
               </se>
 
@@ -153,7 +148,8 @@
                     复制授权链接
                   </button>
                   <div class="field-extra">
-                    将打开 OpenAI OAuth 授权页，并携带 client_id、redirect_uri、scope、state 和 PKCE 参数；登录完成后复制浏览器地址栏中的完整回调 URL 到下方解析。
+                    将打开 OpenAI OAuth 授权页，并携带 client_id、redirect_uri、scope、state 和 PKCE
+                    参数；登录完成后复制浏览器地址栏中的完整回调 URL 到下方解析。
                   </div>
                   @if (openAIAuthorizeUrl) {
                     <div class="field-extra">
@@ -180,7 +176,10 @@
                     </button>
                   </div>
                   <div class="field-extra">
-                    {{ loginCallbackHint || '解析成功后会自动写入 Secret；只有 access_token 可直接用于代理请求。' }}
+                    {{
+                      loginCallbackHint ||
+                        '解析成功后会自动写入 Secret；只有 access_token 可直接用于代理请求。'
+                    }}
                   </div>
                 </se>
               }
@@ -210,31 +209,10 @@
                     <i nz-icon nzType="cloud-upload"></i>
                   </button>
                 </div>
-                <div class="field-extra">留空表示不限制；点击右侧图标可从上游 API 拉取模型列表。</div>
+                <div class="field-extra">
+                  留空表示不限制；点击右侧图标可从上游 API 拉取模型列表。
+                </div>
               </se>
-
-              @if (showUsageConfig) {
-                <se label="额度查询">
-                  <nz-select id="usageQueryType" formControlName="usageQueryType" nzPlaceHolder="请选择额度查询方式">
-                    @for (option of usageQueryOptions; track option.value) {
-                      <nz-option [nzValue]="option.value" [nzLabel]="option.label" />
-                    }
-                  </nz-select>
-                  <div class="field-extra">{{ usageQueryExtra }}</div>
-                </se>
-
-                @if (needsUsageApiUrl) {
-                  <se label="额度接口地址" required error="请输入额度接口地址">
-                    <input
-                      id="usageApiUrl"
-                      nz-input
-                      formControlName="usageApiUrl"
-                      [placeholder]="usageApiUrlPlaceholder"
-                    />
-                    <div class="field-extra">同步时会使用当前 Secret 作为 key 参数请求该地址。</div>
-                  </se>
-                }
-              }
             </se-container>
           </section>
 
@@ -242,7 +220,12 @@
             <div class="section-title">调度与备注</div>
             <se-container col="2" nzLayout="vertical">
               <se label="优先级">
-                <nz-input-number id="priority" formControlName="priority" [nzMin]="0" [nzStep]="1" />
+                <nz-input-number
+                  id="priority"
+                  formControlName="priority"
+                  [nzMin]="0"
+                  [nzStep]="1"
+                />
               </se>
 
               <se label="权重">
@@ -304,9 +287,14 @@
 
         <div class="section-title">填写建议</div>
         <ul class="note-list">
-          <li>供应商建议与后端路由配置保持一致，目前支持 OpenAI、CodexZH、FreeModel、Aiok、Tokeni 和自定义供应商。</li>
-          <li>支持模型可留空表示不限制；如果填了列表，请确保模型映射中的 public model 能匹配到这里。</li>
-          <li>登录回调会解析回调 URL 中的 token 或 code/state；只有 access_token 可以直接用于代理请求。</li>
+          <li>上游固定为 OpenAI 官方 Platform API，不支持第三方转发地址。</li>
+          <li>
+            支持模型可留空表示不限制；如果填了列表，请确保模型映射中的 public model 能匹配到这里。
+          </li>
+          <li>
+            登录回调会解析回调 URL 中的 token 或 code/state；只有 access_token
+            可以直接用于代理请求。
+          </li>
           <li>权重越高越容易被选中，优先级用于做更粗粒度的先后顺序控制。</li>
           <li>编辑账号时如果不打算更换 Secret，直接留空即可，后端会保留原值。</li>
         </ul>

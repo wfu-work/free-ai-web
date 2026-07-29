@@ -15,7 +15,6 @@ import { catchError, finalize, forkJoin, of } from 'rxjs';
 import {
   AccountSelectOption,
   DEFAULT_ACCOUNT_GROUP_OPTIONS,
-  DEFAULT_USAGE_QUERY_OPTIONS,
   getAccountTypeLabel,
   getProviderLabel,
   mergeAccountTypeOptions,
@@ -27,22 +26,12 @@ import { AccountsService } from '../accounts.service';
 
 type AccountFormMode = 'create' | 'edit';
 
-const PROVIDER_API_BASE_URLS: Record<string, string> = {
-  openai: 'https://api.openai.com/v1',
-  codexzh: 'https://api.codexzh.com/v1',
-  freemodel: 'https://api.freemodel.dev',
-  aiok: 'https://aiok.club/v1',
-  tokeni: 'https://api.tokeni.top',
-};
-const USAGE_API_URLS: Record<string, string> = {
-  codexzh: 'https://codexzh.com/api/v1/usage/stats',
-  freemodel: 'https://freemodel.dev/api/usage',
-  tokeni: 'https://api.tokeni.top/v1/usage',
-};
+const OPENAI_API_BASE_URL = 'https://api.openai.com/v1';
 const OPENAI_OAUTH_AUTHORIZE_URL = 'https://auth.openai.com/oauth/authorize';
 const OPENAI_OAUTH_CLIENT_ID = 'app_EMoamEEZ73f0CkXaXp7hrann';
 const OPENAI_OAUTH_REDIRECT_URI = 'http://localhost:1455/auth/callback';
-const OPENAI_OAUTH_SCOPE = 'openid profile email offline_access api.connectors.read api.connectors.invoke';
+const OPENAI_OAUTH_SCOPE =
+  'openid profile email offline_access api.connectors.read api.connectors.invoke';
 const OPENAI_OAUTH_VERIFIER_STORAGE_KEY = 'freeai.openai.oauth.codeVerifier';
 
 @Component({
@@ -73,7 +62,6 @@ export class AccountEditComponent implements OnInit, OnDestroy {
   protected parsingCallback = false;
   protected loginCallbackHint = '';
   protected openAIAuthorizeUrl = '';
-  protected readonly usageQueryOptions = DEFAULT_USAGE_QUERY_OPTIONS;
 
   protected readonly form = this.fb.nonNullable.group({
     name: ['', [Validators.required]],
@@ -113,22 +101,15 @@ export class AccountEditComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     window.addEventListener('message', this.handleOAuthCallbackMessage);
-    this.form.controls.provider.valueChanges.subscribe((provider) => {
-      this.syncApiBaseUrlWithProvider(provider);
-      this.syncUsageConfigWithProvider(provider);
-      this.syncCustomProviderValidators();
-      this.cdr.markForCheck();
-    });
-    this.form.controls.usageQueryType.valueChanges.subscribe(() => {
-      this.syncUsageApiUrlValidators();
+    this.form.controls.provider.valueChanges.subscribe(() => {
+      this.syncOfficialProviderFields();
       this.cdr.markForCheck();
     });
     this.form.controls.authType.valueChanges.subscribe(() => {
       this.syncSecretValidators();
       this.cdr.markForCheck();
     });
-    this.syncCustomProviderValidators();
-    this.syncUsageApiUrlValidators();
+    this.syncOfficialProviderFields();
     this.loadSelectOptions();
     const guid = this.route.snapshot.paramMap.get('guid');
     if (guid) {
@@ -152,11 +133,12 @@ export class AccountEditComponent implements OnInit, OnDestroy {
     const value = this.form.getRawValue();
     const payload: AccountPayload = {
       ...value,
-      apiBaseUrl: this.resolveApiBaseUrl(value.provider, value.apiBaseUrl),
-      supplierName: value.provider === 'custom' ? value.supplierName.trim() : '',
-      officialUrl: value.provider === 'custom' ? value.officialUrl.trim() : '',
-      usageQueryType: value.usageQueryType,
-      usageApiUrl: this.resolveUsageApiUrl(value.usageQueryType, value.usageApiUrl),
+      provider: 'openai',
+      apiBaseUrl: OPENAI_API_BASE_URL,
+      supplierName: 'OpenAI',
+      officialUrl: 'https://openai.com',
+      usageQueryType: '',
+      usageApiUrl: '',
       supportedModels: value.supportedModels ? JSON.stringify([value.supportedModels]) : '',
       priority: Number(value.priority || 0),
       weight: Math.max(Number(value.weight || 1), 1),
@@ -197,8 +179,8 @@ export class AccountEditComponent implements OnInit, OnDestroy {
 
   protected get pageDescription(): string {
     return this.formMode === 'create'
-      ? '创建新的上游 AI 账号，配置供应商、认证方式、支持模型与调度优先级。'
-      : '更新已有账号的供应商、调度参数与 Secret；留空 Secret 表示继续使用当前值。';
+      ? '创建官方 OpenAI 账号，配置认证方式、支持模型与调度优先级。'
+      : '更新官方 OpenAI 账号的调度参数与 Secret；留空 Secret 表示继续使用当前值。';
   }
 
   protected get statusLabel(): string {
@@ -244,51 +226,16 @@ export class AccountEditComponent implements OnInit, OnDestroy {
     return getProviderLabel(this.form.controls.provider.value);
   }
 
-  protected get isCustomProvider(): boolean {
-    return this.form.controls.provider.value === 'custom';
-  }
-
-  protected get apiBaseUrlReadonly(): boolean {
-    return !this.isCustomProvider;
-  }
-
-  protected get showUsageConfig(): boolean {
-    const provider = this.form.controls.provider.value;
-    return provider === 'custom' || provider === 'codexzh' || provider === 'freemodel' || provider === 'tokeni';
-  }
-
-  protected get isCodexZHUsageQuery(): boolean {
-    return this.form.controls.usageQueryType.value === 'codexzh';
-  }
-
-  protected get needsUsageApiUrl(): boolean {
-    return ['codexzh', 'freemodel', 'tokeni'].includes(this.form.controls.usageQueryType.value);
-  }
-
-  protected get usageApiUrlPlaceholder(): string {
-    return this.defaultUsageApiUrl(this.form.controls.usageQueryType.value) || 'https://example.com/api/usage';
-  }
-
-  protected get usageQueryExtra(): string {
-    const provider = this.form.controls.provider.value;
-    if (provider === 'tokeni') return 'Tokeni 中转账号会默认使用 Tokeni 额度接口同步额度。';
-    if (provider === 'freemodel') return 'FreeModel 中转账号会默认使用 FreeModel 额度接口同步额度。';
-    if (provider === 'codexzh') return 'CodexZH 中转账号会默认使用 CodexZH 额度接口同步额度。';
-    return '自定义中转账号需要选择对应的额度查询方式，才可以同步额度。';
-  }
-
   protected get isLoginCallbackAuth(): boolean {
     return this.form.controls.authType.value === 'login_callback';
   }
 
   protected get canOpenLoginAuth(): boolean {
-    return this.form.controls.provider.value === 'openai';
+    return true;
   }
 
   protected get apiBaseUrlHint(): string {
-    const provider = this.form.controls.provider.value;
-    if (provider === 'custom') return '自定义供应商需要填写 OpenAI 兼容接口地址，通常以 /v1 结尾。';
-    return '系统会按供应商自动使用该接口地址，账号测试和网关转发都会走这里。';
+    return '系统固定使用 OpenAI 官方 Platform API 地址。';
   }
 
   protected async openLoginAuth(): Promise<void> {
@@ -367,10 +314,6 @@ export class AccountEditComponent implements OnInit, OnDestroy {
 
   protected fetchModels(): void {
     const value = this.form.getRawValue();
-    if (!this.resolveApiBaseUrl(value.provider, value.apiBaseUrl)) {
-      this.message.warning('请先填写 API 请求地址');
-      return;
-    }
     if (!value.secret.trim() && this.formMode === 'create') {
       this.message.warning('请先填写 Secret，拉取模型列表需要上游鉴权');
       return;
@@ -379,8 +322,8 @@ export class AccountEditComponent implements OnInit, OnDestroy {
     this.accountsService
       .fetchModels({
         guid: this.formMode === 'edit' ? this.accountGuid : '',
-        provider: value.provider,
-        apiBaseUrl: this.resolveApiBaseUrl(value.provider, value.apiBaseUrl),
+        provider: 'openai',
+        apiBaseUrl: OPENAI_API_BASE_URL,
         authType: value.authType,
         secret: value.secret,
       })
@@ -441,9 +384,9 @@ export class AccountEditComponent implements OnInit, OnDestroy {
       name: '',
       email: '',
       provider: 'openai',
-      apiBaseUrl: this.providerDefaultApiBaseUrl('openai'),
-      supplierName: '',
-      officialUrl: '',
+      apiBaseUrl: OPENAI_API_BASE_URL,
+      supplierName: 'OpenAI',
+      officialUrl: 'https://openai.com',
       usageQueryType: '',
       usageApiUrl: '',
       accountType: 'manual',
@@ -480,17 +423,19 @@ export class AccountEditComponent implements OnInit, OnDestroy {
       )
       .subscribe((account) => {
         this.account = account;
-        this.mergeSelectOptions([account.provider], [account.accountGroup], [account.accountType]);
-        this.modelOptions = this.mergeModelOptions([this.firstSupportedModel(account.supportedModels)]);
+        this.mergeSelectOptions([], [account.accountGroup], [account.accountType]);
+        this.modelOptions = this.mergeModelOptions([
+          this.firstSupportedModel(account.supportedModels),
+        ]);
         this.form.reset({
           name: account.name ?? '',
           email: account.email ?? '',
-          provider: account.provider ?? 'openai',
-          apiBaseUrl: account.apiBaseUrl || this.providerDefaultApiBaseUrl(account.provider),
-          supplierName: account.supplierName ?? '',
-          officialUrl: account.officialUrl ?? '',
-          usageQueryType: account.usageQueryType ?? '',
-          usageApiUrl: account.usageApiUrl ?? '',
+          provider: 'openai',
+          apiBaseUrl: OPENAI_API_BASE_URL,
+          supplierName: 'OpenAI',
+          officialUrl: 'https://openai.com',
+          usageQueryType: '',
+          usageApiUrl: '',
           accountType: account.accountType ?? '',
           authType: account.authType || 'api_key',
           secret: '',
@@ -513,7 +458,7 @@ export class AccountEditComponent implements OnInit, OnDestroy {
     }).subscribe({
       next: ({ accounts, groups }) => {
         this.mergeSelectOptions(
-          accounts.map((item) => item.provider),
+          [],
           groups.map((item) => item.name),
           accounts.map((item) => item.accountType),
         );
@@ -523,8 +468,12 @@ export class AccountEditComponent implements OnInit, OnDestroy {
     });
   }
 
-  private mergeSelectOptions(providers: string[], accountGroups: string[], accountTypes: string[]): void {
-    this.providerOptions = mergeProviderOptions(providers);
+  private mergeSelectOptions(
+    _providers: string[],
+    accountGroups: string[],
+    accountTypes: string[],
+  ): void {
+    this.providerOptions = mergeProviderOptions([]);
     this.accountGroupOptions = mergeStringOptions(DEFAULT_ACCOUNT_GROUP_OPTIONS, accountGroups);
     this.accountTypeOptions = mergeAccountTypeOptions(accountTypes);
   }
@@ -536,52 +485,29 @@ export class AccountEditComponent implements OnInit, OnDestroy {
       const parsed = JSON.parse(value);
       if (Array.isArray(parsed)) return String(parsed[0] || '');
     } catch {
-      return value.split(',').map((item) => item.trim()).filter(Boolean)[0] || '';
+      return (
+        value
+          .split(',')
+          .map((item) => item.trim())
+          .filter(Boolean)[0] || ''
+      );
     }
     return value;
   }
 
   private mergeModelOptions(values: Array<string | null | undefined>): string[] {
     return Array.from(
-      new Set(
-        [...this.modelOptions, ...values]
-          .map((item) => (item || '').trim())
-          .filter(Boolean),
-      ),
+      new Set([...this.modelOptions, ...values].map((item) => (item || '').trim()).filter(Boolean)),
     );
   }
 
-  private syncCustomProviderValidators(): void {
-    const controls = [
-      this.form.controls.apiBaseUrl,
-      this.form.controls.supplierName,
-      this.form.controls.officialUrl,
-    ];
-    if (this.isCustomProvider) {
-      controls.forEach((control) => control.setValidators([Validators.required]));
-    } else {
-      controls.forEach((control) => control.clearValidators());
-    }
-    controls.forEach((control) => control.updateValueAndValidity({ emitEvent: false }));
-  }
-
-  private syncApiBaseUrlWithProvider(provider: string): void {
-    if (provider === 'custom') {
-      const current = this.form.controls.apiBaseUrl.value.trim();
-      if (Object.values(PROVIDER_API_BASE_URLS).includes(current)) {
-        this.form.controls.apiBaseUrl.setValue('', { emitEvent: false });
-      }
-      return;
-    }
-    this.form.controls.apiBaseUrl.setValue(this.providerDefaultApiBaseUrl(provider), { emitEvent: false });
-  }
-
-  private providerDefaultApiBaseUrl(provider: string): string {
-    return PROVIDER_API_BASE_URLS[(provider || '').trim()] || '';
-  }
-
-  private resolveApiBaseUrl(provider: string, value: string): string {
-    return value.trim() || this.providerDefaultApiBaseUrl(provider);
+  private syncOfficialProviderFields(): void {
+    this.form.controls.provider.setValue('openai', { emitEvent: false });
+    this.form.controls.apiBaseUrl.setValue(OPENAI_API_BASE_URL, { emitEvent: false });
+    this.form.controls.supplierName.setValue('OpenAI', { emitEvent: false });
+    this.form.controls.officialUrl.setValue('https://openai.com', { emitEvent: false });
+    this.form.controls.usageQueryType.setValue('', { emitEvent: false });
+    this.form.controls.usageApiUrl.setValue('', { emitEvent: false });
   }
 
   private syncSecretValidators(): void {
@@ -591,56 +517,6 @@ export class AccountEditComponent implements OnInit, OnDestroy {
       this.form.controls.secret.clearValidators();
     }
     this.form.controls.secret.updateValueAndValidity({ emitEvent: false });
-  }
-
-  private syncUsageConfigWithProvider(provider: string): void {
-    const usageTypeControl = this.form.controls.usageQueryType;
-    const usageUrlControl = this.form.controls.usageApiUrl;
-    if (provider === 'codexzh') {
-      usageTypeControl.setValue('codexzh', { emitEvent: false });
-      if (!usageUrlControl.value.trim()) {
-        usageUrlControl.setValue(this.defaultUsageApiUrl('codexzh'), { emitEvent: false });
-      }
-    } else if (provider === 'freemodel') {
-      usageTypeControl.setValue('freemodel', { emitEvent: false });
-      const current = usageUrlControl.value.trim();
-      if (!current || current === this.defaultUsageApiUrl('codexzh')) {
-        usageUrlControl.setValue(this.defaultUsageApiUrl('freemodel'), { emitEvent: false });
-      }
-    } else if (provider === 'tokeni') {
-      usageTypeControl.setValue('tokeni', { emitEvent: false });
-      const current = usageUrlControl.value.trim();
-      if (!current || current === this.defaultUsageApiUrl('codexzh') || current === this.defaultUsageApiUrl('freemodel')) {
-        usageUrlControl.setValue(this.defaultUsageApiUrl('tokeni'), { emitEvent: false });
-      }
-    } else if (provider !== 'custom') {
-      usageTypeControl.setValue('', { emitEvent: false });
-      usageUrlControl.setValue('', { emitEvent: false });
-    }
-    this.syncUsageApiUrlValidators();
-  }
-
-  private syncUsageApiUrlValidators(): void {
-    const control = this.form.controls.usageApiUrl;
-    if (this.needsUsageApiUrl) {
-      control.setValidators([Validators.required]);
-      if (!control.value.trim()) {
-        control.setValue(this.defaultUsageApiUrl(this.form.controls.usageQueryType.value), { emitEvent: false });
-      }
-    } else {
-      control.clearValidators();
-    }
-    control.updateValueAndValidity({ emitEvent: false });
-  }
-
-  private defaultUsageApiUrl(type: string): string {
-    return USAGE_API_URLS[(type || '').trim()] || '';
-  }
-
-  private resolveUsageApiUrl(type: string, value: string): string {
-    const usageType = (type || '').trim();
-    if (!usageType) return '';
-    return value.trim() || this.defaultUsageApiUrl(usageType);
   }
 
   private tryParseLoginCallbackFromLocation(): void {

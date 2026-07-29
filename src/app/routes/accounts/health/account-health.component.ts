@@ -35,7 +35,6 @@ export class AccountHealthComponent implements OnInit {
   protected rawData: AccountHealthItem[] = [];
   protected data: AccountHealthItem[] = [];
   protected loading = false;
-  protected syncingGuid = '';
   totalCount = 0;
 
   protected readonly statusTag: STColumnTag = {
@@ -64,18 +63,6 @@ export class AccountHealthComponent implements OnInit {
     { title: '下次检查', render: 'nextCheckRender', width: 150 },
     { title: '冷却 / 过期', render: 'cooldownRender', width: 190 },
     { title: '最近使用', render: 'activityRender', width: 180 },
-    {
-      title: '操作',
-      width: 140,
-      fixed: 'right',
-      buttons: [
-        {
-          text: '同步额度',
-          click: (item: AccountHealthItem) => this.refreshUsage(item),
-          iif: (item: AccountHealthItem) => this.canRefreshUsage(item),
-        },
-      ],
-    },
   ];
 
   ngOnInit(): void {
@@ -108,7 +95,9 @@ export class AccountHealthComponent implements OnInit {
 
   protected get cooldownCount(): number {
     return this.data.filter(
-      (item) => item.status === 'cooldown' || Boolean(item.cooldownUntil && item.cooldownUntil > Date.now()),
+      (item) =>
+        item.status === 'cooldown' ||
+        Boolean(item.cooldownUntil && item.cooldownUntil > Date.now()),
     ).length;
   }
 
@@ -118,46 +107,12 @@ export class AccountHealthComponent implements OnInit {
     ).length;
   }
 
-  protected refreshUsage(item: AccountHealthItem): void {
-    if (!this.canRefreshUsage(item)) return;
-    this.syncingGuid = item.guid;
-    this.accountsService
-      .refreshUsage(item.guid)
-      .pipe(
-        finalize(() => {
-          this.syncingGuid = '';
-          this.cdr.markForCheck();
-        }),
-      )
-      .subscribe(() => {
-        this.getData();
-      });
+  protected usageQueryLabel(_item: AccountHealthItem): string {
+    return '本地用量统计';
   }
 
-  protected canRefreshUsage(item: AccountHealthItem): boolean {
-    if (item.usageQueryType === 'codexzh' || item.provider === 'codexzh') return true;
-    if (item.usageQueryType === 'freemodel' || item.provider === 'freemodel') return true;
-    if (item.usageQueryType === 'tokeni' || item.provider === 'tokeni') return true;
-    if (item.usageQueryType) return false;
-    return [item.supplierName, item.usageApiUrl]
-      .filter(Boolean)
-      .some((value) => {
-        const text = String(value).toLowerCase();
-        return text.includes('codexzh') || text.includes('freemodel') || text.includes('tokeni');
-      });
-  }
-
-  protected usageQueryLabel(item: AccountHealthItem): string {
-    if (item.usageQueryType === 'tokeni' || item.provider === 'tokeni') return 'Tokeni 额度';
-    if (item.usageQueryType === 'freemodel' || item.provider === 'freemodel') return 'FreeModel 额度';
-    if (this.canRefreshUsage(item)) return 'CodexZH 额度';
-    return '未配置额度查询';
-  }
-
-  protected nextUsageCheckLabel(item: AccountHealthItem): string {
-    if (!this.canRefreshUsage(item)) return '未配置';
-    if (!item.nextUsageCheckAt) return '待检查';
-    return this.formatTime(item.nextUsageCheckAt);
+  protected nextUsageCheckLabel(_item: AccountHealthItem): string {
+    return '不查询官方余额';
   }
 
   protected quotaTone(quota: AccountQuota): string {
@@ -181,8 +136,14 @@ export class AccountHealthComponent implements OnInit {
     const totalTokens = Number(quota.totalTokens || 0);
     const remainingTokens = Number(quota.remainingTokens || 0);
     if (quota.status === 'exhausted') return true;
-    if (totalAmount > 0 && (remainingAmount <= 0 || usedPercent >= QUOTA_EXHAUSTED_PERCENT_THRESHOLD)) return true;
-    return totalTokens > 0 && (remainingTokens <= 0 || usedPercent >= QUOTA_EXHAUSTED_PERCENT_THRESHOLD);
+    if (
+      totalAmount > 0 &&
+      (remainingAmount <= 0 || usedPercent >= QUOTA_EXHAUSTED_PERCENT_THRESHOLD)
+    )
+      return true;
+    return (
+      totalTokens > 0 && (remainingTokens <= 0 || usedPercent >= QUOTA_EXHAUSTED_PERCENT_THRESHOLD)
+    );
   }
 
   protected quotaPercent(quota: AccountQuota): string {

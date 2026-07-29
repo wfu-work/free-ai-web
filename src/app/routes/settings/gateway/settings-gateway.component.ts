@@ -1,5 +1,11 @@
 import { HttpClient } from '@angular/common/http';
-import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnInit, inject } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  ChangeDetectorRef,
+  Component,
+  OnInit,
+  inject,
+} from '@angular/core';
 import { FormBuilder } from '@angular/forms';
 import { SHARED_IMPORTS, TitleLabelComponent } from '@shared';
 import { NzMessageService } from 'ng-zorro-antd/message';
@@ -61,7 +67,7 @@ export class SettingsGatewayComponent implements OnInit {
     { label: '均衡轮询 (Round Robin)', value: 'round_robin' },
   ];
 
-  protected readonly freeModelOptions = [
+  protected readonly freeAccountModelOptions = [
     { label: '跟随请求', value: 'follow_request' },
     { label: 'gpt-5.4-mini', value: 'gpt-5.4-mini' },
     { label: 'gpt-5.4', value: 'gpt-5.4' },
@@ -141,9 +147,9 @@ export class SettingsGatewayComponent implements OnInit {
     return this.strategyOptions.find((item) => item.value === value)?.label || '-';
   }
 
-  protected get freeModelLabel(): string {
+  protected get freeAccountModelLabel(): string {
     const value = this.form.controls.freeAccountModel.value;
-    return this.freeModelOptions.find((item) => item.value === value)?.label || value || '-';
+    return this.freeAccountModelOptions.find((item) => item.value === value)?.label || value || '-';
   }
 
   protected get upstreamModeLabel(): string {
@@ -163,7 +169,8 @@ export class SettingsGatewayComponent implements OnInit {
       const parsed = JSON.parse(raw) as Partial<GatewayConfig>;
       const migrated = {
         ...parsed,
-        upstreamProxyUrl: parsed.upstreamProxyUrl || (parsed as { upstreamProxy?: string }).upstreamProxy || '',
+        upstreamProxyUrl:
+          parsed.upstreamProxyUrl || (parsed as { upstreamProxy?: string }).upstreamProxy || '',
       };
       this.form.patchValue(this.normalizeConfig({ ...DEFAULT_GATEWAY_CONFIG, ...migrated }));
     } catch {
