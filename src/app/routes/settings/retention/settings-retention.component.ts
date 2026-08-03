@@ -246,7 +246,7 @@ export class SettingsRetentionComponent implements OnInit {
     if (!value || typeof value !== 'object') return false;
     const payload = value as Record<string, any>;
     return (
-      payload['version'] === 'freeai-core-backup/v1' &&
+      payload['version'] === 'freeai-account-pool-backup/v3' &&
       payload['data'] &&
       typeof payload['data'] === 'object'
     );
@@ -258,7 +258,7 @@ export class SettingsRetentionComponent implements OnInit {
     return [
       `账号 ${count('accounts')}`,
       `分组 ${count('accountGroups')}`,
-      `模型目录 ${count('modelCatalogs') || count('modelMappings')}`,
+      `模型目录 ${count('modelCatalogs')}`,
       `账号模型 ${count('accountModels')}`,
       `对外策略 ${count('modelExposures')}`,
       `API 密钥 ${count('platformKeys')}`,
@@ -278,7 +278,9 @@ export class SettingsRetentionComponent implements OnInit {
       Number(result.accounts || 0) +
       Number(result.accountGroups || 0) +
       Number(result.accountQuotas || 0) +
-      Number(result.modelMappings || 0) +
+      Number(result.modelCatalogs || 0) +
+      Number(result.accountModels || 0) +
+      Number(result.modelExposures || 0) +
       Number(result.platformKeys || 0) +
       Number(result.routeStates || 0) +
       Number(result.systemConfigs || 0) +
@@ -291,7 +293,9 @@ export class SettingsRetentionComponent implements OnInit {
       Number(result.failedAccounts || 0) +
       Number(result.failedAccountGroups || 0) +
       Number(result.failedAccountQuotas || 0) +
-      Number(result.failedModelMappings || 0) +
+      Number(result.failedModelCatalogs || 0) +
+      Number(result.failedAccountModels || 0) +
+      Number(result.failedModelExposures || 0) +
       Number(result.failedPlatformKeys || 0) +
       Number(result.failedRouteStates || 0) +
       Number(result.failedSystemConfigs || 0) +

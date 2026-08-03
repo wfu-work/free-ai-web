@@ -33,8 +33,12 @@ export interface CoreBackupImportResult {
   failedAccountGroups: number;
   accountQuotas: number;
   failedAccountQuotas: number;
-  modelMappings: number;
-  failedModelMappings: number;
+  modelCatalogs: number;
+  failedModelCatalogs: number;
+  accountModels: number;
+  failedAccountModels: number;
+  modelExposures: number;
+  failedModelExposures: number;
   platformKeys: number;
   failedPlatformKeys: number;
   routeStates: number;
