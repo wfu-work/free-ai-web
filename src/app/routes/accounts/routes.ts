@@ -2,7 +2,6 @@ import { Routes } from '@angular/router';
 
 import { AccountEditComponent } from './edit/account-edit.component';
 import { AccountGroupsComponent } from './groups/account-groups.component';
-import { AccountHealthComponent } from './health/account-health.component';
 import { AccountListComponent } from './list/account-list.component';
 
 export const routes: Routes = [
@@ -10,7 +9,7 @@ export const routes: Routes = [
   {
     path: 'list',
     component: AccountListComponent,
-    data: { title: '账号列表' },
+    data: { title: '官方账号' },
   },
   {
     path: 'edit',
@@ -26,10 +25,5 @@ export const routes: Routes = [
     path: 'groups',
     component: AccountGroupsComponent,
     data: { title: '账号分组' },
-  },
-  {
-    path: 'health',
-    component: AccountHealthComponent,
-    data: { title: '账号健康' },
   },
 ];

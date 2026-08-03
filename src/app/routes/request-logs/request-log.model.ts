@@ -12,7 +12,6 @@ export interface RequestLog {
   upstreamModel: string;
   reasoningEffort: string;
   serviceTier: string;
-  provider: string;
   statusCode: number;
   errorType: string;
   switched: boolean;
@@ -22,15 +21,11 @@ export interface RequestLog {
   firstTokenMs: number;
   inputTokens: number;
   outputTokens: number;
-  cacheReadTokens?: number;
   cachedInputTokens?: number;
-  cacheWriteTokens?: number;
-  inputCost?: number;
-  outputCost?: number;
-  cacheReadCost?: number;
-  cacheWriteCost?: number;
-  totalCost?: number;
-  chargedAmount?: number;
+  costMicrousd?: number;
+  costAmount?: number;
+  pricingMatched?: boolean;
+  pricingSource?: string;
   createdAtUnix: number;
   createTime?: number;
 }

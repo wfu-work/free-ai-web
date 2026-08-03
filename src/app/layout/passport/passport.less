@@ -139,21 +139,48 @@
 [data-theme='dark'] {
   :host ::ng-deep {
     .container {
-      background: #141414;
+      background:
+        radial-gradient(circle at 22% 36%, rgb(var(--nm-primary-rgb) / 15%), transparent 30%),
+        radial-gradient(circle at 82% 20%, rgb(15 139 141 / 12%), transparent 34%),
+        linear-gradient(128deg, #080d13 0%, var(--nm-page-background) 52%, #0d151d 100%);
+    }
+
+    .container::before {
+      background:
+        linear-gradient(118deg, transparent 0 24%, rgb(255 255 255 / 4%) 32%, transparent 42%),
+        linear-gradient(
+          124deg,
+          transparent 0 48%,
+          rgb(var(--nm-primary-rgb) / 7%) 56%,
+          transparent 66%
+        );
+    }
+
+    .wrap {
+      border-color: var(--nm-border);
+      background: var(--nm-surface-glass);
+      box-shadow:
+        0 28px 80px rgb(0 0 0 / 36%),
+        inset 0 1px 0 var(--nm-border);
     }
 
     .title {
-      color: fade(@white, 85%);
+      color: var(--nm-text);
     }
 
     .desc {
-      color: fade(@white, 45%);
+      color: var(--nm-text-secondary);
     }
 
-    @media (min-width: @screen-md-min) {
-      .container {
-        background-image: none;
-      }
+    .ant-checkbox-wrapper {
+      color: var(--nm-text-secondary);
+    }
+
+    .ant-input-affix-wrapper,
+    .ant-input {
+      border-color: var(--nm-border);
+      color: var(--nm-text);
+      background: var(--nm-surface-muted);
     }
   }
 }

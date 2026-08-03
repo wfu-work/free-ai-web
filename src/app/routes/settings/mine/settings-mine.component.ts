@@ -1,17 +1,12 @@
-import {
-  ChangeDetectionStrategy,
-  ChangeDetectorRef,
-  Component,
-  inject,
-} from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Router } from '@angular/router';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, inject } from '@angular/core';
 import { FormBuilder, Validators } from '@angular/forms';
+import { Router } from '@angular/router';
 import { DA_SERVICE_TOKEN, ITokenService } from '@delon/auth';
 import { SettingsService, User } from '@delon/theme';
 import { SHARED_IMPORTS, TitleLabelComponent } from '@shared';
-import { finalize, forkJoin, switchMap } from 'rxjs';
 import { NzMessageService } from 'ng-zorro-antd/message';
+import { finalize, forkJoin, switchMap } from 'rxjs';
 
 @Component({
   selector: 'app-settings-mine',
@@ -30,19 +25,22 @@ export class SettingsMineComponent {
   private readonly tokenService: ITokenService = inject(DA_SERVICE_TOKEN);
 
   protected saving = false;
-  protected readonly user = this.settingsService.user as User & { username?: string; email?: string };
+  protected readonly user = this.settingsService.user as User & {
+    username?: string;
+    email?: string;
+  };
   protected readonly passwordRules = [
     '建议至少 8 位，并混合大小写字母、数字或符号。',
-    '不要复用平台密钥、上游账号 Secret 或其他系统密码。',
+    '不要复用API 密钥、上游账号 Secret 或其他系统密码。',
     '修改密码后会清除当前登录态，需要立即重新登录。',
   ];
   protected readonly securityTips = [
     {
       title: '后台登录密码',
-      desc: '用于进入 FreeAi 管理台，和平台密钥不是同一套鉴权。',
+      desc: '用于进入 FreeAi 管理台，和API 密钥不是同一套鉴权。',
     },
     {
-      title: '平台密钥',
+      title: 'API 密钥',
       desc: '用于业务客户端访问 /v1 网关，不应该作为后台登录密码使用。',
     },
     {
@@ -108,7 +106,9 @@ export class SettingsMineComponent {
           this.router.navigateByUrl(this.tokenService.login_url || '/passport/login');
         },
         error: (error) => {
-          this.message.error(error?.msg || error?.error?.msg || '密码修改失败，请确认当前密码是否正确');
+          this.message.error(
+            error?.msg || error?.error?.msg || '密码修改失败，请确认当前密码是否正确',
+          );
         },
       });
   }

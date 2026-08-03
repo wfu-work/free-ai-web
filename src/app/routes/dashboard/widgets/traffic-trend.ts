@@ -40,7 +40,10 @@ interface TrendRangeOption {
         [attr.aria-label]="selectedRangeLabel + '代理请求趋势柱状图'"
       >
         @for (item of bars; track trackBar($index, item)) {
-          <div class="trend-bar-wrap" [attr.aria-label]="item.time + ' ' + (item.raw || 0) + ' 次请求'">
+          <div
+            class="trend-bar-wrap"
+            [attr.aria-label]="item.time + ' ' + (item.raw || 0) + ' 次请求'"
+          >
             <div
               class="trend-bar"
               [class.trend-bar-active]="item.active"
@@ -70,11 +73,8 @@ interface TrendRangeOption {
         height: 100%;
         padding: 28px 30px 26px;
         border: 1px solid rgb(var(--nm-primary-rgb) / 12%);
-        border-radius: 22px;
-        background: rgb(255 255 255 / 88%);
-        box-shadow:
-          0 18px 44px rgb(var(--nm-primary-rgb) / 8%),
-          inset 0 1px 0 rgb(255 255 255 / 90%);
+        border-radius: 8px;
+        background: var(--nm-surface-glass);
       }
 
       .trend-card-header {
@@ -86,7 +86,7 @@ interface TrendRangeOption {
 
       .trend-card-header h2 {
         margin: 0;
-        color: #182334;
+        color: var(--nm-text);
         font-size: 20px;
         font-weight: 800;
         line-height: 1.35;
@@ -160,7 +160,7 @@ interface TrendRangeOption {
         justify-content: space-between;
         margin-top: 14px;
         padding-top: 10px;
-        color: #b0beb9;
+        color: var(--nm-text-secondary);
         font-size: 14px;
         font-weight: 700;
       }
@@ -194,7 +194,7 @@ export class DashboardTrafficTrendComponent {
   @Input() badge = '过去 1 小时';
   @Input() selectedRange = '1h';
   @Input() rangeOptions: TrendRangeOption[] = [];
-  @Output() selectedRangeChange = new EventEmitter<string>();
+  @Output() readonly selectedRangeChange = new EventEmitter<string>();
   @Input() bars: TrafficBar[] = [
     { time: '10:00', value: 24, raw: 8 },
     { time: '10:10', value: 38, raw: 12 },
@@ -208,7 +208,12 @@ export class DashboardTrafficTrendComponent {
 
   get axisLabels(): string[] {
     if (this.bars.length <= 5) return this.bars.map((item) => item.time);
-    const indexes = [0, Math.floor(this.bars.length / 3), Math.floor((this.bars.length / 3) * 2), this.bars.length - 1];
+    const indexes = [
+      0,
+      Math.floor(this.bars.length / 3),
+      Math.floor((this.bars.length / 3) * 2),
+      this.bars.length - 1,
+    ];
     return indexes.map((index) => this.bars[index]?.time).filter(Boolean);
   }
 

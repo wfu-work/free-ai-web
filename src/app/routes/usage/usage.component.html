@@ -1,0 +1,211 @@
+<section class="usage-page">
+  <div class="header-row">
+    <title-label
+      title="用量分析"
+      description="按时间范围集中查看请求质量、Token 消耗和估算成本，定位账号池的使用与稳定性问题。"
+    />
+    <div class="header-actions">
+      <div class="range-switch" role="group" aria-label="统计时间范围">
+        @for (range of ranges; track range) {
+          <button
+            nz-button
+            [nzType]="days === range ? 'primary' : 'default'"
+            [attr.aria-pressed]="days === range"
+            (click)="load(range)"
+          >
+            {{ range }} 天
+          </button>
+        }
+      </div>
+      <button nz-button (click)="load()" [disabled]="loading">
+        <i nz-icon nzType="reload"></i>
+        刷新
+      </button>
+    </div>
+  </div>
+
+  <nz-spin [nzSpinning]="loading">
+    <div class="period-hint">
+      统计区间：{{ formatDate(summary.since) }} - {{ formatDate(summary.until) }}
+    </div>
+
+    <div class="metric-grid">
+      <article class="metric-card">
+        <span>请求总量</span>
+        <strong>{{ formatNumber(summary.totalRequests) }}</strong>
+        <small
+          >成功 {{ formatNumber(summary.successRequests) }} · 失败
+          {{ formatNumber(summary.failedRequests) }}</small
+        >
+      </article>
+      <article
+        class="metric-card"
+        [class.metric-success]="summary.totalRequests > 0 && successPercent >= 95"
+        [class.metric-warning]="
+          summary.totalRequests > 0 && successPercent < 95 && successPercent >= 85
+        "
+        [class.metric-danger]="summary.totalRequests > 0 && successPercent < 85"
+      >
+        <span>成功率</span>
+        <strong>{{ successRate }}</strong>
+        <small>{{ reliabilityLabel }}</small>
+      </article>
+      <article
+        class="metric-card"
+        [class.metric-warning]="summary.avgLatencyMs > 5000 && summary.avgLatencyMs <= 12000"
+        [class.metric-danger]="summary.avgLatencyMs > 12000"
+      >
+        <span>平均延迟</span>
+        <strong>{{ formatMs(summary.avgLatencyMs) }}</strong>
+        <small>{{ latencyLabel }}</small>
+      </article>
+      <article class="metric-card">
+        <span>Token 总量</span>
+        <strong>{{ formatNumber(totalTokens) }}</strong>
+        <small>输入 {{ formatNumber(summary.inputTokens) }}</small>
+      </article>
+      <article class="metric-card metric-cost">
+        <span>估算成本</span>
+        <strong>{{ formatCost(summary.costAmount) }}</strong>
+        <small>基于已匹配的官方定价</small>
+      </article>
+    </div>
+
+    <div class="content-grid mt-lg">
+      <nz-card class="panel-card panel-card-wide" [nzBordered]="false">
+        <div class="panel-head quality-head">
+          <div>
+            <div class="panel-title">请求质量</div>
+            <div class="panel-subtitle">质量评分综合当前时间范围内的成功率与平均延迟。</div>
+          </div>
+        </div>
+        <div class="quality-layout">
+          <div class="quality-score">
+            <nz-progress
+              nzType="circle"
+              [nzPercent]="qualityScore"
+              [nzWidth]="112"
+              [nzStrokeColor]="qualityStrokeColor"
+            />
+            <div>
+              <strong>{{ reliabilityLabel }}</strong>
+              <span>{{ failurePressureLabel }}</span>
+            </div>
+          </div>
+          <div class="analysis-list">
+            @for (item of analysisItems; track item.title) {
+              <div
+                class="analysis-item"
+                [class.analysis-neutral]="item.tone === 'neutral'"
+                [class.analysis-warn]="item.tone === 'warn'"
+                [class.analysis-bad]="item.tone === 'bad'"
+              >
+                <strong>{{ item.title }}</strong>
+                <span>{{ item.text }}</span>
+              </div>
+            }
+          </div>
+        </div>
+      </nz-card>
+
+      <nz-card class="panel-card panel-card-wide" [nzBordered]="false">
+        <div class="panel-head">
+          <div>
+            <div class="panel-title">用量排行</div>
+            <div class="panel-subtitle">最多展示 20 个对象，成本单位为美元。</div>
+          </div>
+          <div class="dimension-switch" role="tablist" aria-label="用量统计维度">
+            @for (item of dimensions; track item.key) {
+              <button
+                type="button"
+                role="tab"
+                [attr.aria-selected]="dimension === item.key"
+                [class.active]="dimension === item.key"
+                (click)="dimension = item.key"
+              >
+                {{ item.label }}
+              </button>
+            }
+          </div>
+        </div>
+
+        <div class="table-wrap">
+          <table class="usage-table">
+            <thead>
+              <tr>
+                <th>名称</th>
+                <th>请求数</th>
+                <th>失败数</th>
+                <th>输入 Token</th>
+                <th>输出 Token</th>
+                <th>缓存 Token</th>
+                <th>估算成本</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (row of rows; track row.dimension) {
+                <tr>
+                  <td class="name-cell">{{ row.dimension }}</td>
+                  <td>{{ formatNumber(row.requests) }}</td>
+                  <td [class.danger-text]="row.failures > 0">{{ formatNumber(row.failures) }}</td>
+                  <td>{{ formatNumber(row.inputTokens) }}</td>
+                  <td>{{ formatNumber(row.outputTokens) }}</td>
+                  <td>{{ formatNumber(row.cachedTokens) }}</td>
+                  <td>{{ formatCost(row.costAmount) }}</td>
+                </tr>
+              } @empty {
+                <tr>
+                  <td class="empty-cell" colspan="7">当前时间范围内暂无请求用量。</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </nz-card>
+
+      <nz-card class="panel-card" [nzBordered]="false">
+        <div class="panel-title">Token 构成</div>
+        <div class="token-list">
+          <div>
+            <span>输入 Token</span>
+            <strong>{{ formatNumber(summary.inputTokens) }}</strong>
+          </div>
+          <div>
+            <span>输出 Token</span>
+            <strong>{{ formatNumber(summary.outputTokens) }}</strong>
+          </div>
+          <div>
+            <span>缓存 Token</span>
+            <strong>{{ formatNumber(summary.cachedTokens) }}</strong>
+          </div>
+        </div>
+        <p class="source-note">缓存 Token 单独统计，不会从输入 Token 中重复扣除。</p>
+      </nz-card>
+
+      <nz-card class="panel-card" [nzBordered]="false">
+        <div class="panel-title">异常排查</div>
+        <div class="diagnostic-summary">
+          <strong>{{ reliabilityLabel }}</strong>
+          <span
+            >失败率 {{ failureRate }}，平均延迟
+            {{ formatMs(summary.avgLatencyMs) }}。出现异常时可从调用记录下钻定位。</span
+          >
+        </div>
+        <div class="quick-actions">
+          <a routerLink="/request-logs/list">
+            <i nz-icon nzType="file-search"></i>
+            <span>查看调用记录</span>
+          </a>
+          <a routerLink="/accounts/list">
+            <i nz-icon nzType="team"></i>
+            <span>检查官方账号</span>
+          </a>
+          <a routerLink="/models/list">
+            <i nz-icon nzType="api"></i>
+            <span>检查模型目录</span>
+          </a>
+        </div>
+      </nz-card>
+    </div>
+  </nz-spin>
+</section>

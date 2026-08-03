@@ -12,7 +12,7 @@
 }
 
 .single-radio__label {
-  color: #6e7f98;
+  color: var(--nm-text-secondary);
   font-size: 14px;
   font-weight: 700;
   line-height: 1.5;
@@ -32,10 +32,10 @@
   min-height: 120px;
   min-width: 120px;
   padding: 18px 14px;
-  border: 1px solid #e7ecf3;
+  border: 1px solid var(--nm-border);
   border-radius: 18px;
-  background: linear-gradient(180deg, #f7f9fc 0%, #f3f6fa 100%);
-  color: #4a5872;
+  background: linear-gradient(180deg, var(--nm-surface) 0%, var(--nm-surface-muted) 100%);
+  color: var(--nm-text-secondary);
   text-align: center;
   cursor: pointer;
   transition:
@@ -54,7 +54,7 @@
     background:
       radial-gradient(circle at top, fade(@primary-color, 10%), transparent 55%),
       linear-gradient(180deg, #f2fff9 0%, #ecfbf4 100%);
-    color: #203049;
+    color: var(--nm-text);
   }
 
   &.is-disabled {
@@ -71,7 +71,7 @@
   justify-content: center;
   width: 42px;
   height: 42px;
-  color: #66758d;
+  color: var(--nm-text-secondary);
   font-size: 30px;
 
   img {
@@ -93,7 +93,7 @@
 }
 
 .single-radio__desc {
-  color: #8b98ad;
+  color: var(--nm-text-secondary);
   font-size: 12px;
   line-height: 1.4;
 }

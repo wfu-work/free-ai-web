@@ -1,3 +1,4 @@
+import { HttpClient, HttpContext } from '@angular/common/http';
 import {
   EnvironmentProviders,
   Injectable,
@@ -5,7 +6,6 @@ import {
   inject,
   provideAppInitializer,
 } from '@angular/core';
-import { HttpClient, HttpContext } from '@angular/common/http';
 import { ACLService } from '@delon/acl';
 import { DA_SERVICE_TOKEN } from '@delon/auth';
 import { CUSTOM_ERROR, MenuService, SettingsService, TitleService } from '@delon/theme';
@@ -40,8 +40,7 @@ export class StartupService {
 
   private handleAppData(res: NzSafeAny): void {
     const token = this.tokenService.get();
-    const fallbackName =
-      token?.['username'] || token?.['name'] || 'guest';
+    const fallbackName = token?.['username'] || token?.['name'] || 'guest';
     const user = {
       ...res,
       username: res.username || fallbackName,

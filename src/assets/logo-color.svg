@@ -1,41 +1,13 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024" role="img" aria-label="FreeAi logo">
   <defs>
-    <linearGradient id="paper" x1="210" y1="128" x2="814" y2="896" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#ffffff"/>
-      <stop offset="1" stop-color="#eef3ff"/>
+    <linearGradient id="freeAiRouteColor" x1="174" y1="150" x2="850" y2="874" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#3448F4"/>
+      <stop offset=".56" stop-color="#3B6EF5"/>
+      <stop offset="1" stop-color="#0EA5A4"/>
     </linearGradient>
-    <linearGradient id="bubble" x1="312" y1="280" x2="700" y2="724" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#b8b5ff"/>
-      <stop offset=".42" stop-color="#6fa7ff"/>
-      <stop offset="1" stop-color="#3448f4"/>
-    </linearGradient>
-    <radialGradient id="shine" cx="42%" cy="28%" r="58%">
-      <stop offset="0" stop-color="#ffffff" stop-opacity=".72"/>
-      <stop offset=".56" stop-color="#ffffff" stop-opacity=".16"/>
-      <stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
-    </radialGradient>
-    <filter id="bubbleShadow" x="-30%" y="-30%" width="160%" height="160%" color-interpolation-filters="sRGB">
-      <feDropShadow dx="0" dy="18" stdDeviation="20" flood-color="#2746db" flood-opacity=".42"/>
-    </filter>
   </defs>
-
-  <rect width="1024" height="1024" rx="230" fill="url(#paper)"/>
-  <g filter="url(#bubbleShadow)" transform="translate(512 512) scale(1.32) translate(-512 -512)">
-    <rect x="230" y="222" width="592" height="562" rx="188" fill="url(#bubble)"/>
-    <ellipse cx="526" cy="292" rx="226" ry="98" fill="#ffffff" fill-opacity=".2"/>
-    <g fill="none" stroke="#edf6ff" stroke-width="28" stroke-linecap="round" stroke-linejoin="round">
-      <path d="M512 396C512 432 512 462 512 494"/>
-      <path d="M512 494C474 508 448 524 414 546"/>
-      <path d="M512 494C550 508 576 524 610 546"/>
-      <path d="M414 546C448 584 478 612 512 636"/>
-      <path d="M610 546C576 584 546 612 512 636"/>
-    </g>
-    <g fill="#edf6ff">
-      <circle cx="512" cy="396" r="36"/>
-      <circle cx="512" cy="494" r="30"/>
-      <circle cx="414" cy="546" r="34"/>
-      <circle cx="610" cy="546" r="34"/>
-      <circle cx="512" cy="636" r="36"/>
-    </g>
+  <g fill="none" stroke="url(#freeAiRouteColor)" stroke-width="88">
+    <rect x="346" y="126" width="332" height="772" rx="166" transform="rotate(45 512 512)"/>
+    <rect x="346" y="126" width="332" height="772" rx="166" transform="rotate(-45 512 512)"/>
   </g>
 </svg>

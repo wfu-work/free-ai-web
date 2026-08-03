@@ -26,16 +26,16 @@
       min-height: 240px !important;
       height: 240px !important;
       margin: 0;
-      border: 2px dashed #cfd9e6;
+      border: 2px dashed var(--nm-border);
       border-radius: 22px;
-      background: linear-gradient(180deg, #fcfdff 0%, #f7f9fc 100%);
+      background: linear-gradient(180deg, var(--nm-surface) 0%, var(--nm-surface-muted) 100%);
       transition:
         border-color 0.2s ease,
         box-shadow 0.2s ease;
     }
 
     .upload-list__control .ant-upload.ant-upload-select-picture-card:hover {
-      border-color: #b8c9df;
+      border-color: rgb(var(--nm-primary-rgb) / 35%);
       box-shadow: 0 10px 24px rgb(15 23 42 / 6%);
     }
 
@@ -46,7 +46,7 @@
       height: 240px;
       border: 1px solid rgb(15 23 42 / 8%);
       border-radius: 22px;
-      background: #f7f9fc;
+      background: var(--nm-surface-muted);
     }
 
     .upload-list__card img {
@@ -92,12 +92,12 @@
       margin-bottom: 24px;
       border-radius: 50%;
       background: linear-gradient(180deg, #eef2f8 0%, #e8edf6 100%);
-      color: #8fa0b7;
+      color: var(--nm-text-secondary);
       font-size: 24px;
     }
 
     .upload-list__trigger-title {
-      color: #1f2a3d;
+      color: var(--nm-text);
       font-size: 15px;
       font-weight: 700;
       line-height: 1.5;
@@ -105,7 +105,7 @@
 
     .upload-list__trigger-hint {
       margin-top: 4px;
-      color: #a1aec0;
+      color: var(--nm-text-secondary);
       font-size: 12px;
       font-weight: 600;
       line-height: 1.5;

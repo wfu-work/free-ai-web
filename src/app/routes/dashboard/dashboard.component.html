@@ -2,7 +2,7 @@
   <div class="dashboard-header">
     <title-label
       title="工作台"
-      description="实时掌握 FreeAiGo 服务状态、账号池健康、模型路由、平台密钥与代理请求质量。"
+      description="实时掌握 FreeAiGo 服务状态、账号池健康、模型目录、API 密钥与代理调用质量。"
     />
     <button nz-button (click)="load()">
       <i nz-icon nzType="reload"></i>
@@ -12,23 +12,37 @@
 
   <nz-spin [nzSpinning]="loading">
     <div class="dashboard-hero">
-      <section class="readiness-card" [class.readiness-warning]="readinessTone === 'warning'" [class.readiness-danger]="readinessTone === 'danger'">
+      <section
+        class="readiness-card"
+        [class.readiness-warning]="readinessTone === 'warning'"
+        [class.readiness-danger]="readinessTone === 'danger'"
+      >
         <div>
           <span>网关接入状态</span>
           <strong>{{ readinessLabel }}</strong>
-          <p>综合服务、主密钥、账号池、模型映射和平台密钥判断当前网关是否可以稳定接流量。</p>
+          <p>综合服务、主密钥、账号池、模型目录和 API 密钥判断当前网关是否可以稳定接流量。</p>
         </div>
         <nz-progress
           nzType="circle"
           [nzPercent]="readinessScore"
           [nzWidth]="56"
-          [nzStrokeColor]="readinessTone === 'success' ? '#14856e' : readinessTone === 'warning' ? '#b7791f' : '#c24141'"
+          [nzStrokeColor]="
+            readinessTone === 'success'
+              ? '#14856e'
+              : readinessTone === 'warning'
+                ? '#b7791f'
+                : '#c24141'
+          "
         />
       </section>
 
       <section class="insight-grid">
         @for (item of insightCards; track item.title) {
-          <article class="insight-card" [class.insight-warning]="item.tone === 'warning'" [class.insight-danger]="item.tone === 'danger'">
+          <article
+            class="insight-card"
+            [class.insight-warning]="item.tone === 'warning'"
+            [class.insight-danger]="item.tone === 'danger'"
+          >
             <span>{{ item.title }}</span>
             <strong>{{ item.value }}</strong>
             <small>{{ item.text }}</small>
@@ -43,7 +57,9 @@
         title="接入就绪度"
         [value]="readinessScore + '%'"
         [trend]="readinessLabel"
-        [trendType]="readinessTone === 'success' ? 'up' : readinessTone === 'warning' ? 'neutral' : 'down'"
+        [trendType]="
+          readinessTone === 'success' ? 'up' : readinessTone === 'warning' ? 'neutral' : 'down'
+        "
       />
       <app-panel
         icon="team"
@@ -56,7 +72,7 @@
         icon="api"
         title="模型 / 密钥"
         [value]="enabledModelsLabel + ' / ' + enabledKeysLabel"
-        [trend]="routeStates.length + ' 个路由状态'"
+        [trend]="enabledModelsLabel + ' 个目录模型已启用'"
         trendType="neutral"
       />
       <app-panel
@@ -76,31 +92,29 @@
         [selectedRange]="trendRange"
         (selectedRangeChange)="onTrendRangeChange($event)"
       />
-      <dashboard-active-rules
-        [rules]="pendingRules"
-        link="/ops/metrics"
-        linkLabel="查看运行指标"
-      />
+      <dashboard-active-rules [rules]="pendingRules" link="/settings/security" linkLabel="查看安全状态" />
     </div>
 
     <div class="dashboard-grid">
       <nz-card class="dashboard-card" [nzBordered]="false">
         <div class="card-head">
           <div>
-            <h2>供应商健康</h2>
-            <p>按供应商聚合账号状态，快速判断是否存在单一上游风险。</p>
+            <h2>账号组健康</h2>
+            <p>按账号组聚合官方账号状态，快速判断各路由池的可用情况。</p>
           </div>
-          <a routerLink="/accounts/health">账号健康</a>
+          <a routerLink="/accounts/list">官方账号</a>
         </div>
-        @if (providerHealthRows.length) {
-          <div class="provider-list">
-            @for (item of providerHealthRows; track item.provider) {
-              <div class="provider-row">
+        @if (accountGroupHealthRows.length) {
+          <div class="group-list">
+            @for (item of accountGroupHealthRows; track item.group) {
+              <div class="group-row">
                 <div>
-                  <strong>{{ item.provider }}</strong>
-                  <span>{{ item.available }} / {{ item.total }} 可用，异常 {{ item.abnormal }}</span>
+                  <strong>{{ item.group }}</strong>
+                  <span
+                    >{{ item.available }} / {{ item.total }} 可用，异常 {{ item.abnormal }}</span
+                  >
                 </div>
-                <div class="provider-meter">
+                <div class="group-meter">
                   <span [style.width.%]="item.percent"></span>
                 </div>
                 <b>{{ item.percent }}%</b>
@@ -108,7 +122,7 @@
             }
           </div>
         } @else {
-          <div class="empty-state">暂无账号数据，创建账号后这里会显示供应商健康。</div>
+          <div class="empty-state">暂无账号数据，创建官方账号后这里会显示账号组健康。</div>
         }
       </nz-card>
 
@@ -116,9 +130,9 @@
         <div class="card-head">
           <div>
             <h2>错误分布</h2>
-            <p>来自请求日志的失败类型统计，适合快速判断是认证、限流还是上游错误。</p>
+            <p>来自调用记录的失败类型统计，适合快速判断是认证、限流还是上游错误。</p>
           </div>
-          <a routerLink="/request-logs/list">请求日志</a>
+          <a routerLink="/request-logs/list">调用记录</a>
         </div>
         @if (errorRows.length) {
           <div class="error-list">
@@ -136,17 +150,17 @@
             }
           </div>
         } @else {
-          <div class="empty-state">暂无失败请求，当前请求日志看起来很安静。</div>
+          <div class="empty-state">暂无失败请求，当前调用记录看起来很安静。</div>
         }
       </nz-card>
 
       <nz-card class="dashboard-card" [nzBordered]="false">
         <div class="card-head">
           <div>
-            <h2>最近请求</h2>
+            <h2>最近调用</h2>
             <p>展示最新代理请求，便于从工作台直接跳转排查。</p>
           </div>
-          <a routerLink="/request-logs/list">全部日志</a>
+          <a routerLink="/request-logs/list">全部记录</a>
         </div>
         @if (recentLogs.length) {
           <div class="recent-list">
@@ -154,7 +168,7 @@
               <a class="recent-row" [routerLink]="['/request-logs/detail', item.guid]">
                 <div>
                   <strong>{{ item.model || '-' }}</strong>
-                  <span>{{ item.provider || '-' }} · {{ item.accountName || shortText(item.accountGuid, '未命中账号') }}</span>
+                  <span>{{ item.accountName || shortText(item.accountGuid, '未命中账号') }}</span>
                 </div>
                 <div class="recent-meta">
                   <b [class.recent-error]="isFailureLog(item)">{{ item.statusCode || '-' }}</b>
@@ -164,32 +178,30 @@
             }
           </div>
         } @else {
-          <div class="empty-state">暂无请求日志，可以先到接入指南里发起一次调试请求。</div>
+          <div class="empty-state">暂无调用记录，可以先到接入指南里发起一次调试请求。</div>
         }
       </nz-card>
 
       <nz-card class="dashboard-card" [nzBordered]="false">
         <div class="card-head">
           <div>
-            <h2>路由状态</h2>
-            <p>查看最近更新的模型路由游标，辅助判断轮询和账号命中是否正常。</p>
+            <h2>模型目录</h2>
+            <p>官方模型由账号同步写入目录，路由只选择已确认支持模型的账号。</p>
           </div>
-          <a routerLink="/models/routes">路由状态</a>
+          <a routerLink="/models/list">模型目录</a>
         </div>
-        @if (routeRows.length) {
+        @if (metrics.enabledModels) {
           <div class="route-list">
-            @for (item of routeRows; track item.guid) {
-              <div class="route-row">
-                <div>
-                  <strong>{{ item.routeKey || '-' }}</strong>
-                  <span>最后账号 {{ shortText(item.lastAccountGuid, '-') }}</span>
-                </div>
-                <span>{{ formatTime(item.updatedAtUnix) }}</span>
+            <div class="route-row">
+              <div>
+                <strong>{{ metrics.enabledModels }} 个模型已启用</strong>
+                <span>对外 /v1/models 只展示存在可用账号的模型</span>
               </div>
-            }
+              <a routerLink="/models/list">查看</a>
+            </div>
           </div>
         } @else {
-          <div class="empty-state">暂无路由状态，模型被调用后会自动产生路由游标。</div>
+          <div class="empty-state">暂无模型目录，请先添加官方账号并同步模型。</div>
         }
       </nz-card>
     </div>

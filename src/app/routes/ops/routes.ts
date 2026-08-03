@@ -1,18 +1,12 @@
 import { Routes } from '@angular/router';
 
-import { OpsMetricsComponent } from './metrics/ops-metrics.component';
-import { OpsStatsComponent } from './stats/ops-stats.component';
+import { OpsTasksComponent } from './tasks/ops-tasks.component';
 
 export const routes: Routes = [
-  { path: '', redirectTo: 'metrics', pathMatch: 'full' },
+  { path: '', redirectTo: 'tasks', pathMatch: 'full' },
   {
-    path: 'metrics',
-    component: OpsMetricsComponent,
-    data: { title: '运行指标' },
-  },
-  {
-    path: 'stats',
-    component: OpsStatsComponent,
-    data: { title: '统计分析' },
+    path: 'tasks',
+    component: OpsTasksComponent,
+    data: { title: '任务中心' },
   },
 ];

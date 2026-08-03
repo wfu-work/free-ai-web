@@ -2,6 +2,20 @@
   display: block;
 }
 
+.switch-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 18px;
+  min-height: 32px;
+  align-items: center;
+}
+
+.capability-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
 .model-edit-page {
   display: grid;
   gap: 18px;
@@ -49,7 +63,7 @@
   min-width: 0;
   border: 1px solid rgb(var(--nm-primary-rgb) / 10%);
   border-radius: 8px;
-  background: rgb(255 255 255 / 92%);
+  background: var(--nm-surface-glass);
 }
 
 .metric-card {
@@ -60,7 +74,7 @@
 .quick-item span,
 .detail-grid span {
   display: block;
-  color: #697684;
+  color: var(--nm-text-secondary);
   font-size: 13px;
   font-weight: 700;
 }
@@ -71,7 +85,7 @@
   display: block;
   margin-top: 8px;
   overflow: hidden;
-  color: #1f3148;
+  color: var(--nm-text);
   font-size: 22px;
   font-weight: 850;
   line-height: 1.2;
@@ -97,7 +111,7 @@
 }
 
 .section-title {
-  color: #213149;
+  color: var(--nm-text);
   font-size: 16px;
   font-weight: 800;
 }
@@ -130,7 +144,7 @@
 
 .field-extra {
   margin-top: 8px;
-  color: #7a8797;
+  color: var(--nm-text-secondary);
   font-size: 12px;
   line-height: 1.6;
 }
@@ -141,19 +155,19 @@
   border-radius: 10px;
   background:
     linear-gradient(135deg, rgb(var(--nm-primary-rgb) / 8%), rgb(var(--nm-primary-rgb) / 3%)),
-    #f8fbff;
+    var(--nm-surface-muted);
 }
 
 .aside-intro strong {
   display: block;
-  color: #1f3148;
+  color: var(--nm-text);
   font-size: 15px;
   font-weight: 800;
 }
 
 .aside-intro p {
   margin: 8px 0 0;
-  color: #5d6d80;
+  color: var(--nm-text-secondary);
   font-size: 13px;
   line-height: 1.7;
 }
@@ -164,7 +178,7 @@
   padding: 14px;
   border: 1px solid rgb(var(--nm-primary-rgb) / 10%);
   border-radius: 8px;
-  background: #f8fafc;
+  background: var(--nm-surface-muted);
 }
 
 .quick-item strong,
@@ -180,7 +194,7 @@
   margin: 0;
   padding: 0;
   list-style: none;
-  color: #526174;
+  color: var(--nm-text-secondary);
   font-size: 14px;
   line-height: 1.7;
 }
@@ -189,7 +203,7 @@
   position: relative;
   padding: 12px 14px 12px 34px;
   border-radius: 8px;
-  background: #f8fafc;
+  background: var(--nm-surface-muted);
 }
 
 .note-list li::before {

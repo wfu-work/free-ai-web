@@ -2,7 +2,7 @@
   <nz-alert
     nzType="info"
     nzShowIcon
-    nzMessage="使用当前浏览器发起一次兼容 OpenAI 的网关请求，Authorization 使用平台密钥原始值，不自动添加 Bearer。"
+    nzMessage="服务端会使用所选 API 密钥的完整值执行调试请求，浏览器只提交密钥标识，不会读取或展示密钥明文。"
   />
 
   <form nz-form nzLayout="vertical" class="debug-form">
@@ -53,18 +53,18 @@
     </div>
 
     <nz-form-item>
-      <nz-form-label>平台密钥</nz-form-label>
+      <nz-form-label>API 密钥</nz-form-label>
       <nz-form-control>
         <nz-select
-          [(ngModel)]="form.platformKey"
-          name="platformKey"
+          [(ngModel)]="form.platformKeyGuid"
+          name="platformKeyGuid"
           nzShowSearch
           nzAllowClear
-          nzPlaceHolder="请选择平台密钥"
+          nzPlaceHolder="请选择API 密钥"
           (ngModelChange)="onKeyChange()"
         >
           @for (key of keys; track key.guid) {
-            <nz-option [nzValue]="key.key || key.keyPrefix" [nzLabel]="key.name + ' · ' + key.keyPrefix" />
+            <nz-option [nzValue]="key.guid" [nzLabel]="key.name + ' · ' + key.keyPrefix" />
           }
         </nz-select>
       </nz-form-control>
@@ -84,7 +84,7 @@
       </nz-form-item>
     }
 
-    @if (form.endpoint === 'responses' || form.endpoint === 'embeddings') {
+    @if (form.endpoint === 'responses') {
       <nz-form-item>
         <nz-form-label>输入内容</nz-form-label>
         <nz-form-control>
@@ -102,7 +102,15 @@
           <span>{{ resultStatus }}</span>
         }
       </div>
-      <button nz-button nzType="link" nzSize="small" [disabled]="!resultText" (click)="copyResult()">复制结果</button>
+      <button
+        nz-button
+        nzType="link"
+        nzSize="small"
+        [disabled]="!resultText"
+        (click)="copyResult()"
+      >
+        复制结果
+      </button>
     </div>
     <nz-spin [nzSpinning]="loading">
       <pre><code>{{ resultText || '点击“开始调试”后，这里会显示网关响应。' }}</code></pre>

@@ -71,7 +71,10 @@ export class SettingsRetentionComponent implements OnInit {
   }
 
   protected clearByRetention(): void {
-    const days = Math.max(Number(this.retentionForm.controls.retentionDays.value || DEFAULT_RETENTION_DAYS), 1);
+    const days = Math.max(
+      Number(this.retentionForm.controls.retentionDays.value || DEFAULT_RETENTION_DAYS),
+      1,
+    );
     this.modal.confirm({
       nzTitle: `确定清理 ${days} 天前的请求日志？`,
       nzContent: '清理操作不可恢复，建议确认已经完成必要的问题追踪。',
@@ -242,7 +245,11 @@ export class SettingsRetentionComponent implements OnInit {
   private isCoreBackupPayload(value: unknown): value is Record<string, any> {
     if (!value || typeof value !== 'object') return false;
     const payload = value as Record<string, any>;
-    return payload['version'] === 'freeai-core-backup/v1' && payload['data'] && typeof payload['data'] === 'object';
+    return (
+      payload['version'] === 'freeai-core-backup/v1' &&
+      payload['data'] &&
+      typeof payload['data'] === 'object'
+    );
   }
 
   private backupSummary(payload: Record<string, any>): string {
@@ -251,10 +258,11 @@ export class SettingsRetentionComponent implements OnInit {
     return [
       `账号 ${count('accounts')}`,
       `分组 ${count('accountGroups')}`,
-      `模型 ${count('modelMappings')}`,
-      `平台密钥 ${count('platformKeys')}`,
+      `模型目录 ${count('modelCatalogs') || count('modelMappings')}`,
+      `账号模型 ${count('accountModels')}`,
+      `对外策略 ${count('modelExposures')}`,
+      `API 密钥 ${count('platformKeys')}`,
       `额度 ${count('accountQuotas')}`,
-      `路由状态 ${count('routeStates')}`,
       `系统配置 ${count('systemConfigs')}`,
     ].join('、');
   }

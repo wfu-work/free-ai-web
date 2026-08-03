@@ -1,148 +1,215 @@
-<section class="settings-page">
-  <div class="d-flex justify-content-between header-row">
+<section class="integration-page">
+  <div class="header-row">
     <title-label
       title="接入指南"
-      description="展示兼容 OpenAI 的 /v1 网关入口、平台密钥鉴权方式和客户端请求示例。"
+      description="使用标准 OpenAI 客户端接入 FreeAiGo，只需配置 /v1 网关地址和 API 密钥。"
     />
     <div class="header-actions">
+      <button nz-button (click)="load()" [nzLoading]="loading">
+        <i nz-icon nzType="reload"></i>
+        刷新
+      </button>
       <button nz-button nzType="primary" (click)="openDebug()">
         <i nz-icon nzType="bug"></i>
-        调试
-      </button>
-      <button nz-button (click)="load()">
-        <i nz-icon nzType="reload"></i>
-        刷新密钥样例
+        接口调试
       </button>
     </div>
   </div>
 
+  <nz-alert
+    class="scope-alert"
+    nzType="info"
+    nzShowIcon
+    nzMessage="对外调用统一使用 /v1 接口"
+    nzDescription="管理接口仅供控制台内部使用，不属于客户端接入范围。业务客户端只需要下方列出的 3 个 OpenAI 兼容接口。"
+  />
+
   <nz-spin [nzSpinning]="loading">
-    <div class="metric-grid">
-      <article class="metric-card metric-success">
-        <span>代理前缀</span>
-        <strong class="address-text">{{ proxyBaseUrl }}</strong>
-      </article>
-      <article class="metric-card">
-        <span>管理前缀</span>
-        <strong class="address-text">{{ adminBaseUrl }}</strong>
-      </article>
-      <article class="metric-card">
-        <span>服务端口</span>
-        <strong>8787</strong>
-      </article>
-      <article class="metric-card metric-warning">
-        <span>启用平台密钥</span>
-        <strong>{{ enabledKeyCount }}</strong>
-      </article>
+    <nz-card class="gateway-card" [nzBordered]="false">
+      <div class="gateway-layout">
+        <div class="gateway-main">
+          <div class="gateway-tags">
+            <nz-tag nzColor="success">OpenAI 兼容</nz-tag>
+            <nz-tag nzColor="blue">仅 /v1</nz-tag>
+          </div>
+          <span class="gateway-label">统一网关地址（Base URL）</span>
+          <div class="gateway-address">
+            <div class="gateway-address-url">
+              {{ proxyBaseUrl }}
+            </div>
+            <button nz-button nzType="primary" (click)="copy(proxyBaseUrl, '网关地址')">
+              <i nz-icon nzType="copy"></i>
+              复制地址
+            </button>
+          </div>
+          <p>OpenAI SDK、Codex 和其他兼容客户端均使用此地址，具体接口路径由客户端自动拼接。</p>
+        </div>
+
+        <div class="gateway-statistics">
+          <nz-statistic nzTitle="对外接口" [nzValue]="publicEndpoints.length" nzSuffix=" 个" />
+          <nz-statistic nzTitle="启用 API 密钥" [nzValue]="enabledKeyCount" nzSuffix=" 把" />
+          <nz-statistic nzTitle="服务端口" [nzValue]="8787" />
+        </div>
+      </div>
+    </nz-card>
+
+    <nz-card class="steps-card section-card" [nzBordered]="false">
+      <div class="section-heading">
+        <div>
+          <strong>三步完成接入</strong>
+          <span>完成以下配置后即可通过标准 OpenAI 客户端调用。</span>
+        </div>
+      </div>
+      <nz-steps [nzCurrent]="0" nzSize="small">
+        <nz-step nzTitle="创建 API 密钥" nzDescription="保存创建时显示的完整 sk- 密钥" />
+        <nz-step nzTitle="配置网关地址" [nzDescription]="proxyBaseUrl" />
+        <nz-step nzTitle="选择公开模型" [nzDescription]="sampleModel" />
+      </nz-steps>
+    </nz-card>
+
+    <div class="guide-grid">
+      <nz-card class="section-card" [nzBordered]="false">
+        <div class="section-heading">
+          <div>
+            <strong>接入参数</strong>
+            <span>将这些参数填写到客户端的 OpenAI 配置中。</span>
+          </div>
+          <button
+            nz-button
+            nzType="link"
+            nzSize="small"
+            (click)="copy(authHeaderPreview, '鉴权头')"
+          >
+            复制鉴权头
+          </button>
+        </div>
+
+        <nz-descriptions nzBordered nzSize="small" [nzColumn]="1">
+          <nz-descriptions-item nzTitle="Base URL">
+            <code class="inline-code">{{ proxyBaseUrl }}</code>
+          </nz-descriptions-item>
+          <nz-descriptions-item nzTitle="API 密钥">
+            <code class="inline-code">{{ sampleKey }}</code>
+          </nz-descriptions-item>
+          <nz-descriptions-item nzTitle="Authorization">
+            <code class="inline-code">Bearer {{ sampleKey }}</code>
+          </nz-descriptions-item>
+          <nz-descriptions-item nzTitle="模型示例">
+            <code class="inline-code">{{ sampleModel }}</code>
+          </nz-descriptions-item>
+        </nz-descriptions>
+
+        <nz-alert
+          nzType="warning"
+          nzShowIcon
+          nzMessage="完整密钥仅在创建成功时显示一次"
+          nzDescription="请将示例中的 sk-your-api-key 替换为真实完整密钥。列表中的密钥前缀不能用于鉴权。"
+        />
+      </nz-card>
+
+      <nz-card class="section-card" [nzBordered]="false">
+        <div class="section-heading">
+          <div>
+            <strong>对外接口</strong>
+            <span>接入指南仅展示业务客户端可以调用的 /v1 接口。</span>
+          </div>
+          <nz-tag nzColor="processing">{{ publicEndpoints.length }} 个接口</nz-tag>
+        </div>
+
+        <nz-list nzBordered nzSize="small">
+          @for (endpoint of publicEndpoints; track endpoint.path) {
+            <nz-list-item>
+              <div class="endpoint-item">
+                <nz-tag [nzColor]="endpoint.method === 'GET' ? 'success' : 'blue'">
+                  {{ endpoint.method }}
+                </nz-tag>
+                <div class="endpoint-content">
+                  <div class="endpoint-title">
+                    <strong>{{ endpoint.name }}</strong>
+                    <code>{{ proxyBaseUrl }}{{ endpoint.path }}</code>
+                  </div>
+                  <span>{{ endpoint.description }}</span>
+                </div>
+              </div>
+            </nz-list-item>
+          }
+        </nz-list>
+      </nz-card>
     </div>
 
-    <div class="content-grid mt-lg">
-      <nz-card class="panel-card" [nzBordered]="false">
-        <div class="panel-head">
-          <div class="panel-title">接入参数</div>
-          <button nz-button nzType="link" nzSize="small" (click)="copy(proxyBaseUrl, '代理地址')">
-            复制地址
-          </button>
+    <nz-card class="section-card examples-card mt-md" [nzBordered]="false">
+      <div class="section-heading">
+        <div>
+          <strong>请求示例</strong>
+          <span>切换标签查看对应调用方式，复制后替换 API 密钥和模型即可使用。</span>
         </div>
-        <div class="detail-grid">
-          <div>
-            <span>基础地址</span>
-            <strong class="address-text">{{ proxyBaseUrl }}</strong>
+      </div>
+
+      <nz-tabs>
+        <nz-tab nzTitle="获取模型">
+          <div class="code-toolbar">
+            <span>curl · GET /v1/models</span>
+            <button
+              nz-button
+              nzType="link"
+              nzSize="small"
+              (click)="copy(curlModelsExample, '模型示例')"
+            >
+              <i nz-icon nzType="copy"></i>
+              复制代码
+            </button>
           </div>
-          <div>
-            <span>请求鉴权头</span>
-            <strong class="address-text">{{ authHeaderPreview }}</strong>
+          <pre><code>{{ curlModelsExample }}</code></pre>
+        </nz-tab>
+
+        <nz-tab nzTitle="聊天补全">
+          <div class="code-toolbar">
+            <span>curl · POST /v1/chat/completions</span>
+            <button
+              nz-button
+              nzType="link"
+              nzSize="small"
+              (click)="copy(curlChatExample, '聊天示例')"
+            >
+              <i nz-icon nzType="copy"></i>
+              复制代码
+            </button>
           </div>
-          <div>
-            <span>原始平台密钥</span>
-            <strong class="address-text">{{ sampleKey }}</strong>
+          <pre><code>{{ curlChatExample }}</code></pre>
+        </nz-tab>
+
+        <nz-tab nzTitle="响应接口">
+          <div class="code-toolbar">
+            <span>curl · POST /v1/responses</span>
+            <button
+              nz-button
+              nzType="link"
+              nzSize="small"
+              (click)="copy(curlResponsesExample, '响应接口示例')"
+            >
+              <i nz-icon nzType="copy"></i>
+              复制代码
+            </button>
           </div>
-          <div>
-            <span>样例密钥前缀</span>
-            <strong class="address-text">{{ sampleKeyPrefix }}</strong>
+          <pre><code>{{ curlResponsesExample }}</code></pre>
+        </nz-tab>
+
+        <nz-tab nzTitle="OpenAI SDK">
+          <div class="code-toolbar">
+            <span>JavaScript · OpenAI SDK</span>
+            <button
+              nz-button
+              nzType="link"
+              nzSize="small"
+              (click)="copy(openAiSdkExample, 'SDK 示例')"
+            >
+              <i nz-icon nzType="copy"></i>
+              复制代码
+            </button>
           </div>
-          <div>
-            <span>默认模型样例</span>
-            <strong class="address-text">{{ sampleModel }}</strong>
-          </div>
-        </div>
-        <ul class="note-list">
-          <li>业务侧统一访问 `/v1/*`，不要直接把前端管理端的登录状态拿来调用代理接口。</li>
-          <li>平台密钥本身是不带 `Bearer` 的原始值；放到 HTTP 请求头时使用 `Authorization: Bearer 平台密钥`。</li>
-          <li>如果某个平台密钥限制了允许模型，请求里的模型必须在允许列表内。</li>
-        </ul>
-      </nz-card>
-
-      <nz-card class="panel-card" [nzBordered]="false">
-        <div class="panel-head">
-          <div class="panel-title">接口范围</div>
-          <button nz-button nzType="link" nzSize="small" (click)="copy(adminBaseUrl, '管理地址')">
-            复制管理地址
-          </button>
-        </div>
-        <div class="api-list">
-          <code>获取模型：GET {{ proxyBaseUrl }}/models</code>
-          <code>聊天补全：POST {{ proxyBaseUrl }}/chat/completions</code>
-          <code>响应接口：POST {{ proxyBaseUrl }}/responses</code>
-          <code>向量接口：POST {{ proxyBaseUrl }}/embeddings</code>
-          <code>平台密钥管理：GET {{ adminBaseUrl }}/platform-keys</code>
-          <code>模型映射管理：GET {{ adminBaseUrl }}/models</code>
-          <code>运行指标：GET {{ adminBaseUrl }}/ops/metrics</code>
-          <code>请求日志：GET {{ adminBaseUrl }}/request-logs</code>
-        </div>
-      </nz-card>
-    </div>
-
-    <div class="snippet-grid mt-lg">
-      <nz-card class="snippet-card" [nzBordered]="false">
-        <div class="panel-head">
-          <div class="panel-title">curl：获取模型</div>
-          <button nz-button nzType="link" nzSize="small" (click)="copy(curlModelsExample, 'models 示例')">
-            复制
-          </button>
-        </div>
-        <pre><code>{{ curlModelsExample }}</code></pre>
-      </nz-card>
-
-      <nz-card class="snippet-card" [nzBordered]="false">
-        <div class="panel-head">
-          <div class="panel-title">curl：聊天补全</div>
-          <button nz-button nzType="link" nzSize="small" (click)="copy(curlChatExample, 'chat 示例')">
-            复制
-          </button>
-        </div>
-        <pre><code>{{ curlChatExample }}</code></pre>
-      </nz-card>
-
-      <nz-card class="snippet-card" [nzBordered]="false">
-        <div class="panel-head">
-          <div class="panel-title">curl：响应接口</div>
-          <button nz-button nzType="link" nzSize="small" (click)="copy(curlResponsesExample, 'responses 示例')">
-            复制
-          </button>
-        </div>
-        <pre><code>{{ curlResponsesExample }}</code></pre>
-      </nz-card>
-
-      <nz-card class="snippet-card" [nzBordered]="false">
-        <div class="panel-head">
-          <div class="panel-title">OpenAI SDK 示例</div>
-          <button nz-button nzType="link" nzSize="small" (click)="copy(openAiSdkExample, 'SDK 示例')">
-            复制
-          </button>
-        </div>
-        <pre><code>{{ openAiSdkExample }}</code></pre>
-      </nz-card>
-
-      <nz-card class="snippet-card" [nzBordered]="false">
-        <div class="panel-head">
-          <div class="panel-title">curl：向量接口</div>
-          <button nz-button nzType="link" nzSize="small" (click)="copy(embeddingsExample, 'embeddings 示例')">
-            复制
-          </button>
-        </div>
-        <pre><code>{{ embeddingsExample }}</code></pre>
-      </nz-card>
-    </div>
+          <pre><code>{{ openAiSdkExample }}</code></pre>
+        </nz-tab>
+      </nz-tabs>
+    </nz-card>
   </nz-spin>
 </section>

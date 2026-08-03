@@ -1,5 +1,12 @@
 import { DOCUMENT, isPlatformBrowser } from '@angular/common';
-import { Injectable, PLATFORM_ID, computed, inject, signal } from '@angular/core';
+import { DestroyRef, Injectable, PLATFORM_ID, computed, inject, signal } from '@angular/core';
+
+export type ThemeMode = 'light' | 'dark' | 'system';
+
+export interface ThemeModeOption {
+  key: ThemeMode;
+  label: string;
+}
 
 export interface ThemeColorPreset {
   key: string;
@@ -12,7 +19,16 @@ export interface ThemeColorPreset {
   rgb: string;
 }
 
-const STORAGE_KEY = 'recodex_relay_theme_color';
+const COLOR_STORAGE_KEY = 'recodex_relay_theme_color';
+const MODE_STORAGE_KEY = 'recodex_relay_theme_mode';
+const DARK_STYLESHEET_ID = 'freeai-dark-theme';
+const SYSTEM_DARK_QUERY = '(prefers-color-scheme: dark)';
+
+export const THEME_MODE_OPTIONS: ThemeModeOption[] = [
+  { key: 'light', label: '浅色' },
+  { key: 'dark', label: '深色' },
+  { key: 'system', label: '跟随系统' },
+];
 
 export const THEME_COLOR_PRESETS: ThemeColorPreset[] = [
   {
@@ -141,46 +157,141 @@ export const THEME_COLOR_PRESETS: ThemeColorPreset[] = [
 export class ThemeColorService {
   private readonly document = inject(DOCUMENT);
   private readonly platformId = inject(PLATFORM_ID);
+  private readonly destroyRef = inject(DestroyRef);
   private readonly isBrowser = isPlatformBrowser(this.platformId);
   private readonly key = signal(THEME_COLOR_PRESETS[0].key);
+  private readonly mode = signal<ThemeMode>('system');
+  private readonly effective = signal<Exclude<ThemeMode, 'system'>>('light');
+  private systemThemeQuery: MediaQueryList | null = null;
 
   readonly presets = THEME_COLOR_PRESETS;
+  readonly modes = THEME_MODE_OPTIONS;
   readonly currentKey = this.key.asReadonly();
   readonly current = computed(() => this.findPreset(this.key()));
+  readonly currentMode = this.mode.asReadonly();
+  readonly effectiveMode = this.effective.asReadonly();
 
   constructor() {
+    this.listenToSystemTheme();
     this.restore();
   }
 
+  /** 应用强调色并持久化用户选择。 */
   apply(key: string): void {
     const preset = this.findPreset(key);
     this.key.set(preset.key);
     this.writeVariables(preset);
-
-    if (this.isBrowser) {
-      localStorage.setItem(STORAGE_KEY, preset.key);
-    }
+    this.writeStorage(COLOR_STORAGE_KEY, preset.key);
   }
 
+  /** 切换浅色、深色或跟随系统模式。 */
+  applyMode(mode: ThemeMode): void {
+    const nextMode = this.isThemeMode(mode) ? mode : 'system';
+    this.mode.set(nextMode);
+    this.applyEffectiveMode(this.resolveEffectiveMode(nextMode));
+    this.writeStorage(MODE_STORAGE_KEY, nextMode);
+  }
+
+  /** 从本地存储恢复主题，存储数据异常时回退到默认值。 */
   restore(): void {
-    const storedKey = this.isBrowser ? localStorage.getItem(STORAGE_KEY) : null;
+    const storedKey = this.readStorage(COLOR_STORAGE_KEY);
     const preset = this.findPreset(storedKey || THEME_COLOR_PRESETS[0].key);
+    const storedMode = this.readStorage(MODE_STORAGE_KEY);
+    const mode = this.isThemeMode(storedMode) ? storedMode : 'system';
+
     this.key.set(preset.key);
-    this.writeVariables(preset);
+    this.mode.set(mode);
+    this.applyEffectiveMode(this.resolveEffectiveMode(mode));
   }
 
+  /** 查找强调色预设，不存在的键统一回退到首个预设。 */
   private findPreset(key: string): ThemeColorPreset {
     return THEME_COLOR_PRESETS.find((preset) => preset.key === key) ?? THEME_COLOR_PRESETS[0];
   }
 
+  /** 将强调色写入 CSS 变量，深色模式下使用半透明底色保证对比度。 */
   private writeVariables(preset: ThemeColorPreset): void {
     const root = this.document.documentElement;
+    const dark = this.effective() === 'dark';
 
     root.style.setProperty('--nm-primary', preset.primary);
     root.style.setProperty('--nm-primary-hover', preset.hover);
     root.style.setProperty('--nm-primary-active', preset.active);
-    root.style.setProperty('--nm-primary-soft', preset.soft);
-    root.style.setProperty('--nm-primary-tint', preset.tint);
+    root.style.setProperty('--nm-primary-soft', dark ? `rgb(${preset.rgb} / 20%)` : preset.soft);
+    root.style.setProperty('--nm-primary-tint', dark ? `rgb(${preset.rgb} / 11%)` : preset.tint);
     root.style.setProperty('--nm-primary-rgb', preset.rgb);
   }
+
+  /** 监听操作系统主题变化，仅在“跟随系统”模式下同步界面。 */
+  private listenToSystemTheme(): void {
+    if (!this.isBrowser || typeof window.matchMedia !== 'function') return;
+
+    this.systemThemeQuery = window.matchMedia(SYSTEM_DARK_QUERY);
+    this.systemThemeQuery.addEventListener('change', this.handleSystemThemeChange);
+    this.destroyRef.onDestroy(() => {
+      this.systemThemeQuery?.removeEventListener('change', this.handleSystemThemeChange);
+    });
+  }
+
+  /** 根据用户模式和系统偏好计算当前真正生效的明暗主题。 */
+  private resolveEffectiveMode(mode: ThemeMode): Exclude<ThemeMode, 'system'> {
+    if (mode !== 'system') return mode;
+    return this.systemThemeQuery?.matches ? 'dark' : 'light';
+  }
+
+  /** 更新根节点标记，并启停 Ant Design 官方暗色样式。 */
+  private applyEffectiveMode(mode: Exclude<ThemeMode, 'system'>): void {
+    const root = this.document.documentElement;
+
+    this.effective.set(mode);
+    root.setAttribute('data-theme', mode);
+    root.style.colorScheme = mode;
+    this.toggleDarkStylesheet(mode === 'dark');
+    this.writeVariables(this.current());
+  }
+
+  /** 暗色资源只创建一次，后续切换通过 disabled 属性复用浏览器缓存。 */
+  private toggleDarkStylesheet(enabled: boolean): void {
+    if (!this.isBrowser) return;
+
+    let stylesheet = this.document.getElementById(DARK_STYLESHEET_ID) as HTMLLinkElement | null;
+    if (!stylesheet && enabled) {
+      stylesheet = this.document.createElement('link');
+      stylesheet.id = DARK_STYLESHEET_ID;
+      stylesheet.rel = 'stylesheet';
+      stylesheet.href = new URL('assets/style.dark.css', this.document.baseURI).toString();
+      this.document.head.appendChild(stylesheet);
+    }
+    if (stylesheet) stylesheet.disabled = !enabled;
+  }
+
+  /** 判断存储值是否为受支持的主题模式。 */
+  private isThemeMode(mode: string | null): mode is ThemeMode {
+    return THEME_MODE_OPTIONS.some((option) => option.key === mode);
+  }
+
+  /** 安全读取本地存储，兼容浏览器隐私策略禁用存储的情况。 */
+  private readStorage(key: string): string | null {
+    if (!this.isBrowser) return null;
+    try {
+      return localStorage.getItem(key);
+    } catch {
+      return null;
+    }
+  }
+
+  /** 安全写入本地存储，写入失败不影响当前主题切换。 */
+  private writeStorage(key: string, value: string): void {
+    if (!this.isBrowser) return;
+    try {
+      localStorage.setItem(key, value);
+    } catch {
+      // 私密浏览或存储配额异常时，仍保留当前会话内的主题状态。
+    }
+  }
+
+  private readonly handleSystemThemeChange = (event: MediaQueryListEvent): void => {
+    if (this.mode() !== 'system') return;
+    this.applyEffectiveMode(event.matches ? 'dark' : 'light');
+  };
 }

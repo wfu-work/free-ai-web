@@ -13,7 +13,12 @@
   background:
     radial-gradient(circle at 24% 38%, rgb(196 241 240 / 46%), transparent 30%),
     radial-gradient(circle at 84% 18%, rgb(220 238 255 / 64%), transparent 34%),
-    linear-gradient(116deg, #edf7ff 0%, #f7fbff 46%, #e8f4ff 100%);
+    linear-gradient(
+      116deg,
+      var(--nm-page-background) 0%,
+      var(--nm-surface-muted) 46%,
+      var(--nm-page-background) 100%
+    );
 
   nz-sider {
     position: fixed;
@@ -24,16 +29,15 @@
     display: flex;
     flex-direction: column;
     height: auto;
-    padding: 18px 14px 20px;
-    border: 1px solid rgb(255 255 255 / 72%);
+    padding: 14px 12px 16px;
+    border: 1px solid var(--nm-border);
     border-radius: 4px;
-    background: #f7f9fc;
     background:
       radial-gradient(circle at 50% 100%, rgb(var(--nm-primary-rgb) / 7%), transparent 32%),
-      linear-gradient(180deg, #f9fcfa 0%, #f4f8f6 100%);
+      linear-gradient(180deg, var(--nm-surface) 0%, var(--nm-surface-muted) 100%);
     box-shadow:
       0 18px 46px rgb(41 99 119 / 12%),
-      inset 0 1px 0 rgb(255 255 255 / 84%);
+      inset 0 1px 0 var(--nm-border);
   }
 
   nz-sider > .ant-layout-sider-children {
@@ -56,7 +60,7 @@
     width: 100%;
     background:
       radial-gradient(circle at 50% 100%, rgb(var(--nm-primary-rgb) / 7%), transparent 32%),
-      linear-gradient(180deg, #f9fcfa 0%, #f4f8f6 100%);
+      linear-gradient(180deg, var(--nm-surface) 0%, var(--nm-surface-muted) 100%);
   }
 
   nz-content {
@@ -67,7 +71,7 @@
 
   nz-footer {
     text-align: center;
-    background: white;
+    background: var(--nm-surface);
   }
 
   .inner-content {
@@ -79,6 +83,15 @@
     min-height: 92vh;
     margin-bottom: 38px;
     padding: 0 25px;
+  }
+
+  .mobile-menu-shell {
+    display: flex;
+    height: 100%;
+    padding: 14px 12px 16px;
+    background:
+      radial-gradient(circle at 50% 100%, rgb(var(--nm-primary-rgb) / 7%), transparent 32%),
+      linear-gradient(180deg, var(--nm-surface) 0%, var(--nm-surface-muted) 100%);
   }
 
   @media (max-width: 767px) {

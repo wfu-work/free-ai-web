@@ -3,7 +3,11 @@
   "version": 1,
   "cli": {
     "packageManager": "npm",
-    "schematicCollections": ["@schematics/angular", "ng-alain"]
+    "schematicCollections": [
+      "@schematics/angular",
+      "ng-alain"
+    ],
+    "analytics": false
   },
   "newProjectRoot": "projects",
   "projects": {
@@ -115,7 +119,6 @@
         "test": {
           "builder": "@angular/build:unit-test",
           "options": {
-            "browsers": "chromium",
             "runnerConfig": "vitest.config.ts"
           },
           "configurations": {

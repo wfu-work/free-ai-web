@@ -12,7 +12,7 @@ import { CUSTOM_ERROR, IGNORE_BASE_URL, RAW_BODY } from '@delon/theme';
 import { environment } from '@env/environment';
 import { NzMessageService } from 'ng-zorro-antd/message';
 import { NzNotificationService } from 'ng-zorro-antd/notification';
-import { Observable, mergeMap, of, throwError } from 'rxjs';
+import { Observable, catchError, mergeMap, of, throwError } from 'rxjs';
 
 import { ReThrowHttpError, getAdditionalHeaders, goTo, toLogin } from './helper';
 import { tryRefreshToken } from './refresh-token';
@@ -40,6 +40,9 @@ function handleData(
           return of(ev);
         }
         if (body && body.code !== 200) {
+          if (body.code === 401) {
+            toLogin(injector);
+          }
           const customError = req.context.get(CUSTOM_ERROR);
           if (!customError) injector.get(NzMessageService).error(body.msg ?? '请求失败');
           return !customError
@@ -121,6 +124,13 @@ export const defaultInterceptor: HttpInterceptorFn = (req, next) => {
       // 若一切都正常，则后续操作
       return of(ev);
     }),
-    // catchError((err: HttpErrorResponse) => handleData(injector, err, newReq, next))
+    catchError((err: unknown) => {
+      // HttpClient 会把 HTTP 4xx/5xx 放入错误通道，必须在这里统一处理。
+      // 业务代码主动抛出的错误保持原样，避免被重复转换。
+      if (err instanceof HttpErrorResponse) {
+        return handleData(injector, err, newReq, next);
+      }
+      return throwError(() => err);
+    }),
   );
 };

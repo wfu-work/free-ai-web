@@ -6,23 +6,36 @@ import {
   inject,
 } from '@angular/core';
 import { SHARED_IMPORTS, TitleLabelComponent } from '@shared';
+import { NzDescriptionsModule } from 'ng-zorro-antd/descriptions';
+import { NzListModule } from 'ng-zorro-antd/list';
 import { NzMessageService } from 'ng-zorro-antd/message';
 import { NzModalService } from 'ng-zorro-antd/modal';
+import { NzStatisticModule } from 'ng-zorro-antd/statistic';
+import { NzStepsModule } from 'ng-zorro-antd/steps';
+import { NzTagModule } from 'ng-zorro-antd/tag';
 import { finalize, forkJoin } from 'rxjs';
 
-import { ModelMapping } from '../../models/model.model';
+import { SettingsIntegrationDebugComponent as EditComponent } from './debug/settings-integration-debug.component';
+import { PlatformKey } from '../../apikey/apikey.model';
+import { PlatformKeysService } from '../../apikey/apikey.service';
+import { ModelCatalogItem } from '../../models/model.model';
 import { ModelsService } from '../../models/models.service';
 import { OpsService } from '../../ops/ops.service';
-import { PlatformKey } from '../../platform-keys/platform-key.model';
-import { PlatformKeysService } from '../../platform-keys/platform-keys.service';
-import { SettingsIntegrationDebugComponent as EditComponent } from './debug/settings-integration-debug.component';
 
 @Component({
   selector: 'app-settings-integration',
   templateUrl: './settings-integration.component.html',
   styleUrls: ['./settings-integration.component.less'],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [SHARED_IMPORTS, TitleLabelComponent],
+  imports: [
+    SHARED_IMPORTS,
+    TitleLabelComponent,
+    NzDescriptionsModule,
+    NzListModule,
+    NzStatisticModule,
+    NzStepsModule,
+    NzTagModule,
+  ],
 })
 export class SettingsIntegrationComponent implements OnInit {
   private readonly platformKeysService = inject(PlatformKeysService);
@@ -34,8 +47,29 @@ export class SettingsIntegrationComponent implements OnInit {
 
   protected loading = false;
   protected keys: PlatformKey[] = [];
-  protected modelMappings: ModelMapping[] = [];
+  protected modelCatalog: ModelCatalogItem[] = [];
   protected proxyPrefix = '/v1';
+  protected readonly sampleKey = 'sk-your-api-key';
+  protected readonly publicEndpoints = [
+    {
+      method: 'GET',
+      name: '获取模型',
+      path: '/models',
+      description: '返回当前 API 密钥可访问的公开模型列表。',
+    },
+    {
+      method: 'POST',
+      name: '聊天补全',
+      path: '/chat/completions',
+      description: '兼容 OpenAI Chat Completions 请求格式。',
+    },
+    {
+      method: 'POST',
+      name: '响应接口',
+      path: '/responses',
+      description: '兼容 OpenAI Responses 请求格式。',
+    },
+  ];
 
   ngOnInit(): void {
     this.load();
@@ -56,17 +90,13 @@ export class SettingsIntegrationComponent implements OnInit {
       )
       .subscribe(({ keys, models, metrics }) => {
         this.keys = keys ?? [];
-        this.modelMappings = models ?? [];
+        this.modelCatalog = models ?? [];
         this.proxyPrefix = this.normalizeProxyPrefix(metrics?.proxyPrefix);
       });
   }
 
   protected get proxyBaseUrl(): string {
     return `${this.gatewayBaseUrl}${this.proxyPrefix}`;
-  }
-
-  protected get adminBaseUrl(): string {
-    return `${this.gatewayBaseUrl}/api`;
   }
 
   protected get gatewayBaseUrl(): string {
@@ -81,31 +111,17 @@ export class SettingsIntegrationComponent implements OnInit {
     return this.keys.filter((item) => item.enabled).length;
   }
 
-  protected get sampleKeyPrefix(): string {
-    const key = this.keys.find((item) => item.enabled) || this.keys[0];
-    return key?.keyPrefix || 'fk_live_example';
-  }
-
-  protected get sampleKey(): string {
-    const key =
-      this.keys.find((item) => item.enabled && item.key) ||
-      this.keys.find((item) => item.key) ||
-      this.keys[0];
-    return key?.key || `${this.sampleKeyPrefix}_完整密钥`;
-  }
-
   protected get sampleModel(): string {
     const key = this.keys.find((item) => item.enabled) || this.keys[0];
     const parsed = this.parseAllowedModels(key?.allowedModels);
-    return parsed[0] || 'gpt-4.1-mini';
-  }
-
-  protected get gatewayRequestBaseUrl(): string {
-    const { hostname, port } = window.location;
-    if ((hostname === 'localhost' || hostname === '127.0.0.1') && /^42\d\d$/.test(port)) {
-      return this.proxyPrefix;
-    }
-    return `${window.location.origin}${this.proxyPrefix}`;
+    const catalogModel = this.modelCatalog.find(
+      (item) => item.enabled && item.availableAccountCount > 0 && item.publicModel,
+    );
+    return (
+      parsed.find((item) => item !== '*' && !item.startsWith('group:')) ||
+      catalogModel?.publicModel ||
+      'gpt-4.1-mini'
+    );
   }
 
   protected get authHeaderPreview(): string {
@@ -157,16 +173,6 @@ const response = await client.chat.completions.create({
 console.log(response.choices[0]?.message?.content);`;
   }
 
-  protected get embeddingsExample(): string {
-    return `curl -sS ${this.proxyBaseUrl}/embeddings \\
-  -H "Content-Type: application/json" \\
-  -H "${this.authHeaderPreview}" \\
-  -d '{
-    "model": "${this.sampleModel}",
-    "input": "你好，世界"
-  }'`;
-  }
-
   protected async copy(value: string, label: string): Promise<void> {
     if (!value) return;
     try {
@@ -188,10 +194,8 @@ console.log(response.choices[0]?.message?.content);`;
       nzWidth: 800,
       nzData: {
         keys: this.keys,
-        modelMappings: this.modelMappings,
+        modelCatalog: this.modelCatalog,
         proxyBaseUrl: this.proxyBaseUrl,
-        requestBaseUrl: this.gatewayRequestBaseUrl,
-        sampleKey: this.sampleKey,
         sampleModel: this.sampleModel,
       },
       nzOnOk: (component) => component?.submit(),

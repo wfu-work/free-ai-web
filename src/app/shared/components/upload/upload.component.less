@@ -34,9 +34,9 @@
       justify-content: center;
       min-height: 240px;
       padding: 30px 24px;
-      border: 2px dashed #cfd9e6;
+      border: 2px dashed var(--nm-border);
       border-radius: 24px;
-      background: linear-gradient(180deg, #fcfdff 0%, #f7f9fc 100%);
+      background: linear-gradient(180deg, var(--nm-surface) 0%, var(--nm-surface-muted) 100%);
       text-align: center;
       transition:
         border-color 0.2s ease,
@@ -45,7 +45,7 @@
     }
 
     .upload-card .ant-upload:hover .upload-card__placeholder {
-      border-color: #b8c9df;
+      border-color: rgb(var(--nm-primary-rgb) / 35%);
       box-shadow: 0 10px 24px rgb(15 23 42 / 6%);
     }
 
@@ -61,12 +61,12 @@
     }
 
     .upload-card__icon {
-      color: #8fa0b7;
+      color: var(--nm-text-secondary);
       font-size: 34px;
     }
 
     .upload-card__title {
-      color: #1f2a3d;
+      color: var(--nm-text);
       font-size: 16px;
       font-weight: 700;
       line-height: 1.5;
@@ -74,7 +74,7 @@
 
     .upload-card__hint {
       margin-top: 8px;
-      color: #a1aec0;
+      color: var(--nm-text-secondary);
       font-size: 12px;
       font-weight: 500;
       line-height: 1.5;
@@ -87,7 +87,7 @@
       height: 270px;
       border: 1px solid rgb(15 23 42 / 8%);
       border-radius: 24px;
-      background: #f6f8fb;
+      background: var(--nm-surface-muted);
       cursor: pointer;
     }
 

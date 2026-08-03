@@ -1,9 +1,9 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
+import { PageEntity } from '@shared';
 import { Observable } from 'rxjs';
 
 import { OpsStats, RequestLog } from './request-log.model';
-import { PageEntity } from '@shared';
 
 @Injectable({ providedIn: 'root' })
 export class RequestLogsService {
@@ -17,7 +17,7 @@ export class RequestLogsService {
     return this.http.get<RequestLog[]>('/request-logs/list/all', { params });
   }
 
-  pageList(params: any): Observable<PageEntity<RequestLog>> {
+  pageList(params: Record<string, string | number | boolean>): Observable<PageEntity<RequestLog>> {
     return this.http.get<PageEntity<RequestLog>>('/request-logs/list', { params });
   }
 

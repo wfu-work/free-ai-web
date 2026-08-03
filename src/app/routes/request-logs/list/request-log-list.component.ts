@@ -32,7 +32,6 @@ export class RequestLogListComponent implements OnInit {
   q = {
     page: 1,
     size: 10,
-    provider: '',
     model: '',
     content: '',
   };
@@ -61,11 +60,11 @@ export class RequestLogListComponent implements OnInit {
     { title: '模型 / 推理 / 等级', index: 'model', render: 'modelRender', width: 230 },
     { title: '状态', index: 'statusCode', type: 'tag', tag: this.statusTag, width: 95 },
     { title: '用时 / 首响', index: 'latencyMs', render: 'latencyRender', width: 150 },
-    { title: 'TOKEN', index: 'inputTokens', render: 'tokenRender', width: 170 },
+    { title: 'Token / 成本', index: 'inputTokens', render: 'tokenRender', width: 180 },
     { title: '错误', index: 'errorType', render: 'errorRender', width: 170 },
     {
       title: '操作',
-      width: 80,
+      width: 100,
       fixed: 'right',
       buttons: [
         {
@@ -101,7 +100,6 @@ export class RequestLogListComponent implements OnInit {
 
   protected resetFilters(): void {
     this.q.page = 1;
-    this.q.provider = '';
     this.q.model = '';
     this.q.content = '';
     this.getData();
@@ -133,10 +131,6 @@ export class RequestLogListComponent implements OnInit {
   protected get successRate(): string {
     if (!this.stats.total) return '--';
     return `${((this.stats.success / this.stats.total) * 100).toFixed(1)}%`;
-  }
-
-  protected get providerOptions(): string[] {
-    return Array.from(new Set(this.data.map((item) => item.provider).filter(Boolean))).sort();
   }
 
   protected get modelOptions(): string[] {
@@ -190,6 +184,10 @@ export class RequestLogListComponent implements OnInit {
     return Number(value || 0).toLocaleString('zh-CN');
   }
 
+  protected formatMoney(value?: number): string {
+    return `$${Number(value || 0).toFixed(6)}`;
+  }
+
   protected shortText(value?: string, fallback = '-'): string {
     const text = (value || '').trim();
     if (!text) return fallback;
@@ -205,7 +203,7 @@ export class RequestLogListComponent implements OnInit {
   }
 
   protected platformKeyTitle(item: RequestLog): string {
-    return item.platformKey || item.keyPrefix || this.shortText(item.platformKeyId, '无平台密钥');
+    return item.platformKey || item.keyPrefix || this.shortText(item.platformKeyId, '无API 密钥');
   }
 
   protected platformKeyMeta(item: RequestLog): string {

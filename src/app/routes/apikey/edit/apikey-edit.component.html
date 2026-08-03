@@ -1,0 +1,218 @@
+<section class="apikey-edit-page">
+  <div class="d-flex justify-content-between header-row">
+    <title-label [title]="pageTitle" [description]="pageDescription" [showBack]="true" />
+    <div class="header-actions">
+      <button nz-button (click)="goList()">取消</button>
+      @if (createdSecret) {
+        <button nz-button nzType="primary" (click)="finishCreation()">我已保存，返回列表</button>
+      } @else {
+        <button nz-button nzType="primary" [nzLoading]="saving" (click)="save()">保存密钥</button>
+      }
+    </div>
+  </div>
+
+  @if (createdSecret) {
+    <nz-card class="secret-delivery" [nzBordered]="false">
+      <nz-alert
+        nzType="warning"
+        nzShowIcon
+        nzMessage="请立即复制API 密钥"
+        nzDescription="为保护调用凭据，完整密钥只在创建成功后显示这一次，离开页面后无法再次查看。"
+      />
+      <div class="secret-delivery__row">
+        <code>{{ createdSecret }}</code>
+        <button nz-button nzType="primary" (click)="copyCreatedSecret()">
+          <i nz-icon nzType="copy"></i>
+          复制密钥
+        </button>
+      </div>
+    </nz-card>
+  }
+
+  <nz-spin [nzSpinning]="loading">
+    <div class="metric-grid metric-grid-compact">
+      <article class="metric-card">
+        <span>账号组筛选</span>
+        <strong>{{ accountGroupLabel }}</strong>
+      </article>
+      <article class="metric-card">
+        <span>绑定模型</span>
+        <strong>{{ form.controls.boundModel.value || '跟随请求' }}</strong>
+      </article>
+      <article class="metric-card">
+        <span>总额度限制</span>
+        <strong>{{ tokenLimitLabel }}</strong>
+      </article>
+    </div>
+
+    <div class="content-grid mt-lg">
+      <nz-card class="form-card" [nzBordered]="false">
+        <form nz-form [formGroup]="form" class="key-form" (ngSubmit)="save()">
+          <section class="form-section">
+            <div class="section-title">基础策略</div>
+            <se-container col="2" nzLayout="vertical">
+              <se label="密钥名称" required error="请输入密钥名称">
+                <input id="name" nz-input formControlName="name" placeholder="例如 Claude 业务线" />
+              </se>
+
+              <se class="span-2" label="账号组筛选">
+                <nz-select
+                  id="accountGroupFilter"
+                  formControlName="accountGroupFilter"
+                  nzShowSearch
+                  nzAllowClear
+                  nzPlaceHolder="全部账号"
+                >
+                  @for (group of accountGroupOptions; track group) {
+                    <nz-option [nzValue]="group" [nzLabel]="group" />
+                  }
+                </nz-select>
+                <div class="field-extra">
+                  可限制这把API 密钥只从指定的官方账号组中选择路由账号。
+                </div>
+              </se>
+
+              <se class="span-2" label="总额度限制（Token，可选）">
+                <div class="quota-row">
+                  <nz-input-number
+                    id="totalTokenLimit"
+                    formControlName="totalTokenLimit"
+                    [nzMin]="0"
+                    [nzStep]="1"
+                  />
+                  <nz-select id="tokenLimitUnit" formControlName="tokenLimitUnit">
+                    <nz-option nzValue="" nzLabel="Token" />
+                    <nz-option nzValue="k" nzLabel="k" />
+                    <nz-option nzValue="m" nzLabel="m" />
+                  </nz-select>
+                </div>
+                <div class="field-extra">
+                  达到上限后，这把API 密钥的新请求会被拒绝；已在途请求会按完成后的真实用量继续统计。
+                </div>
+              </se>
+            </se-container>
+          </section>
+
+          <section class="form-section">
+            <div class="section-title">模型策略</div>
+            <se-container col="2" nzLayout="vertical">
+              <se label="绑定模型（可选）">
+                <nz-select
+                  id="boundModel"
+                  formControlName="boundModel"
+                  nzShowSearch
+                  nzAllowClear
+                  nzPlaceHolder="跟随请求"
+                >
+                  @for (model of modelOptions; track model) {
+                    <nz-option [nzValue]="model" [nzLabel]="model" />
+                  }
+                </nz-select>
+                <div class="field-extra">选择“跟随请求”时，会使用请求体里的实际模型。</div>
+              </se>
+
+              <se label="推理等级（可选）">
+                <nz-select
+                  id="reasoningEffort"
+                  formControlName="reasoningEffort"
+                  nzAllowClear
+                  nzPlaceHolder="跟随请求等级"
+                >
+                  <nz-option nzValue="minimal" nzLabel="Minimal" />
+                  <nz-option nzValue="low" nzLabel="Low" />
+                  <nz-option nzValue="medium" nzLabel="Medium" />
+                  <nz-option nzValue="high" nzLabel="High" />
+                </nz-select>
+                <div class="field-extra">会覆盖请求里的 reasoning effort。</div>
+              </se>
+
+              <se label="服务等级（可选）">
+                <nz-select
+                  id="serviceTier"
+                  formControlName="serviceTier"
+                  nzAllowClear
+                  nzPlaceHolder="跟随请求"
+                >
+                  <nz-option nzValue="default" nzLabel="Default" />
+                  <nz-option nzValue="flex" nzLabel="Flex" />
+                  <nz-option nzValue="auto" nzLabel="Auto" />
+                  <nz-option nzValue="priority" nzLabel="Priority" />
+                </nz-select>
+                <div class="field-extra">Fast 会映射为上游 priority；未设置时跟随请求。</div>
+              </se>
+
+              <se class="span-2" label="允许模型">
+                <textarea
+                  id="allowedModels"
+                  nz-input
+                  formControlName="allowedModels"
+                  rows="3"
+                  placeholder='留空表示允许全部模型；例如 ["gpt-4.1-mini"]'
+                ></textarea>
+                <div class="field-extra">
+                  留空表示允许全部模型；建议填写 JSON 数组，例如 ["gpt-4.1-mini"]。
+                </div>
+              </se>
+            </se-container>
+          </section>
+
+          <section class="form-section">
+            <div class="section-title">访问控制</div>
+            <se-container col="2" nzLayout="vertical">
+              <se label="每分钟限速">
+                <nz-input-number
+                  id="rateLimitPerMinute"
+                  formControlName="rateLimitPerMinute"
+                  [nzMin]="0"
+                  [nzStep]="1"
+                />
+                <div class="field-extra">0 表示不限速。</div>
+              </se>
+
+              <se class="span-2" label="备注">
+                <textarea id="remark" nz-input formControlName="remark" rows="2"></textarea>
+              </se>
+            </se-container>
+          </section>
+        </form>
+      </nz-card>
+
+      <nz-card class="side-card" [nzBordered]="false">
+        <div class="aside-intro">
+          <strong>API 密钥说明</strong>
+          <p>API 密钥面向业务客户端，用于访问 OpenAI 兼容网关。完整密钥只在创建成功后展示一次。</p>
+        </div>
+
+        <div class="section-title">填写建议</div>
+        <ul class="note-list">
+          <li>如果这把密钥只给某个业务线使用，建议绑定账号组，避免和其它账号池混用。</li>
+          <li>绑定模型会覆盖请求体里的模型，适合为某个客户端固定使用指定上游模型。</li>
+          <li>总额度限制用于API 密钥维度的消耗控制，账号自身额度仍由账号管理模块维护。</li>
+          <li>系统只对接官方账号池，并统一通过 OpenAI 兼容数据格式对外服务。</li>
+        </ul>
+
+        @if (formMode === 'edit' && platformKey) {
+          <div class="section-title section-title-spaced">当前密钥概览</div>
+          <div class="detail-grid">
+            <div>
+              <span>密钥前缀</span>
+              <strong>{{ platformKey.keyPrefix || '-' }}</strong>
+            </div>
+            <div>
+              <span>启用状态</span>
+              <strong>{{ platformKey.enabled ? '已启用' : '已停用' }}</strong>
+            </div>
+            <div>
+              <span>最近使用</span>
+              <strong>{{ platformKey.lastUsedAt || '-' }}</strong>
+            </div>
+            <div>
+              <span>限速</span>
+              <strong>{{ platformKey.rateLimitPerMinute || 0 }} / min</strong>
+            </div>
+          </div>
+        }
+      </nz-card>
+    </div>
+  </nz-spin>
+</section>

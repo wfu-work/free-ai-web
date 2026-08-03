@@ -1,194 +1,135 @@
 <section class="model-edit-page">
-  <div class="d-flex justify-content-between header-row">
-    <title-label [title]="pageTitle" [description]="pageDescription" [showBack]="true" />
+  <div class="header-row">
+    <title-label
+      title="模型对外策略"
+      description="官方模型身份由远端目录维护；这里只配置对外名称、可见性和账号组范围。"
+      [showBack]="true"
+    />
     <div class="header-actions">
       <button nz-button (click)="goList()">取消</button>
-      <button nz-button nzType="primary" [nzLoading]="saving" (click)="save()">保存映射</button>
+      <button nz-button nzType="primary" [nzLoading]="saving" (click)="save()">保存策略</button>
     </div>
   </div>
 
   <nz-spin [nzSpinning]="loading">
-    <div class="metric-grid">
-      <article class="metric-card">
-        <span>当前供应商</span>
-        <strong>{{ providerLabel }}</strong>
-      </article>
-      <article class="metric-card">
-        <span>账号组</span>
-        <strong>{{ groupLabel }}</strong>
-      </article>
-      <article class="metric-card">
-        <span>流式能力</span>
-        <strong>{{ streamLabel }}</strong>
-      </article>
-      <article class="metric-card">
-        <span>请求超时</span>
-        <strong>{{ timeoutLabel }}</strong>
-      </article>
-    </div>
+    @if (model) {
+      <div class="metric-grid">
+        <article class="metric-card">
+          <span>官方来源</span><strong>{{ sourceLabel }}</strong>
+        </article>
+        <article class="metric-card">
+          <span>远端模型</span><strong>{{ model.remoteModelId }}</strong>
+        </article>
+        <article class="metric-card">
+          <span>账号可用性</span><strong>{{ routeStateLabel }}</strong>
+        </article>
+        <article class="metric-card">
+          <span>最近同步</span><strong>{{ formatTime(model.lastSeenAt) }}</strong>
+        </article>
+      </div>
 
-    <div class="content-grid mt-lg">
-      <nz-card class="form-card" [nzBordered]="false">
-        <form nz-form [formGroup]="form" class="model-form" (ngSubmit)="save()">
-          <section class="form-section">
-            <div class="section-title">模型定义</div>
-            <se-container col="2" nzLayout="vertical">
-              <se label="对外模型" required error="请输入对外模型名">
-                <input
-                  id="publicModel"
-                  nz-input
-                  formControlName="publicModel"
-                  placeholder="gpt-4.1-mini"
-                />
-              </se>
+      <div class="content-grid mt-lg">
+        <nz-card class="form-card" [nzBordered]="false">
+          <form nz-form [formGroup]="form" class="model-form" (ngSubmit)="save()">
+            <section class="form-section">
+              <div class="section-title">对外 API</div>
+              <se-container col="2" nzLayout="vertical">
+                <se label="对外模型 ID" required error="请输入对外模型 ID">
+                  <input nz-input formControlName="publicModel" placeholder="gpt-5.4" />
+                  <div class="field-extra">
+                    客户端通过 OpenAI-compatible API 请求时使用的 model。
+                  </div>
+                </se>
+                <se label="请求超时">
+                  <nz-input-number formControlName="timeoutSec" [nzMin]="1" [nzStep]="1" />
+                </se>
+                <se class="span-2" label="兼容别名">
+                  <textarea
+                    nz-input
+                    formControlName="aliases"
+                    rows="3"
+                    placeholder='JSON 数组或逗号分隔，例如 ["gpt-latest","codex"]'
+                  ></textarea>
+                  <div class="field-extra">
+                    别名必须全局唯一，不能与其他模型的对外名称或别名重复。
+                  </div>
+                </se>
+              </se-container>
+            </section>
 
-              <se label="上游模型" required error="请输入上游模型名">
-                @if (hasScopedRoute && upstreamModelOptions.length) {
+            <section class="form-section">
+              <div class="section-title">路由范围</div>
+              <se-container col="2" nzLayout="vertical">
+                <se label="账号组">
                   <nz-select
-                    id="upstreamModel"
-                    formControlName="upstreamModel"
+                    formControlName="accountGroup"
                     nzShowSearch
                     nzAllowClear
-                    nzPlaceHolder="请选择上游模型"
+                    nzPlaceHolder="不限制账号组"
                   >
-                    @for (model of upstreamModelOptions; track model) {
-                      <nz-option [nzValue]="model" [nzLabel]="model" />
+                    @for (group of accountGroupOptions; track group) {
+                      <nz-option [nzValue]="group" [nzLabel]="group" />
                     }
                   </nz-select>
-                } @else {
-                  <input
-                    id="upstreamModel"
-                    nz-input
-                    formControlName="upstreamModel"
-                    placeholder="gpt-4.1-mini"
-                  />
-                }
-                <div class="field-extra">{{ modelOptionHint }}</div>
-              </se>
+                  <div class="field-extra">
+                    路由只会从已确认支持该模型的账号中选择，不会回退到未知账号。
+                  </div>
+                </se>
+                <se label="对外状态">
+                  <div class="switch-row">
+                    <label nz-checkbox formControlName="enabled">允许路由</label>
+                    <label nz-checkbox formControlName="visible">显示在 /v1/models</label>
+                  </div>
+                </se>
+              </se-container>
+            </section>
+          </form>
+        </nz-card>
 
-              <se class="span-2" label="模型别名">
-                <textarea
-                  id="aliases"
-                  nz-input
-                  formControlName="aliases"
-                  rows="3"
-                  placeholder='可填 JSON 数组或逗号分隔，例如 ["gpt-4o-mini","mini"]'
-                ></textarea>
-                <div class="field-extra">
-                  别名会作为相同映射的额外入口，适合兼容历史 model 名称。
-                </div>
-              </se>
-            </se-container>
-          </section>
-
-          <section class="form-section">
-            <div class="section-title">路由绑定</div>
-            <se-container col="2" nzLayout="vertical">
-              <se label="供应商">
-                <nz-select id="provider" formControlName="provider" [nzDisabled]="true">
-                  @for (provider of providerOptions; track provider) {
-                    <nz-option [nzValue]="provider.value" [nzLabel]="provider.label" />
-                  }
-                </nz-select>
-                <div class="field-extra">模型映射固定使用 OpenAI 官方账号。</div>
-              </se>
-
-              <se label="账号组">
-                <nz-select
-                  id="accountGroup"
-                  formControlName="accountGroup"
-                  nzShowSearch
-                  nzAllowClear
-                  nzPlaceHolder="不限制账号组"
-                >
-                  @for (group of accountGroupOptions; track group) {
-                    <nz-option [nzValue]="group" [nzLabel]="group" />
-                  }
-                </nz-select>
-                <div class="field-extra">
-                  留空表示全局账号组；选择后只展示该账号组内账号支持的模型。
-                </div>
-              </se>
-
-              <se label="超时秒数">
-                <nz-input-number
-                  id="timeoutSec"
-                  formControlName="timeoutSec"
-                  [nzMin]="1"
-                  [nzStep]="1"
-                />
-              </se>
-
-              <se label="流式响应">
-                <label nz-checkbox formControlName="stream">允许流式响应</label>
-              </se>
-            </se-container>
-          </section>
-        </form>
-      </nz-card>
-
-      <nz-card class="side-card" [nzBordered]="false">
-        <div class="aside-intro">
-          <strong>路由提示</strong>
-          <p>
-            模型映射固定绑定 OpenAI，可继续按账号组限定路由范围。保存后新的 publicModel
-            会立即参与代理路由。
-          </p>
-        </div>
-
-        <div class="quick-grid">
-          <div class="quick-item">
-            <span>路由范围</span>
-            <strong>{{ routeScopeLabel }}</strong>
+        <nz-card class="side-card" [nzBordered]="false">
+          <div class="aside-intro">
+            <strong>{{ model.displayName || model.remoteModelId }}</strong>
+            <p>{{ model.description || '官方接口暂未返回模型描述。' }}</p>
           </div>
-          <div class="quick-item">
-            <span>匹配账号数</span>
-            <strong>{{ relatedAccountCount }}</strong>
-          </div>
-          <div class="quick-item">
-            <span>目标账号组</span>
-            <strong>{{ groupLabel }}</strong>
-          </div>
-          <div class="quick-item">
-            <span>供应商</span>
-            <strong>{{ providerLabel }}</strong>
-          </div>
-          <div class="quick-item">
-            <span>流式设置</span>
-            <strong>{{ streamLabel }}</strong>
-          </div>
-        </div>
 
-        <div class="section-title">填写建议</div>
-        <ul class="note-list">
-          <li>对外模型建议与业务侧实际传入的 `model` 完全一致，避免多余兼容逻辑。</li>
-          <li>供应商固定为 OpenAI；账号组留空时会使用全部 OpenAI 账号。</li>
-          <li>超时秒数应与上游模型响应时长匹配，长上下文或推理模型通常需要更高超时。</li>
-          <li>流式能力关闭后，请确认客户端不会再以 SSE/stream 模式调用这个模型。</li>
-        </ul>
-
-        @if (formMode === 'edit' && model) {
-          <div class="section-title section-title-spaced">当前映射概览</div>
           <div class="detail-grid">
             <div>
-              <span>映射 GUID</span>
-              <strong>{{ model.guid }}</strong>
+              <span>厂商</span><strong>{{ model.vendorCode }}</strong>
             </div>
             <div>
-              <span>启用状态</span>
-              <strong>{{ model.enabled ? '已启用' : '已停用' }}</strong>
+              <span>产品</span><strong>{{ model.productCode }}</strong>
             </div>
             <div>
-              <span>对外模型</span>
-              <strong>{{ model.publicModel || '-' }}</strong>
+              <span>上游协议</span><strong>{{ model.upstreamProtocol }}</strong>
             </div>
             <div>
-              <span>上游模型</span>
-              <strong>{{ model.upstreamModel || '-' }}</strong>
+              <span>官方所有者</span><strong>{{ model.ownedBy || '-' }}</strong>
+            </div>
+            <div>
+              <span>首次发现</span><strong>{{ formatTime(model.firstSeenAt) }}</strong>
+            </div>
+            <div>
+              <span>目录来源</span><strong>{{ model.source }}</strong>
             </div>
           </div>
-        }
-      </nz-card>
-    </div>
+
+          @if (capabilities().length) {
+            <div class="section-title section-title-spaced">官方能力信息</div>
+            <div class="capability-list">
+              @for (item of capabilities(); track item) {
+                <nz-tag>{{ item }}</nz-tag>
+              }
+            </div>
+          }
+
+          <nz-alert
+            class="mt-lg"
+            nzType="info"
+            nzShowIcon
+            nzMessage="远端模型 ID 和官方元数据会在下次同步时自动更新，用户配置不会被覆盖。"
+          />
+        </nz-card>
+      </div>
+    }
   </nz-spin>
 </section>

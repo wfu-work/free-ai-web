@@ -1,3 +1,7 @@
+@import '../../../../styles/list-toolbar.less';
+
+.list-toolbar-layout();
+
 :host {
   display: block;
 }
@@ -26,7 +30,7 @@
   min-width: 0;
   border: 1px solid rgb(var(--nm-primary-rgb) / 10%);
   border-radius: 8px;
-  background: rgb(255 255 255 / 92%);
+  background: var(--nm-surface-glass);
 }
 
 .filter-row {
@@ -58,7 +62,7 @@
 
 .filter-summary {
   margin-top: 10px;
-  color: #697684;
+  color: var(--nm-text-secondary);
   font-size: 13px;
   font-weight: 700;
 }
@@ -78,12 +82,12 @@
   padding: 18px 20px;
   border: 1px solid rgb(var(--nm-primary-rgb) / 10%);
   border-radius: 8px;
-  background: rgb(255 255 255 / 92%);
+  background: var(--nm-surface-glass);
 }
 
 .metric-card span {
   display: block;
-  color: #697684;
+  color: var(--nm-text-secondary);
   font-size: 13px;
   font-weight: 700;
 }
@@ -91,29 +95,33 @@
 .metric-card strong {
   display: block;
   margin-top: 8px;
-  color: #1f3148;
+  color: var(--nm-text);
   font-size: 22px;
   font-weight: 850;
   line-height: 1.2;
 }
 
 .metric-success strong {
-  color: #14856e;
+  color: var(--nm-success);
 }
 
 .metric-danger strong {
-  color: #c24141;
+  color: var(--nm-danger);
 }
 
 .log-card {
   min-width: 0;
   overflow: hidden;
   border: 1px solid rgb(var(--nm-primary-rgb) / 10%);
-  border-radius: 8px;
-  background: #fff;
+  border-radius: 10px;
+  background: var(--nm-surface);
 }
 
 .log-card ::ng-deep {
+  .ant-card-body {
+    padding: 20px;
+  }
+
   .ant-card-body,
   st,
   .st,
@@ -141,7 +149,7 @@
   padding: 0;
   overflow: hidden;
   border: 0;
-  color: #697789;
+  color: var(--nm-text-secondary);
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   font-size: 12px;
   line-height: 1.5;
@@ -154,7 +162,7 @@
 
 .copy-text.strong,
 .model-name {
-  color: #1d2b3f;
+  color: var(--nm-text);
   font-weight: 700;
 }
 
@@ -170,18 +178,18 @@
   align-items: center;
   height: 22px;
   padding: 0 9px;
-  border: 1px solid #d8e2ec;
+  border: 1px solid var(--nm-border);
   border-radius: 999px;
-  color: #60758c;
+  color: var(--nm-text-secondary);
   font-size: 12px;
   font-weight: 800;
   line-height: 1;
-  background: #eef5fb;
+  background: var(--nm-surface-muted);
 }
 
 .method-text {
   margin-left: 8px;
-  color: #109884;
+  color: var(--nm-success);
   font-weight: 850;
 }
 
@@ -194,7 +202,7 @@
 
 .identity-name strong {
   overflow: hidden;
-  color: #1d2b3f;
+  color: var(--nm-text);
   font-weight: 750;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -202,11 +210,11 @@
 
 .identity-icon {
   flex: 0 0 auto;
-  color: #f2b300;
+  color: var(--nm-warning);
 }
 
 .latency-text {
-  color: #159a8c;
+  color: var(--nm-success);
   font-weight: 800;
 }
 
@@ -217,14 +225,14 @@
 .muted {
   display: block;
   overflow: hidden;
-  color: #7b8794;
+  color: var(--nm-text-secondary);
   font-size: 12px;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .error-text {
-  color: #c24141;
+  color: var(--nm-danger);
   font-weight: 700;
 }
 

@@ -1,7 +1,7 @@
 <section class="settings-page">
   <div class="d-flex justify-content-between header-row">
     <title-label
-      title="数据保留"
+      title="数据管理"
       description="管理请求日志保留策略和手动清理入口，避免本地 SQLite 日志无限增长。"
     />
     <div class="header-actions">
@@ -37,11 +37,20 @@
         <div class="panel-head">
           <div>
             <div class="panel-title">核心数据备份</div>
-            <p>导出账号、账号分组、模型映射、平台密钥、账号额度、路由状态和网关配置；导入时按 guid 恢复并覆盖同一份核心数据。</p>
+            <p>
+              导出账号、账号分组、模型目录、账号模型可用性、对外策略、API 密钥、账号额度和网关配置；导入时按
+              guid 恢复并覆盖同一份核心数据。
+            </p>
           </div>
         </div>
         <div class="backup-actions">
-          <button nz-button nzType="primary" type="button" [nzLoading]="backupLoading" (click)="exportCoreBackup()">
+          <button
+            nz-button
+            nzType="primary"
+            type="button"
+            [nzLoading]="backupLoading"
+            (click)="exportCoreBackup()"
+          >
             <i nz-icon nzType="download"></i>
             导出备份文件
           </button>
@@ -79,7 +88,10 @@
                 <strong>按保留天数清理</strong>
                 <span>推荐</span>
               </div>
-              <p>保留最近一段时间的日志，清理超出窗口的数据。默认与后端 cleanup-log-retention-days 保持 30 天。</p>
+              <p>
+                保留最近一段时间的日志，清理超出窗口的数据。默认与后端 cleanup-log-retention-days
+                保持 30 天。
+              </p>
             </div>
 
             <div class="cleanup-action">

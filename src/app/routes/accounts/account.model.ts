@@ -9,22 +9,25 @@ export type AccountStatus =
   | 'unknown'
   | string;
 
-export type AccountAuthType = 'api_key' | 'bearer_token' | 'login_callback' | string;
-
 export interface Account {
   guid: string;
+  vendorCode: string;
+  productCode: string;
+  credentialType: string;
   name: string;
   email: string;
-  provider: string;
-  apiBaseUrl: string;
-  supplierName: string;
-  officialUrl: string;
-  usageQueryType: string;
-  usageApiUrl: string;
-  accountType: string;
-  authType: AccountAuthType;
-  secretHint: string;
-  supportedModels: string;
+  chatgptAccountId: string;
+  workspaceId: string;
+  credentialHint: string;
+  planType: string;
+  subscriptionPlan: string;
+  subscriptionExpiredAt: number;
+  subscriptionRenewsAt: number;
+  subscriptionWillRenew: boolean | null;
+  accessTokenExpiresAt: number;
+  tokenStatus: string;
+  lastError?: string;
+  availableModelCount?: number;
   accountGroup: string;
   status: AccountStatus;
   priority: number;
@@ -32,7 +35,6 @@ export interface Account {
   enabled: boolean;
   lastUsedAt: number;
   lastRefreshedAt: number;
-  subscriptionExpiredAt: number;
   failureCount: number;
   cooldownUntil: number;
   remark: string;
@@ -43,14 +45,12 @@ export interface AccountQuota {
   guid: string;
   accountGuid: string;
   windowType: string;
-  usedPercent: number;
-  remainingTokens: number;
-  totalTokens: number;
-  unit: string;
-  usedAmount: number;
-  remainingAmount: number;
-  totalAmount: number;
+  usedPercent: number | null;
+  limitWindowSeconds: number;
   resetAt: number;
+  allowed: boolean | null;
+  limitReached: boolean | null;
+  source: 'wham' | 'response_header' | 'active_probe' | string;
   nextRefreshAt: number;
   lastSyncedAt: number;
   status: string;
@@ -63,8 +63,6 @@ export interface AccountGroup {
   description: string;
   sort: number;
   enabled: boolean;
-  providerSummary: string;
-  accountTypeSummary: string;
   modelSummary: string;
   accountCount: number;
   enabledAccountCount: number;
@@ -86,38 +84,83 @@ export interface AccountGroupPayload {
 export interface AccountHealthItem {
   guid: string;
   name: string;
-  provider: string;
-  supplierName: string;
-  usageQueryType: string;
-  usageApiUrl: string;
   accountGroup: string;
   status: AccountStatus;
   enabled: boolean;
   failureCount: number;
   cooldownUntil: number;
   lastUsedAt: number;
+  lastRefreshedAt?: number;
   subscriptionExpiredAt: number;
-  nextUsageCheckAt: number;
+  planType?: string;
+  tokenStatus?: string;
   quotas: AccountQuota[];
+}
+
+export interface AccountImportPayload {
+  accountFile: Record<string, unknown>;
+  vendorCode?: string;
+  name?: string;
+  accountGroup?: string;
+  priority?: number;
+  weight?: number;
+  remark?: string;
+}
+
+export interface AccountPoolPayload {
+  vendorCode?: string;
+  name?: string;
+  accountGroup?: string;
+  priority?: number;
+  weight?: number;
+  remark?: string;
+}
+
+export interface AccountManualPayload extends AccountPoolPayload {
+  accessToken?: string;
+  refreshToken?: string;
+  idToken?: string;
+  accountId?: string;
+}
+
+export type AccountOAuthMode = 'browser' | 'device';
+
+export interface AccountOAuthStartPayload extends AccountPoolPayload {
+  mode: AccountOAuthMode;
+}
+
+export type AccountOAuthStatusValue =
+  | 'pending'
+  | 'completing'
+  | 'success'
+  | 'failed'
+  | 'cancelled'
+  | 'expired';
+
+export interface AccountOAuthSession {
+  id: string;
+  mode: AccountOAuthMode;
+  status: AccountOAuthStatusValue;
+  authorizationUrl?: string;
+  verificationUrl?: string;
+  userCode?: string;
+  intervalSeconds?: number;
+  expiresAt: number;
+  accountGuid?: string;
+  error?: string;
+  callbackListening?: boolean;
+}
+
+export interface AccountOAuthCompletePayload {
+  callbackUrl: string;
 }
 
 export interface AccountPayload {
   name: string;
-  email?: string;
-  provider: string;
-  apiBaseUrl?: string;
-  supplierName?: string;
-  officialUrl?: string;
-  usageQueryType?: string;
-  usageApiUrl?: string;
-  accountType?: string;
-  authType?: AccountAuthType;
-  secret?: string;
-  supportedModels?: string;
+  vendorCode?: string;
   accountGroup?: string;
   priority?: number;
   weight?: number;
-  subscriptionExpiredAt?: number;
   remark?: string;
 }
 
@@ -134,66 +177,26 @@ export interface AccountTestInput {
 
 export interface AccountTestResult {
   ok: boolean;
-  provider: string;
-  status: string;
-  secretHint: string;
-  enabled: boolean;
-  modelCount: number;
-  checkedAtMs: number;
-  mode?: string;
-  message?: string;
+  status?: string;
+  statusCode?: number;
+  errorType?: string;
   model?: string;
-  upstreamModel?: string;
-  upstreamStatusCode?: number;
-  upstreamErrorType?: string;
   latencyMs?: number;
+  quotas?: AccountQuota[];
 }
 
 export interface AccountModelFetchPayload {
-  guid?: string;
-  provider?: string;
-  apiBaseUrl?: string;
-  authType?: AccountAuthType;
-  secret?: string;
+  guid: string;
 }
 
 export interface AccountModelFetchResult {
   models: string[];
 }
 
-export interface AccountLoginCallbackParsePayload {
-  provider: string;
-  callbackUrl: string;
-  codeVerifier?: string;
-  redirectUri?: string;
-}
-
-export interface AccountLoginCallbackParseResult {
-  provider: string;
-  authType: AccountAuthType;
-  secret: string;
-  secretHint: string;
-  accessToken?: string;
-  apiKeyToken?: string;
-  code?: string;
-  state?: string;
-  codeVerifier?: string;
-  refreshToken?: string;
-  idToken?: string;
-  tokenType?: string;
-  expiresIn?: string;
-  scope?: string;
-  exchangeError?: string;
-  apiKeyError?: string;
-  hasAccessToken: boolean;
-  hasApiKeyToken?: boolean;
-  params: Record<string, string>;
-}
-
 export interface AccountUsageRefreshResult {
   accountGuid: string;
-  provider: string;
   usageType: string;
+  planType: string;
   quotas: AccountQuota[];
   raw?: Record<string, unknown>;
 }

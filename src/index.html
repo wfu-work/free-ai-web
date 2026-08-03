@@ -6,7 +6,7 @@
   <title>FreeAi</title>
   <base href="/">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <link rel="icon" type="image/svg+xml" href="favicon.svg">
+  <link rel="icon" type="image/svg+xml" href="favicon.svg?v=2">
   <style type="text/css">
     .preloader {
       position: fixed;
@@ -33,6 +33,12 @@
 
     .preloader-hidden {
       display: none
+    }
+
+    [data-theme='dark'] .preloader {
+      background:
+        radial-gradient(circle at 50% 100%, rgb(10 163 109 / 12%), transparent 32%),
+        linear-gradient(180deg, #111820 0%, #0b1016 100%)
     }
 
     .cs-loader {

@@ -1,3 +1,4 @@
+import { HttpClient } from '@angular/common/http';
 import {
   ChangeDetectionStrategy,
   ChangeDetectorRef,
@@ -5,7 +6,6 @@ import {
   OnInit,
   inject,
 } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
 import { SHARED_IMPORTS, TitleLabelComponent } from '@shared';
 import { catchError, finalize, forkJoin, of } from 'rxjs';
 
@@ -44,7 +44,9 @@ export class SettingsSecurityComponent implements OnInit {
     forkJoin({
       masterKey: this.opsService.masterKey().pipe(catchError(() => of(null))),
       metrics: this.opsService.metrics().pipe(catchError(() => of(null))),
-      gatewayConfig: this.http.get<SecurityGatewayConfig>('/ops/gateway-config').pipe(catchError(() => of(null))),
+      gatewayConfig: this.http
+        .get<SecurityGatewayConfig>('/ops/gateway-config')
+        .pipe(catchError(() => of(null))),
     })
       .pipe(
         finalize(() => {
@@ -119,7 +121,7 @@ export class SettingsSecurityComponent implements OnInit {
     return [
       {
         title: '主密钥可用',
-        desc: '账号 Secret 与平台密钥依赖主密钥解密，异常时新增、测试、转发都会受影响。',
+        desc: '账号 Secret 与API 密钥依赖主密钥解密，异常时新增、测试、转发都会受影响。',
         ok: Boolean(this.masterKey?.loaded),
       },
       {
@@ -130,18 +132,20 @@ export class SettingsSecurityComponent implements OnInit {
       },
       {
         title: '平台代理密钥已启用',
-        desc: '业务侧调用 /v1/* 需要平台密钥；停用无效密钥可以减少误用面。',
+        desc: '业务侧调用 /v1/* 需要API 密钥；停用无效密钥可以减少误用面。',
         ok: Number(this.metrics?.enabledKeys || 0) > 0,
       },
       {
         title: '上游账号池可用',
-        desc: '可用账号为 0 时，平台密钥即使有效也无法完成代理请求。',
+        desc: '可用账号为 0 时，API 密钥即使有效也无法完成代理请求。',
         ok: Number(this.metrics?.availableAccounts || 0) > 0,
       },
       {
         title: '上游代理配置完整',
         desc: '开启代理后必须填写代理地址，否则 OpenAI 登录、模型拉取和网关转发可能失败。',
-        ok: !this.gatewayConfig?.upstreamProxyEnabled || Boolean(this.gatewayConfig?.upstreamProxyUrl),
+        ok:
+          !this.gatewayConfig?.upstreamProxyEnabled ||
+          Boolean(this.gatewayConfig?.upstreamProxyUrl),
       },
     ];
   }

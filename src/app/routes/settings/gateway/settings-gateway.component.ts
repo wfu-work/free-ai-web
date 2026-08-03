@@ -14,8 +14,6 @@ import { finalize } from 'rxjs';
 interface GatewayConfig {
   listenAddress: string;
   accountSelectionStrategy: string;
-  freeAccountModel: string;
-  modelRewriteRules: string;
   originator: string;
   residency: string;
   upstreamProxyEnabled: boolean;
@@ -30,8 +28,6 @@ const STORAGE_KEY = 'freeai.gateway.config';
 const DEFAULT_GATEWAY_CONFIG: GatewayConfig = {
   listenAddress: '127.0.0.1',
   accountSelectionStrategy: 'ordered',
-  freeAccountModel: 'follow_request',
-  modelRewriteRules: 'spark*=gpt-5.4-mini\nclaude-sonnet-4*=gpt-5.4',
   originator: 'codex_cli_rs',
   residency: '',
   upstreamProxyEnabled: false,
@@ -67,14 +63,6 @@ export class SettingsGatewayComponent implements OnInit {
     { label: '均衡轮询 (Round Robin)', value: 'round_robin' },
   ];
 
-  protected readonly freeAccountModelOptions = [
-    { label: '跟随请求', value: 'follow_request' },
-    { label: 'gpt-5.4-mini', value: 'gpt-5.4-mini' },
-    { label: 'gpt-5.4', value: 'gpt-5.4' },
-    { label: 'gpt-5.3-codex', value: 'gpt-5.3-codex' },
-    { label: 'gpt-5.2', value: 'gpt-5.2' },
-  ];
-
   protected readonly residencyOptions = [
     { label: '不限制', value: '' },
     { label: '美国 (us)', value: 'us' },
@@ -83,8 +71,6 @@ export class SettingsGatewayComponent implements OnInit {
   protected readonly form = this.fb.nonNullable.group({
     listenAddress: [DEFAULT_GATEWAY_CONFIG.listenAddress],
     accountSelectionStrategy: [DEFAULT_GATEWAY_CONFIG.accountSelectionStrategy],
-    freeAccountModel: [DEFAULT_GATEWAY_CONFIG.freeAccountModel],
-    modelRewriteRules: [DEFAULT_GATEWAY_CONFIG.modelRewriteRules],
     originator: [DEFAULT_GATEWAY_CONFIG.originator],
     residency: [DEFAULT_GATEWAY_CONFIG.residency],
     upstreamProxyEnabled: [DEFAULT_GATEWAY_CONFIG.upstreamProxyEnabled],
@@ -147,11 +133,6 @@ export class SettingsGatewayComponent implements OnInit {
     return this.strategyOptions.find((item) => item.value === value)?.label || '-';
   }
 
-  protected get freeAccountModelLabel(): string {
-    const value = this.form.controls.freeAccountModel.value;
-    return this.freeAccountModelOptions.find((item) => item.value === value)?.label || value || '-';
-  }
-
   protected get upstreamModeLabel(): string {
     return this.form.controls.upstreamProxyEnabled.value ? '代理转发' : '直连上游';
   }
@@ -199,7 +180,6 @@ export class SettingsGatewayComponent implements OnInit {
     return {
       ...value,
       listenAddress: this.normalizeListenAddress(value.listenAddress),
-      modelRewriteRules: value.modelRewriteRules.trim(),
       originator: value.originator.trim() || DEFAULT_GATEWAY_CONFIG.originator,
       upstreamProxyEnabled: Boolean(value.upstreamProxyEnabled),
       upstreamProxyUrl: value.upstreamProxyUrl.trim(),

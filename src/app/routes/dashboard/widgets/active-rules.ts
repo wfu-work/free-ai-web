@@ -52,11 +52,8 @@ interface RuleSnapshot {
         height: 100%;
         padding: 28px 30px 26px;
         border: 1px solid rgb(var(--nm-primary-rgb) / 12%);
-        border-radius: 22px;
-        background: rgb(255 255 255 / 88%);
-        box-shadow:
-          0 18px 44px rgb(var(--nm-primary-rgb) / 8%),
-          inset 0 1px 0 rgb(255 255 255 / 90%);
+        border-radius: 8px;
+        background: var(--nm-surface-glass);
       }
 
       .rules-card-header {
@@ -68,7 +65,7 @@ interface RuleSnapshot {
 
       .rules-card-header h2 {
         margin: 0;
-        color: #182334;
+        color: var(--nm-text);
         font-size: 20px;
         font-weight: 800;
         line-height: 1.35;
@@ -127,7 +124,7 @@ interface RuleSnapshot {
       }
 
       .rule-copy strong {
-        color: #334054;
+        color: var(--nm-text);
         font-size: 15px;
         font-weight: 800;
         line-height: 1.45;
@@ -135,14 +132,14 @@ interface RuleSnapshot {
 
       .rule-copy span {
         margin-top: 2px;
-        color: #697684;
+        color: var(--nm-text-secondary);
         font-size: 14px;
         font-weight: 700;
         line-height: 1.45;
       }
 
       .rule-status {
-        color: #7f8c99;
+        color: var(--nm-text-secondary);
         font-size: 14px;
         font-weight: 800;
         white-space: nowrap;
@@ -178,6 +175,11 @@ export class DashboardActiveRulesComponent {
   @Input() rules: RuleSnapshot[] = [
     { name: '账号认证失败', flow: '检查上游 Secret 和账号状态', status: '--', tone: 'warning' },
     { name: '额度即将耗尽', flow: '查看账号额度和限流状态', status: '--', tone: 'warning' },
-    { name: '模型路由待确认', flow: '核对供应商、账号组和 publicModel', status: '--', tone: 'idle' },
+    {
+      name: '模型路由待确认',
+      flow: '核对账号组、上游模型和 publicModel',
+      status: '--',
+      tone: 'idle',
+    },
   ];
 }

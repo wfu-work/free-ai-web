@@ -1,17 +1,16 @@
 <section class="model-page">
-  <div class="d-flex justify-content-between header-row">
+  <div class="header-row">
     <title-label
-      title="模型映射"
-      description="配置 publicModel 到上游模型、供应商、账号组和请求超时的路由关系。"
+      title="模型目录"
+      description="从官方账号同步远端模型，统一管理账号可用性和 OpenAI-compatible 对外策略。"
     />
     <div class="header-actions">
-      <button nz-button (click)="q.page = 1; getData()">
-        <i nz-icon nzType="reload"></i>
-        刷新
+      <button nz-button (click)="getData()"><i nz-icon nzType="reload"></i>刷新</button>
+      <button nz-button [nzLoading]="pricingSyncing" (click)="syncPricing()">
+        <i nz-icon nzType="dollar"></i>同步官方定价
       </button>
-      <button nz-button nzType="primary" (click)="add()">
-        <i nz-icon nzType="plus"></i>
-        新增映射
+      <button nz-button nzType="primary" [nzLoading]="syncing" (click)="syncAll()">
+        <i nz-icon nzType="sync"></i>同步全部账号
       </button>
     </div>
   </div>
@@ -19,41 +18,64 @@
   <nz-alert
     nzType="info"
     nzShowIcon
-    nzMessage="publicModel 是业务客户端请求中的 model；aliases 可作为同一映射的额外入口。"
+    nzMessage="模型只从官方账号发现；同一厂商、产品和远端模型 ID 会直接更新，不会重复创建。"
+  />
+  <nz-alert
+    nzType="warning"
+    nzShowIcon
+    nzMessage="价格是 OpenAI Platform API 公开参考价，仅用于成本估算，不代表 Codex 订阅账号的实际扣费或剩余额度。"
   />
 
+  <div class="catalog-summary">
+    <article>
+      <span>目录模型</span><strong>{{ totalCount }}</strong>
+    </article>
+    <article>
+      <span>当前页面可路由</span><strong>{{ routablePageCount }}</strong>
+    </article>
+    <article><span>官方产品</span><strong>OpenAI · Codex</strong></article>
+  </div>
+
   <nz-card class="model-card" [nzBordered]="false">
-    <div class="d-flex justify-content-between mb-md">
-      <h2>{{ '模型映射' }}</h2>
-      <div class=" d-flex text-right">
-        <nz-select
-          [(ngModel)]="q.enabled"
-          placeholder="启用状态"
-          (ngModelChange)="q.page = 1; getData()"
-        >
-          <nz-option [nzValue]="''" [nzLabel]="'全部'" />
-          <nz-option [nzValue]="1" [nzLabel]="'启用'" />
-          <nz-option [nzValue]="0" [nzLabel]="'禁用'" />
-        </nz-select>
-        <nz-input-wrapper class="ml-lg">
-          <nz-icon nzInputPrefix nzType="search" />
-          <input
-            nz-input
-            [(ngModel)]="q.content"
-            name="content"
-            [placeholder]="'请输入搜索内容'"
-            (keydown.enter)="q.page = 1; getData()"
-          />
-        </nz-input-wrapper>
-        <div class="d-flex ml-lg">
-          <button nz-button (click)="q.page = 1; getData()" nzType="primary">
-            {{ '搜索' }}
-          </button>
-          <button nz-button (click)="q.page = 1; q.content = ''; getData()">
-            {{ '重置' }}
-          </button>
-        </div>
-      </div>
+    <div class="filters">
+      <nz-select
+        [(ngModel)]="q.vendorCode"
+        nzPlaceHolder="官方厂商"
+        (ngModelChange)="q.page = 1; getData()"
+      >
+        <nz-option nzValue="" nzLabel="全部厂商" />
+        <nz-option nzValue="openai" nzLabel="OpenAI" />
+        <nz-option nzValue="anthropic" nzLabel="Anthropic（预留）" />
+      </nz-select>
+      <nz-select
+        [(ngModel)]="q.productCode"
+        nzPlaceHolder="官方产品"
+        (ngModelChange)="q.page = 1; getData()"
+      >
+        <nz-option nzValue="" nzLabel="全部产品" />
+        <nz-option nzValue="codex" nzLabel="Codex" />
+        <nz-option nzValue="claude_code" nzLabel="Claude Code（预留）" />
+      </nz-select>
+      <nz-select
+        [(ngModel)]="q.enabled"
+        nzPlaceHolder="启用状态"
+        (ngModelChange)="q.page = 1; getData()"
+      >
+        <nz-option nzValue="" nzLabel="全部状态" />
+        <nz-option [nzValue]="1" nzLabel="已启用" />
+        <nz-option [nzValue]="0" nzLabel="已停用" />
+      </nz-select>
+      <nz-input-wrapper class="search-input">
+        <nz-icon nzInputPrefix nzType="search" />
+        <input
+          nz-input
+          [(ngModel)]="q.content"
+          placeholder="搜索模型 ID、名称或描述"
+          (keydown.enter)="q.page = 1; getData()"
+        />
+      </nz-input-wrapper>
+      <button nz-button nzType="primary" (click)="q.page = 1; getData()">搜索</button>
+      <button nz-button (click)="reset()">重置</button>
     </div>
 
     <st
@@ -63,32 +85,197 @@
       [pi]="q.page"
       [ps]="q.size"
       [total]="totalCount"
+      [scroll]="{ x: '1860px' }"
       (change)="tableChange($event)"
     >
-      <ng-template st-row="publicRender" let-item>
-        <div class="model-name">{{ item.publicModel || '-' }}</div>
-        <button
-          type="button"
-          class="copy-text"
-          nz-tooltip
-          nzTooltipTitle="复制 publicModel"
-          (click)="copy(item.publicModel, 'publicModel')"
-        >
-          {{ formatAliases(item.aliases) }}
+      <ng-template st-row="modelRender" let-item>
+        <div class="model-name">{{ item.displayName || item.remoteModelId }}</div>
+        <button class="copy-text" type="button" (click)="copy(item.remoteModelId)">
+          {{ item.remoteModelId }}
         </button>
+        @if (item.description) {
+          <span class="muted description">{{ item.description }}</span>
+        }
       </ng-template>
 
-      <ng-template st-row="upstreamRender" let-item>
-        <div>{{ item.upstreamModel || '-' }}</div>
-        <span class="muted">{{ item.guid }}</span>
+      <ng-template st-row="sourceRender" let-item>
+        <div class="source-label">{{ sourceLabel(item) }}</div>
+        <span class="muted">{{ item.upstreamProtocol }}</span>
       </ng-template>
 
-      <ng-template st-row="providerRender" let-item>
-        <div class="provider-line">{{ item.provider || '全局供应商' }}</div>
-        <span class="muted">{{ item.accountGroup || '全局账号组' }}</span>
+      <ng-template st-row="accountsRender" let-item>
+        <button nz-button nzType="link" class="account-count" (click)="showAccounts(item)">
+          {{ item.availableAccountCount }} 个账号
+        </button>
+        <span class="muted">{{
+          item.availableAccountCount ? '已发现可用来源' : '当前不可路由'
+        }}</span>
       </ng-template>
 
-      <ng-template st-row="timeoutRender" let-item> {{ item.timeoutSec || 120 }}s </ng-template>
+      <ng-template st-row="reasoningRender" let-item>
+        @if (reasoningEfforts(item).length) {
+          <div class="reasoning-list">
+            @for (effort of reasoningEfforts(item); track effort) {
+              <span
+                class="reasoning-effort"
+                [class.is-default]="effort === item.defaultReasoningEffort"
+              >
+                {{ effort }}
+              </span>
+            }
+          </div>
+          <span class="muted">默认 {{ item.defaultReasoningEffort || '由官方决定' }}</span>
+        } @else {
+          <span class="muted">官方未声明</span>
+        }
+      </ng-template>
+
+      <ng-template st-row="pricingRender" let-item>
+        @if (referencePrice(item); as price) {
+          <div class="pricing-summary">
+            <span
+              ><em>输入</em><strong>{{ formatPrice(price.inputMicrousdPer1M) }}</strong></span
+            >
+            <span
+              ><em>缓存输入</em
+              ><strong>{{ formatPrice(price.cachedInputMicrousdPer1M) }}</strong></span
+            >
+            <span
+              ><em>输出</em><strong>{{ formatPrice(price.outputMicrousdPer1M) }}</strong></span
+            >
+          </div>
+          <div class="pricing-footer">
+            <span>USD / 100万 Token</span>
+            <button nz-button nzType="link" (click)="showPricing(item)">全部价格</button>
+          </div>
+        } @else {
+          <span class="muted">官方未提供匹配价格</span>
+          <button nz-button nzType="link" class="pricing-empty-action" (click)="syncPricing()">
+            同步定价
+          </button>
+        }
+      </ng-template>
+
+      <ng-template st-row="exposureRender" let-item>
+        <div class="model-name">{{ item.publicModel || '尚未设置' }}</div>
+        <span class="muted">{{ formatAliases(item.aliases) }}</span>
+      </ng-template>
+
+      <ng-template st-row="timeRender" let-item>
+        <div>{{ formatTime(item.lastSeenAt) }}</div>
+        <span class="muted">首次 {{ formatTime(item.firstSeenAt) }}</span>
+      </ng-template>
     </st>
   </nz-card>
 </section>
+
+<nz-modal
+  [(nzVisible)]="accountsVisible"
+  [nzTitle]="(selectedModel?.displayName || selectedModel?.remoteModelId || '模型') + ' · 可用账号'"
+  [nzFooter]="null"
+  nzWidth="760px"
+  (nzOnCancel)="accountsVisible = false"
+>
+  <ng-container *nzModalContent>
+    <nz-spin [nzSpinning]="accountsLoading">
+      @if (modelAccounts.length) {
+        <div class="account-list">
+          @for (item of modelAccounts; track item.accountGuid) {
+            <article class="account-item">
+              <div>
+                <strong>{{ item.name || item.email || item.accountGuid }}</strong>
+                <span>{{ item.email || item.accountGuid }}</span>
+              </div>
+              <div>
+                <span>账号组</span><strong>{{ item.accountGroup || 'default' }}</strong>
+              </div>
+              <div>
+                <span>同步状态</span><strong>{{ accountStatus(item) }}</strong>
+              </div>
+              <div>
+                <span>最近发现</span><strong>{{ formatTime(item.lastSeenAt) }}</strong>
+              </div>
+            </article>
+          }
+        </div>
+      } @else if (!accountsLoading) {
+        <nz-empty nzNotFoundContent="没有账号返回这个模型" />
+      }
+    </nz-spin>
+  </ng-container>
+</nz-modal>
+
+<nz-modal
+  [(nzVisible)]="pricingVisible"
+  [nzTitle]="
+    (selectedPricingModel?.displayName || selectedPricingModel?.remoteModelId || '模型') +
+    ' · OpenAI API 参考价'
+  "
+  [nzFooter]="null"
+  nzWidth="960px"
+  (nzOnCancel)="pricingVisible = false"
+>
+  <ng-container *nzModalContent>
+    <div class="pricing-modal">
+      <nz-alert
+        nzType="warning"
+        nzShowIcon
+        nzMessage="以下是 OpenAI Platform API 公开参考价，不代表 Codex 订阅账号实际扣费。"
+      />
+
+      @if (selectedPricingModel?.pricing?.length) {
+        <div class="pricing-source">
+          <div>
+            <span>数据来源</span>
+            <strong>{{ pricingSourceLabel(selectedPricingModel?.pricingSourceKind) }}</strong>
+          </div>
+          <div>
+            <span>最近同步</span>
+            <strong>{{ formatTime(selectedPricingModel?.pricingUpdatedAt) }}</strong>
+          </div>
+          @if (selectedPricingModel?.pricingSourceUrl) {
+            <a
+              [href]="selectedPricingModel?.pricingSourceUrl"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              查看 OpenAI 官方定价
+            </a>
+          }
+        </div>
+
+        <div class="pricing-table-wrap">
+          <table class="pricing-table">
+            <thead>
+              <tr>
+                <th>服务层级</th>
+                <th>上下文区间</th>
+                <th>输入</th>
+                <th>缓存输入</th>
+                <th>缓存写入</th>
+                <th>输出</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (price of selectedPricingModel?.pricing; track $index) {
+                <tr>
+                  <td>
+                    <strong>{{ serviceTierLabel(price.serviceTier) }}</strong>
+                  </td>
+                  <td>{{ contextTierLabel(price.contextTier) }}</td>
+                  <td>{{ formatPrice(price.inputMicrousdPer1M) }}</td>
+                  <td>{{ formatPrice(price.cachedInputMicrousdPer1M) }}</td>
+                  <td>{{ formatPrice(price.cacheWriteMicrousdPer1M) }}</td>
+                  <td>{{ formatPrice(price.outputMicrousdPer1M) }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+        <p class="pricing-unit">所有金额单位：USD / 100万 Token</p>
+      } @else {
+        <nz-empty nzNotFoundContent="这个模型还没有官方 API 参考价" />
+      }
+    </div>
+  </ng-container>
+</nz-modal>

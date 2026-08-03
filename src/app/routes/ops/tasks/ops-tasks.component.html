@@ -1,0 +1,69 @@
+<section class="tasks-page">
+  <div class="header-row">
+    <title-label
+      title="任务中心"
+      description="集中执行账号额度、模型目录和官方定价同步。当前页面记录仅保留在本次管理端会话中。"
+    />
+  </div>
+
+  <nz-alert
+    nzType="info"
+    nzShowIcon
+    nzMessage="后台会按计划自动同步。这里提供即时手动执行，页面中的最近执行结果仅记录本次管理端会话。"
+  />
+
+  <div class="task-grid">
+    @for (task of tasks; track task.id) {
+      <nz-card class="task-card" [nzBordered]="false">
+        <div class="task-icon"><i nz-icon [nzType]="task.icon"></i></div>
+        <div class="task-content">
+          <div class="task-title-row">
+            <div>
+              <h3>{{ task.title }}</h3>
+              <span>{{ task.schedule }}</span>
+            </div>
+            @switch (stateOf(task).status) {
+              @case ('success') {
+                <nz-tag nzColor="success">已完成</nz-tag>
+              }
+              @case ('warning') {
+                <nz-tag nzColor="warning">部分完成</nz-tag>
+              }
+              @case ('error') {
+                <nz-tag nzColor="error">失败</nz-tag>
+              }
+              @default {
+                <nz-tag>待执行</nz-tag>
+              }
+            }
+          </div>
+          <p>{{ task.description }}</p>
+          <div class="task-meta">
+            <span>最近执行：{{ formatTime(stateOf(task).lastRunAt) }}</span>
+            <span>{{ stateOf(task).message }}</span>
+          </div>
+          <button
+            nz-button
+            nzType="primary"
+            [nzLoading]="stateOf(task).running"
+            (click)="run(task)"
+          >
+            <i nz-icon nzType="play-circle"></i>
+            立即执行
+          </button>
+        </div>
+      </nz-card>
+    }
+  </div>
+
+  <nz-card class="panel-card" [nzBordered]="false">
+    <div class="panel-title">执行边界</div>
+    <div class="boundary-grid">
+      <div><strong>数据来源</strong><span>官方账号 API、远端模型目录和官方定价快照。</span></div>
+      <div><strong>写入范围</strong><span>只更新当前本地数据库，不会删除账号或模型。</span></div>
+      <div>
+        <strong>失败处理</strong><span>单个账号失败不会阻断其他账号，结果会在任务卡中标记。</span>
+      </div>
+    </div>
+  </nz-card>
+</section>

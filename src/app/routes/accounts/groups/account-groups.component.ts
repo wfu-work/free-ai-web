@@ -57,18 +57,13 @@ export class AccountGroupsComponent implements OnInit {
   };
 
   protected readonly columns: Array<STColumn<AccountGroup>> = [
-    { title: '账号分组', render: 'groupRender', width: 230, fixed: 'left' },
-    { title: '供应商', render: 'providerRender', width: 180 },
-    { title: '账号池', render: 'accountRender', width: 160 },
-    { title: '模型映射', render: 'modelRender', width: 220 },
-    { title: '账号类型', render: 'typeRender', width: 160 },
-    { title: '排序', index: 'sort', width: 90 },
-    { title: '启用', index: 'enabled', type: 'tag', tag: this.enabledTag, width: 86 },
-    { title: '说明 / 同步', render: 'descriptionRender', width: 220 },
+    { title: '账号分组', render: 'groupRender', width: 230 },
+    { title: '账号池', render: 'accountRender' },
+    { title: '目录模型', render: 'modelRender' },
+    { title: '排序', index: 'sort' },
+    { title: '启用', index: 'enabled', type: 'tag', tag: this.enabledTag },
     {
       title: '操作',
-      width: 120,
-      fixed: 'right',
       buttons: [
         {
           text: '编辑',
@@ -155,7 +150,7 @@ export class AccountGroupsComponent implements OnInit {
   protected delete(item: AccountGroup): void {
     this.modal.confirm({
       nzTitle: '确定删除该账号分组？',
-      nzContent: '删除后新增账号和模型映射将无法再选择该分组；如果已有引用，后端会拒绝删除。',
+      nzContent: '删除后账号和模型对外策略将无法再选择该分组；如果已有引用，后端会拒绝删除。',
       nzOkDanger: true,
       nzOnOk: () =>
         new Promise<void>((resolve, reject) => {
@@ -192,7 +187,10 @@ export class AccountGroupsComponent implements OnInit {
         return parsed.map((item) => String(item || '').trim()).filter(Boolean);
       }
     } catch {
-      return raw.split(',').map((item) => item.trim()).filter(Boolean);
+      return raw
+        .split(',')
+        .map((item) => item.trim())
+        .filter(Boolean);
     }
     return [];
   }

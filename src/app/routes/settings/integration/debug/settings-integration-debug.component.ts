@@ -1,21 +1,25 @@
 import { ChangeDetectionStrategy, ChangeDetectorRef, Component, inject } from '@angular/core';
 import { SHARED_IMPORTS } from '@shared';
-import { NZ_MODAL_DATA } from 'ng-zorro-antd/modal';
 import { NzMessageService } from 'ng-zorro-antd/message';
+import { NZ_MODAL_DATA } from 'ng-zorro-antd/modal';
+import { firstValueFrom } from 'rxjs';
 
-import { ModelMapping } from '../../../models/model.model';
-import { PlatformKey } from '../../../platform-keys/platform-key.model';
+import {
+  PlatformKey,
+  PlatformKeyDebugEndpoint,
+  PlatformKeyDebugPayload,
+} from '../../../apikey/apikey.model';
+import { PlatformKeysService } from '../../../apikey/apikey.service';
+import { ModelCatalogItem } from '../../../models/model.model';
 
 interface DebugModalData {
   keys: PlatformKey[];
-  modelMappings: ModelMapping[];
+  modelCatalog: ModelCatalogItem[];
   proxyBaseUrl: string;
-  requestBaseUrl: string;
-  sampleKey: string;
   sampleModel: string;
 }
 
-type DebugEndpoint = 'models' | 'chat' | 'responses' | 'embeddings';
+type DebugEndpoint = PlatformKeyDebugEndpoint;
 
 interface EndpointOption {
   label: string;
@@ -33,6 +37,7 @@ interface EndpointOption {
 })
 export class SettingsIntegrationDebugComponent {
   private readonly data = inject<DebugModalData>(NZ_MODAL_DATA, { optional: true });
+  private readonly platformKeysService = inject(PlatformKeysService);
   private readonly message = inject(NzMessageService);
   private readonly cdr = inject(ChangeDetectorRef);
 
@@ -40,7 +45,6 @@ export class SettingsIntegrationDebugComponent {
     { label: '获取模型', value: 'models', method: 'GET', path: '/models' },
     { label: '聊天补全', value: 'chat', method: 'POST', path: '/chat/completions' },
     { label: '响应接口', value: 'responses', method: 'POST', path: '/responses' },
-    { label: '向量接口', value: 'embeddings', method: 'POST', path: '/embeddings' },
   ];
   protected readonly reasoningOptions = [
     { label: '跟随密钥/请求', value: '' },
@@ -56,13 +60,12 @@ export class SettingsIntegrationDebugComponent {
   ];
 
   protected readonly keys = this.data?.keys ?? [];
-  protected readonly modelMappings = this.data?.modelMappings ?? [];
+  protected readonly modelCatalog = this.data?.modelCatalog ?? [];
   protected readonly displayBaseUrl = this.data?.proxyBaseUrl || `${window.location.origin}/v1`;
-  private readonly requestBaseUrl = this.data?.requestBaseUrl || '/v1';
 
   protected form = {
     endpoint: 'chat' as DebugEndpoint,
-    platformKey: this.data?.sampleKey || '',
+    platformKeyGuid: this.keys.find((item) => item.enabled)?.guid || this.keys[0]?.guid || '',
     model: this.data?.sampleModel || 'gpt-4.1-mini',
     reasoningEffort: '',
     serviceTier: '',
@@ -82,17 +85,25 @@ export class SettingsIntegrationDebugComponent {
   }
 
   protected get availableModels(): string[] {
-    const selectedKey = this.keys.find((item) => item.key === this.form.platformKey);
-    const mappedModels = this.modelMappings
-      .filter((model) => model.enabled)
+    const selectedKey = this.keys.find((item) => item.guid === this.form.platformKeyGuid);
+    const mappedModels = this.modelCatalog
+      .filter((model) => model.enabled && model.availableAccountCount > 0)
       .filter((model) => this.modelAllowedByKey(selectedKey, model))
       .flatMap((model) => this.publicModelNames(model));
-    const allowedModels = this.parseAllowedModels(selectedKey?.allowedModels).filter((model) => !this.isRuleModel(model));
-    return this.unique([this.form.model, ...mappedModels, ...allowedModels, this.data?.sampleModel, 'gpt-4.1-mini']);
+    const allowedModels = this.parseAllowedModels(selectedKey?.allowedModels).filter(
+      (model) => !this.isRuleModel(model),
+    );
+    return this.unique([
+      this.form.model,
+      ...mappedModels,
+      ...allowedModels,
+      this.data?.sampleModel,
+      'gpt-4.1-mini',
+    ]);
   }
 
   protected onKeyChange(): void {
-    const selectedKey = this.keys.find((item) => item.key === this.form.platformKey);
+    const selectedKey = this.keys.find((item) => item.guid === this.form.platformKeyGuid);
     const models = this.availableModels;
     if (models.length > 0 && !models.includes(this.form.model)) {
       this.form.model = models[0];
@@ -102,29 +113,24 @@ export class SettingsIntegrationDebugComponent {
   }
 
   async submit(): Promise<boolean> {
-    if (!this.form.platformKey) {
-      this.message.warning('请选择或输入平台密钥');
+    if (!this.form.platformKeyGuid) {
+      this.message.warning('请选择 API 密钥');
       return false;
     }
 
-    const request = this.buildRequest();
+    const request = this.buildDebugRequest();
     this.loading = true;
     this.resultStatus = '请求中...';
     this.resultText = '';
     this.cdr.markForCheck();
 
-    const startedAt = performance.now();
     try {
-      const response = await fetch(request.url, {
-        method: request.method,
-        headers: request.headers,
-        body: request.body,
-      });
-      const elapsed = Math.round(performance.now() - startedAt);
-      const text = await response.text();
-      this.resultStatus = `${response.status} ${response.statusText || ''} · ${elapsed}ms`;
-      this.resultText = this.formatResponse(text);
-      if (response.ok) {
+      const response = await firstValueFrom(
+        this.platformKeysService.debug(this.form.platformKeyGuid, request),
+      );
+      this.resultStatus = `${response.statusCode} ${response.statusText || ''} · ${response.latencyMs}ms`;
+      this.resultText = this.formatResponse(response.body);
+      if (response.statusCode >= 200 && response.statusCode < 300) {
         this.message.success('调试请求完成');
       } else {
         this.message.warning('调试请求返回异常状态');
@@ -151,23 +157,11 @@ export class SettingsIntegrationDebugComponent {
     }
   }
 
-  private buildRequest(): { url: string; method: string; headers: HeadersInit; body?: string } {
+  private buildDebugRequest(): PlatformKeyDebugPayload {
     const endpoint = this.selectedEndpoint;
-    const headers: Record<string, string> = {
-      Authorization: this.form.platformKey,
-    };
-    let body: string | undefined;
-
-    if (endpoint.method === 'POST') {
-      headers['Content-Type'] = 'application/json';
-      body = JSON.stringify(this.buildPayload(endpoint.value));
-    }
-
     return {
-      url: `${this.requestBaseUrl}${endpoint.path}`,
-      method: endpoint.method,
-      headers,
-      body,
+      endpoint: endpoint.value,
+      payload: endpoint.method === 'POST' ? this.buildPayload(endpoint.value) : undefined,
     };
   }
 
@@ -180,8 +174,6 @@ export class SettingsIntegrationDebugComponent {
     switch (endpoint) {
       case 'responses':
         return { model: this.form.model, input: this.form.input };
-      case 'embeddings':
-        return { model: this.form.model, input: this.form.input || this.form.message };
       default:
         return {
           model: this.form.model,
@@ -226,7 +218,7 @@ export class SettingsIntegrationDebugComponent {
     return [];
   }
 
-  private publicModelNames(model: ModelMapping): string[] {
+  private publicModelNames(model: ModelCatalogItem): string[] {
     return this.unique([model.publicModel, ...this.parseAliases(model.aliases)]);
   }
 
@@ -246,16 +238,15 @@ export class SettingsIntegrationDebugComponent {
     return [];
   }
 
-  private modelAllowedByKey(key: PlatformKey | undefined, model: ModelMapping): boolean {
+  private modelAllowedByKey(key: PlatformKey | undefined, model: ModelCatalogItem): boolean {
     if (!key) return true;
     if (key.accountGroupFilter && key.accountGroupFilter !== model.accountGroup) {
       return false;
     }
     return this.allowedByRules(key.allowedModels, (allowed) => {
       if (allowed === '*') return true;
-      if (allowed === model.publicModel || allowed === model.upstreamModel) return true;
+      if (allowed === model.publicModel) return true;
       if (allowed.startsWith('group:')) return allowed.slice(6) === model.accountGroup;
-      if (allowed.startsWith('provider:')) return allowed.slice(9) === model.provider;
       return false;
     });
   }
@@ -267,7 +258,7 @@ export class SettingsIntegrationDebugComponent {
   }
 
   private isRuleModel(value: string): boolean {
-    return value === '*' || value.startsWith('group:') || value.startsWith('provider:');
+    return value === '*' || value.startsWith('group:');
   }
 
   private unique(values: Array<string | undefined>): string[] {

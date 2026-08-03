@@ -1,26 +1,13 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" role="img" aria-label="FreeAi logo">
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024" role="img" aria-label="FreeAi logo">
   <defs>
-    <clipPath id="freeaiCloudClip">
-      <path d="M80 165c-19 0-34-13-34-29 0-15 11-26 26-29 7-23 27-39 52-39 21 0 39 11 49 27 4-2 9-2 14-2 14 0 26 13 26 30 0 23-18 42-41 42H80z"/>
-    </clipPath>
+    <linearGradient id="freeAiRouteFavicon" x1="174" y1="150" x2="850" y2="874" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#3448F4"/>
+      <stop offset=".56" stop-color="#3B6EF5"/>
+      <stop offset="1" stop-color="#0EA5A4"/>
+    </linearGradient>
   </defs>
-
-  <rect x="8" y="8" width="240" height="240" rx="54" fill="#3d5af6"/>
-  <rect x="14" y="14" width="228" height="228" rx="48" fill="none" stroke="#dbe4ff" stroke-opacity=".26" stroke-width="4"/>
-  <path fill="none" stroke="#ffffff" stroke-opacity=".34" stroke-width="11" stroke-linecap="round" d="M56 131h29M171 131h29"/>
-  <path fill="#f8fbff" d="M80 165c-19 0-34-13-34-29 0-15 11-26 26-29 7-23 27-39 52-39 21 0 39 11 49 27 4-2 9-2 14-2 14 0 26 13 26 30 0 23-18 42-41 42H80z"/>
-  <g clip-path="url(#freeaiCloudClip)">
-    <path fill="#3d5af6" fill-opacity=".08" d="M48 146h176v23H48z"/>
-  </g>
-  <g fill="none" stroke="#2644bf" stroke-width="8" stroke-linecap="round" stroke-linejoin="round">
-    <path d="M105 137 128 118 152 137"/>
-    <path d="M128 118v30"/>
-    <path d="M112 152h32"/>
-  </g>
-  <g fill="#2644bf">
-    <circle cx="105" cy="137" r="7"/>
-    <circle cx="128" cy="118" r="9"/>
-    <circle cx="152" cy="137" r="7"/>
-    <circle cx="128" cy="152" r="8"/>
+  <g fill="none" stroke="url(#freeAiRouteFavicon)" stroke-width="96">
+    <rect x="346" y="126" width="332" height="772" rx="166" transform="rotate(45 512 512)"/>
+    <rect x="346" y="126" width="332" height="772" rx="166" transform="rotate(-45 512 512)"/>
   </g>
 </svg>

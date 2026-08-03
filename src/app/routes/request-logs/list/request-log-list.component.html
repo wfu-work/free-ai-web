@@ -1,7 +1,7 @@
 <section class="log-page">
-  <div class="d-flex justify-content-between header-row">
+  <div class="header-row">
     <title-label
-      title="请求日志"
+      title="请求记录"
       description="追踪 /v1 代理调用、命中账号、路由切换、错误分类、Token 用量和延迟表现。"
     />
     <div class="header-actions">
@@ -36,21 +36,14 @@
   </div>
 
   <nz-card class="log-card" [nzBordered]="false">
-    <div class="d-flex justify-content-between mb-md">
-      <h2>{{ '请求日志' }}</h2>
-      <div class=" d-flex text-right">
+    <div class="list-toolbar">
+      <div class="list-summary">
+        <h2>请求记录</h2>
+        <span>共 {{ totalCount }} 条记录</span>
+      </div>
+      <div class="filter-controls">
         <nz-select
-          [(ngModel)]="q.provider"
-          placeholder="全部供应商"
-          (ngModelChange)="q.page = 1; getData()"
-        >
-          <nz-option [nzValue]="''" [nzLabel]="'全部供应商'" />
-          @for (provider of providerOptions; track provider) {
-            <nz-option [nzValue]="provider" [nzLabel]="provider" />
-          }
-        </nz-select>
-        <nz-select
-          class="ml-lg"
+          class="model-filter"
           [(ngModel)]="q.model"
           placeholder="全部模型"
           (ngModelChange)="q.page = 1; getData()"
@@ -60,7 +53,7 @@
             <nz-option [nzValue]="model" [nzLabel]="model" />
           }
         </nz-select>
-        <nz-input-wrapper class="ml-lg">
+        <nz-input-wrapper class="search-input">
           <nz-icon nzInputPrefix nzType="search" />
           <input
             nz-input
@@ -70,7 +63,7 @@
             (keydown.enter)="q.page = 1; getData()"
           />
         </nz-input-wrapper>
-        <div class="d-flex ml-lg">
+        <div class="filter-actions">
           <button nz-button (click)="q.page = 1; getData()" nzType="primary">
             {{ '搜索' }}
           </button>
@@ -119,20 +112,21 @@
             type="button"
             class="copy-text muted"
             nz-tooltip
-            nzTooltipTitle="复制平台密钥"
-            (click)="copy(item.keyPrefix || item.platformKeyId, '平台密钥')"
+            nzTooltipTitle="复制API 密钥"
+            (click)="copy(item.keyPrefix || item.platformKeyId, 'API 密钥')"
           >
             <i nz-icon nzType="safety-certificate"></i>
             {{ platformKeyTitle(item) }}
           </button>
-          <span class="muted">{{ platformKeyMeta(item) }}</span>
         </div>
       </ng-template>
 
       <ng-template st-row="modelRender" let-item>
         <div class="model-name">{{ item.model || '-' }}</div>
-        <span class="muted">推理 {{ item.reasoningEffort || 'auto' }} · 等级 {{ item.serviceTier || 'auto' }}</span>
-        <span class="muted">{{ item.upstreamModel || '-' }} · {{ item.provider || '-' }}</span>
+        <span class="muted"
+          >推理 {{ item.reasoningEffort || 'auto' }} · 等级 {{ item.serviceTier || 'auto' }}</span
+        >
+        <span class="muted">上游 {{ item.upstreamModel || '-' }}</span>
       </ng-template>
 
       <ng-template st-row="errorRender" let-item>
@@ -140,19 +134,25 @@
       </ng-template>
 
       <ng-template st-row="latencyRender" let-item>
-        <div class="latency-text">{{ formatSeconds(item.latencyMs) }}/{{ formatSeconds(item.firstTokenMs) }}</div>
+        <div class="latency-text">
+          {{ formatSeconds(item.latencyMs) }}/{{ formatSeconds(item.firstTokenMs) }}
+        </div>
       </ng-template>
 
       <ng-template st-row="tokenRender" let-item>
         <div>总 {{ formatNumber(tokenTotal(item)) }}</div>
-        <span class="muted">输入 {{ formatNumber(item.inputTokens) }}</span>
-        <span class="muted">输出 {{ formatNumber(item.outputTokens) }}</span>
+        <span class="muted"
+          >输入 {{ formatNumber(item.inputTokens) }} · 缓存
+          {{ formatNumber(item.cachedInputTokens) }}</span
+        >
+        <span class="muted">{{
+          item.pricingMatched ? formatMoney(item.costAmount) : '暂无匹配定价'
+        }}</span>
       </ng-template>
 
       <ng-template st-row="timeRender" let-item>
         {{ formatTime(logTime(item)) }}
       </ng-template>
-
     </st>
   </nz-card>
 </section>

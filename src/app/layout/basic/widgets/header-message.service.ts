@@ -1,15 +1,23 @@
 import { Injectable, inject } from '@angular/core';
-import { forkJoin, Observable, of, timer } from 'rxjs';
-import { catchError, map, switchMap } from 'rxjs/operators';
+import { forkJoin, Observable, of, Subject } from 'rxjs';
+import {
+  catchError,
+  exhaustMap,
+  map,
+  shareReplay,
+  startWith,
+  take,
+  tap,
+  timeout,
+} from 'rxjs/operators';
 
+import type { HeaderMessageItem } from './message';
 import { AccountHealthItem, AccountQuota } from '../../../routes/accounts/account.model';
-import { getProviderLabel } from '../../../routes/accounts/account-options';
 import { AccountsService } from '../../../routes/accounts/accounts.service';
 import { MasterKeyStatus, OpsMetrics, OpsStats } from '../../../routes/ops/ops.model';
 import { OpsService } from '../../../routes/ops/ops.service';
 import { RequestLog } from '../../../routes/request-logs/request-log.model';
 import { RequestLogsService } from '../../../routes/request-logs/request-logs.service';
-import type { HeaderMessageItem } from './message';
 
 type MessageRoute = string | Array<string | number>;
 
@@ -27,11 +35,48 @@ export class HeaderMessageService {
   private readonly accountsService = inject(AccountsService);
   private readonly opsService = inject(OpsService);
   private readonly readStorageKey = 'free-ai-header-message-read-ids';
-  private readonly refreshIntervalMs = 30000;
+  private readonly refreshCooldownMs = 30000;
+  private readonly requestTimeoutMs = 5000;
   private readonly recentWindowMs = 24 * 60 * 60 * 1000;
+  private readonly metricsRefresh$ = new Subject<void>();
+  private readonly messageRefresh$ = new Subject<void>();
+  private lastMessageRefreshAt = 0;
+
+  private readonly metrics$ = this.metricsRefresh$.pipe(
+    startWith(void 0),
+    exhaustMap(() =>
+      this.opsService.metrics().pipe(
+        timeout(this.requestTimeoutMs),
+        catchError(() => of(null as OpsMetrics | null)),
+      ),
+    ),
+    shareReplay({ bufferSize: 1, refCount: true }),
+  );
+
+  private readonly messages$ = this.messageRefresh$.pipe(
+    startWith(void 0),
+    tap(() => {
+      this.lastMessageRefreshAt = Date.now();
+    }),
+    exhaustMap(() => this.load()),
+    shareReplay({ bufferSize: 1, refCount: true }),
+  );
 
   stream(): Observable<HeaderMessageItem[]> {
-    return timer(0, this.refreshIntervalMs).pipe(switchMap(() => this.load()));
+    return this.messages$;
+  }
+
+  metricsStream(): Observable<OpsMetrics | null> {
+    return this.metrics$;
+  }
+
+  refreshMetrics(): void {
+    this.metricsRefresh$.next();
+  }
+
+  refreshMessages(): void {
+    if (Date.now() - this.lastMessageRefreshAt < this.refreshCooldownMs) return;
+    this.messageRefresh$.next();
   }
 
   markRead(id: HeaderMessageItem['id']): void {
@@ -49,10 +94,14 @@ export class HeaderMessageService {
   private load(): Observable<HeaderMessageItem[]> {
     const since = Date.now() - this.recentWindowMs;
     return forkJoin({
-      metrics: this.opsService.metrics().pipe(catchError(() => of(null as OpsMetrics | null))),
+      metrics: this.metricsStream().pipe(take(1)),
       stats: this.opsService.stats().pipe(catchError(() => of(null as OpsStats | null))),
-      masterKey: this.opsService.masterKey().pipe(catchError(() => of(null as MasterKeyStatus | null))),
-      healthItems: this.accountsService.health().pipe(catchError(() => of([] as AccountHealthItem[]))),
+      masterKey: this.opsService
+        .masterKey()
+        .pipe(catchError(() => of(null as MasterKeyStatus | null))),
+      healthItems: this.accountsService
+        .health()
+        .pipe(catchError(() => of([] as AccountHealthItem[]))),
       logs: this.requestLogsService.list(80, since).pipe(catchError(() => of([] as RequestLog[]))),
     }).pipe(map((source: HeaderEventSource) => this.applyReadState(this.buildMessages(source))));
   }
@@ -69,7 +118,7 @@ export class HeaderMessageService {
           '管理端暂时无法读取网关运行指标，请确认后端服务和接口代理是否正常。',
           now,
           'error',
-          '/ops/metrics',
+          '/dashboard',
         ),
       );
     } else if (!source.metrics.ok) {
@@ -80,16 +129,16 @@ export class HeaderMessageService {
           `${source.metrics.name || 'FreeAi 网关'} 当前健康状态异常，请进入运行指标查看账号、模型和密钥配置。`,
           now,
           'error',
-          '/ops/metrics',
+          '/dashboard',
         ),
       );
     }
 
     if (source.metrics) {
       const missing: string[] = [];
-      if (!source.metrics.enabledKeys) missing.push('平台密钥');
+      if (!source.metrics.enabledKeys) missing.push('API 密钥');
       if (!source.metrics.accounts) missing.push('账号');
-      if (!source.metrics.enabledModels) missing.push('模型映射');
+      if (!source.metrics.enabledModels) missing.push('模型目录');
       if (missing.length) {
         messages.push(
           this.createMessage(
@@ -98,7 +147,7 @@ export class HeaderMessageService {
             `当前缺少可用的${missing.join('、')}，请求可能无法完成路由。`,
             now,
             'warning',
-            '/ops/metrics',
+            '/dashboard',
           ),
         );
       }
@@ -109,7 +158,7 @@ export class HeaderMessageService {
         this.createMessage(
           'ops:master-key-not-loaded',
           '主密钥未加载',
-          source.masterKey.error || '平台密钥解密依赖主密钥，请在系统设置中检查主密钥文件状态。',
+          source.masterKey.error || 'API 密钥解密依赖主密钥，请在系统设置中检查主密钥文件状态。',
           source.masterKey.updatedAt || now,
           'warning',
           '/settings/security',
@@ -127,10 +176,10 @@ export class HeaderMessageService {
         this.createMessage(
           `account:${item.guid}:${item.status}:${item.failureCount}`,
           '账号健康异常',
-          `${item.name || item.guid}（${getProviderLabel(item.provider)}）状态为 ${this.accountStatusLabel(item.status)}，失败次数 ${item.failureCount || 0}。`,
+          `${item.name || item.guid} 状态为 ${this.accountStatusLabel(item.status)}，失败次数 ${item.failureCount || 0}。`,
           this.accountEventTime(item, now),
           this.accountMessageLevel(item),
-          '/accounts/health',
+          '/accounts/list',
         ),
       );
     });
@@ -142,10 +191,10 @@ export class HeaderMessageService {
           this.createMessage(
             `quota:${account.guid}:${quota.guid || quota.windowType}:${quota.status}:${Math.round(Number(quota.usedPercent || 0))}`,
             '账号额度风险',
-            `${account.name || account.guid} 的 ${quota.windowType || '默认'} 额度已使用 ${Number(quota.usedPercent || 0).toFixed(0)}%，剩余额度 ${this.formatQuotaRemain(quota)}。`,
+            `${account.name || account.guid} 的 ${quota.windowType || '默认'} 窗口已使用 ${Number(quota.usedPercent || 0).toFixed(0)}%，${this.formatQuotaReset(quota)}。`,
             quota.lastSyncedAt || now,
             quota.status === 'exhausted' ? 'error' : 'warning',
-            '/accounts/health',
+            '/accounts/list',
           ),
         );
       });
@@ -160,7 +209,7 @@ export class HeaderMessageService {
           this.createMessage(
             `request-log:error:${log.guid || log.requestId}`,
             '请求失败',
-            `${this.logProvider(log)} ${log.model || log.upstreamModel || '未指定模型'} 返回 ${log.statusCode || log.errorType || '异常'}，路径 ${log.path || '/v1'}。`,
+            `${this.logSource(log)} ${log.model || log.upstreamModel || '未指定模型'} 返回 ${log.statusCode || log.errorType || '异常'}，路径 ${log.path || '/v1'}。`,
             this.logTime(log) || now,
             'error',
             log.guid ? ['/request-logs/detail', log.guid] : '/request-logs/list',
@@ -194,13 +243,15 @@ export class HeaderMessageService {
             `累计 ${source.stats.total} 次请求中失败 ${source.stats.failures} 次，失败率 ${Math.round(failureRate * 100)}%。`,
             now,
             failureRate >= 0.5 ? 'error' : 'warning',
-            '/ops/stats',
+            '/usage',
           ),
         );
       }
     }
 
-    return messages.sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime()).slice(0, 12);
+    return messages
+      .sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime())
+      .slice(0, 12);
   }
 
   private createMessage(
@@ -248,7 +299,8 @@ export class HeaderMessageService {
 
   private isRiskyAccount(item: AccountHealthItem): boolean {
     if (['available'].includes(item.status)) return false;
-    if (['limited', 'cooldown', 'exhausted', 'expired', 'invalid'].includes(item.status)) return true;
+    if (['limited', 'cooldown', 'exhausted', 'expired', 'invalid'].includes(item.status))
+      return true;
     return Boolean(item.failureCount || item.cooldownUntil);
   }
 
@@ -283,10 +335,12 @@ export class HeaderMessageService {
   }
 
   private accountEventTime(item: AccountHealthItem, fallback: number): number {
-    return item.cooldownUntil || item.lastUsedAt || item.nextUsageCheckAt || fallback;
+    return item.cooldownUntil || item.lastUsedAt || fallback;
   }
 
-  private findRiskyQuotas(items: AccountHealthItem[]): Array<{ account: AccountHealthItem; quota: AccountQuota }> {
+  private findRiskyQuotas(
+    items: AccountHealthItem[],
+  ): Array<{ account: AccountHealthItem; quota: AccountQuota }> {
     return items
       .flatMap((account) =>
         (account.quotas || []).map((quota) => ({
@@ -294,18 +348,16 @@ export class HeaderMessageService {
           quota,
         })),
       )
-      .filter(({ quota }) => ['limited', 'exhausted'].includes(quota.status) || Number(quota.usedPercent || 0) >= 85)
+      .filter(
+        ({ quota }) =>
+          ['limited', 'exhausted'].includes(quota.status) || Number(quota.usedPercent || 0) >= 85,
+      )
       .sort((a, b) => Number(b.quota.usedPercent || 0) - Number(a.quota.usedPercent || 0));
   }
 
-  private formatQuotaRemain(quota: AccountQuota): string {
-    if (quota.unit === 'usd') {
-      return `$${Number(quota.remainingAmount || 0).toFixed(2)}`;
-    }
-    const remaining = Number(quota.remainingTokens || 0);
-    if (remaining >= 1_000_000) return `${(remaining / 1_000_000).toFixed(1)}M tokens`;
-    if (remaining >= 1_000) return `${(remaining / 1_000).toFixed(1)}K tokens`;
-    return `${remaining} tokens`;
+  private formatQuotaReset(quota: AccountQuota): string {
+    if (!quota.resetAt) return `来源 ${quota.source || '未知'}`;
+    return `${new Date(quota.resetAt).toLocaleString('zh-CN', { hour12: false })} 重置`;
   }
 
   private isFailureLog(log: RequestLog): boolean {
@@ -316,7 +368,7 @@ export class HeaderMessageService {
     return Number(log.createdAtUnix || log.createTime || 0);
   }
 
-  private logProvider(log: RequestLog): string {
-    return getProviderLabel(log.provider) || log.accountName || '上游';
+  private logSource(log: RequestLog): string {
+    return log.accountName || '官方上游';
   }
 }

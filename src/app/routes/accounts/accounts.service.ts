@@ -1,5 +1,6 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
+import { PageEntity } from '@shared';
 import { Observable } from 'rxjs';
 
 import {
@@ -7,17 +8,19 @@ import {
   AccountGroup,
   AccountGroupPayload,
   AccountHealthItem,
-  AccountLoginCallbackParsePayload,
-  AccountLoginCallbackParseResult,
+  AccountImportPayload,
+  AccountManualPayload,
   AccountModelFetchPayload,
   AccountModelFetchResult,
   AccountPayload,
+  AccountOAuthCompletePayload,
+  AccountOAuthSession,
+  AccountOAuthStartPayload,
   AccountTestInput,
   AccountTestResult,
   AccountUsageRefreshResult,
   ReorderAccountItem,
 } from './account.model';
-import { PageEntity } from '@shared';
 
 @Injectable({ providedIn: 'root' })
 export class AccountsService {
@@ -39,8 +42,28 @@ export class AccountsService {
     return this.http.get<Account>(`/accounts/${guid}`);
   }
 
-  create(payload: AccountPayload): Observable<Account> {
+  importAccount(payload: AccountImportPayload): Observable<Account> {
+    return this.http.post<Account>('/accounts/import', payload);
+  }
+
+  addManual(payload: AccountManualPayload): Observable<Account> {
     return this.http.post<Account>('/accounts', payload);
+  }
+
+  startOAuth(payload: AccountOAuthStartPayload): Observable<AccountOAuthSession> {
+    return this.http.post<AccountOAuthSession>('/accounts/oauth/sessions', payload);
+  }
+
+  oauthStatus(id: string): Observable<AccountOAuthSession> {
+    return this.http.get<AccountOAuthSession>(`/accounts/oauth/sessions/${id}`);
+  }
+
+  completeOAuth(id: string, payload: AccountOAuthCompletePayload): Observable<AccountOAuthSession> {
+    return this.http.post<AccountOAuthSession>(`/accounts/oauth/sessions/${id}/complete`, payload);
+  }
+
+  cancelOAuth(id: string): Observable<AccountOAuthSession> {
+    return this.http.delete<AccountOAuthSession>(`/accounts/oauth/sessions/${id}`);
   }
 
   update(guid: string, payload: AccountPayload): Observable<Account> {
@@ -59,16 +82,16 @@ export class AccountsService {
     return this.http.post<boolean>(`/accounts/${guid}/disable`, {});
   }
 
-  refresh(guid: string): Observable<Account> {
-    return this.http.post<Account>(`/accounts/${guid}/refresh`, {});
-  }
-
   refreshUsage(guid: string): Observable<AccountUsageRefreshResult> {
     return this.http.post<AccountUsageRefreshResult>(`/accounts/${guid}/refresh-usage`, {});
   }
 
-  test(guid: string, payload: AccountTestInput = {}): Observable<AccountTestResult> {
-    return this.http.post<AccountTestResult>(`/accounts/${guid}/test`, payload);
+  probe(guid: string, payload: AccountTestInput = {}): Observable<AccountTestResult> {
+    return this.http.post<AccountTestResult>(`/accounts/${guid}/probe`, payload);
+  }
+
+  exportAccount(guid: string): Observable<Blob> {
+    return this.http.get(`/accounts/${guid}/export`, { responseType: 'blob' });
   }
 
   reorder(items: ReorderAccountItem[]): Observable<boolean> {
@@ -77,10 +100,6 @@ export class AccountsService {
 
   fetchModels(payload: AccountModelFetchPayload): Observable<AccountModelFetchResult> {
     return this.http.post<AccountModelFetchResult>('/accounts/fetch-models', payload);
-  }
-
-  parseLoginCallback(payload: AccountLoginCallbackParsePayload): Observable<AccountLoginCallbackParseResult> {
-    return this.http.post<AccountLoginCallbackParseResult>('/accounts/parse-login-callback', payload);
   }
 
   listGroups(): Observable<AccountGroup[]> {

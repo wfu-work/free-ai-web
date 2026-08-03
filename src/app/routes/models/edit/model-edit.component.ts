@@ -5,32 +5,24 @@ import {
   OnInit,
   inject,
 } from '@angular/core';
-import { ActivatedRoute, Router } from '@angular/router';
 import { FormBuilder, Validators } from '@angular/forms';
+import { ActivatedRoute, Router } from '@angular/router';
 import { SHARED_IMPORTS, TitleLabelComponent } from '@shared';
 import { NzMessageService } from 'ng-zorro-antd/message';
-import { finalize, forkJoin } from 'rxjs';
+import { NzTagModule } from 'ng-zorro-antd/tag';
+import { catchError, finalize, of } from 'rxjs';
 
-import {
-  AccountSelectOption,
-  DEFAULT_ACCOUNT_GROUP_OPTIONS,
-  getProviderLabel,
-  mergeProviderOptions,
-  mergeStringOptions,
-} from '../../accounts/account-options';
-import { Account } from '../../accounts/account.model';
+import { DEFAULT_ACCOUNT_GROUP_OPTIONS, mergeStringOptions } from '../../accounts/account-options';
 import { AccountsService } from '../../accounts/accounts.service';
-import { ModelMapping, ModelPayload } from '../model.model';
+import { ModelCatalogItem, ModelPolicyPayload } from '../model.model';
 import { ModelsService } from '../models.service';
-
-type ModelFormMode = 'create' | 'edit';
 
 @Component({
   selector: 'app-model-edit',
   templateUrl: './model-edit.component.html',
   styleUrls: ['./model-edit.component.less'],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [SHARED_IMPORTS, TitleLabelComponent],
+  imports: [SHARED_IMPORTS, TitleLabelComponent, NzTagModule],
 })
 export class ModelEditComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);
@@ -43,34 +35,28 @@ export class ModelEditComponent implements OnInit {
 
   protected loading = false;
   protected saving = false;
-  protected formMode: ModelFormMode = 'create';
   protected modelGuid = '';
-  protected model: ModelMapping | null = null;
-  protected providerOptions: AccountSelectOption[] = mergeProviderOptions([]);
+  protected model: ModelCatalogItem | null = null;
   protected accountGroupOptions = [...DEFAULT_ACCOUNT_GROUP_OPTIONS];
-  protected relatedAccounts: Account[] = [];
-  protected upstreamModelOptions: string[] = [];
 
   protected readonly form = this.fb.nonNullable.group({
     publicModel: ['', [Validators.required]],
     aliases: [''],
-    upstreamModel: ['', [Validators.required]],
-    provider: ['openai', [Validators.required]],
     accountGroup: [''],
-    stream: [true],
-    timeoutSec: [120],
+    timeoutSec: [120, [Validators.min(1)]],
+    enabled: [true],
+    visible: [true],
   });
 
   ngOnInit(): void {
-    this.form.controls.provider.valueChanges.subscribe(() => this.syncUpstreamModelOptions());
-    this.form.controls.accountGroup.valueChanges.subscribe(() => this.syncUpstreamModelOptions());
-    this.loadSelectOptions();
+    this.loadGroups();
     const guid = this.route.snapshot.paramMap.get('guid');
-    if (guid) {
-      this.enterEditMode(guid);
+    if (!guid) {
+      void this.router.navigateByUrl('/models/list');
       return;
     }
-    this.enterCreateMode();
+    this.modelGuid = guid;
+    this.loadModel();
   }
 
   protected save(): void {
@@ -78,23 +64,20 @@ export class ModelEditComponent implements OnInit {
       control.markAsDirty();
       control.updateValueAndValidity();
     });
-    if (this.form.invalid) return;
+    if (this.form.invalid || !this.modelGuid) return;
 
     const value = this.form.getRawValue();
-    const payload: ModelPayload = {
-      ...value,
-      provider: 'openai',
+    const payload: ModelPolicyPayload = {
+      publicModel: value.publicModel.trim(),
+      aliases: value.aliases.trim(),
       accountGroup: value.accountGroup || '',
       timeoutSec: Math.max(Number(value.timeoutSec || 0), 1),
+      enabled: value.enabled,
+      visible: value.visible,
     };
-
     this.saving = true;
-    const request =
-      this.formMode === 'create'
-        ? this.modelsService.create(payload)
-        : this.modelsService.update(this.modelGuid, payload);
-
-    request
+    this.modelsService
+      .update(this.modelGuid, payload)
       .pipe(
         finalize(() => {
           this.saving = false;
@@ -102,97 +85,53 @@ export class ModelEditComponent implements OnInit {
         }),
       )
       .subscribe((model) => {
-        this.model = model ?? this.model;
-        this.message.success(this.formMode === 'create' ? '模型映射已创建' : '模型映射已更新');
-        this.router.navigateByUrl('/models/list');
+        this.model = model;
+        this.message.success('模型对外策略已更新');
+        void this.router.navigateByUrl('/models/list');
       });
   }
 
   protected goList(): void {
-    this.router.navigateByUrl('/models/list');
+    void this.router.navigateByUrl('/models/list');
   }
 
-  protected get pageTitle(): string {
-    return this.formMode === 'create' ? '新增模型映射' : '编辑模型映射';
+  protected get sourceLabel(): string {
+    if (!this.model) return '-';
+    const vendor = this.model.vendorCode === 'openai' ? 'OpenAI' : this.model.vendorCode;
+    const product = this.model.productCode === 'codex' ? 'Codex' : this.model.productCode;
+    return `${vendor} · ${product}`;
   }
 
-  protected get pageDescription(): string {
-    return this.formMode === 'create'
-      ? '配置对外模型、OpenAI 上游模型和可选账号组。'
-      : '更新已有模型映射的目标模型、路由范围和流式能力，保存后立即影响后端路由。';
+  protected get routeStateLabel(): string {
+    if (!this.form.controls.enabled.value) return '已停用';
+    if (!this.model?.availableAccountCount) return '暂无账号可用';
+    return `${this.model.availableAccountCount} 个账号可路由`;
   }
 
-  protected get streamLabel(): string {
-    return this.form.controls.stream.value ? '允许流式' : '关闭流式';
+  protected capabilities(): string[] {
+    const raw = this.model?.capabilitiesJson;
+    if (!raw) return [];
+    try {
+      const value = JSON.parse(raw) as Record<string, unknown>;
+      return Object.entries(value).flatMap(([key, item]) => {
+        if (Array.isArray(item)) return item.map((part) => `${key}: ${String(part)}`);
+        return [`${key}: ${String(item)}`];
+      });
+    } catch {
+      return [];
+    }
   }
 
-  protected get timeoutLabel(): string {
-    return `${Math.max(Number(this.form.controls.timeoutSec.value || 0), 1)}s`;
+  protected formatTime(value?: number): string {
+    if (!value) return '-';
+    const date = new Date(value);
+    return Number.isNaN(date.getTime()) ? '-' : date.toLocaleString('zh-CN', { hour12: false });
   }
 
-  protected get groupLabel(): string {
-    return this.form.controls.accountGroup.value || '全局账号组';
-  }
-
-  protected get providerLabel(): string {
-    return getProviderLabel('openai');
-  }
-
-  protected get relatedAccountCount(): number {
-    return this.matchedAccounts.length;
-  }
-
-  protected get routeScopeLabel(): string {
-    const group = this.form.controls.accountGroup.value;
-    return group ? `OpenAI / ${group}` : 'OpenAI / 全部账号组';
-  }
-
-  protected get hasScopedRoute(): boolean {
-    return true;
-  }
-
-  protected get modelOptionHint(): string {
-    const group = this.form.controls.accountGroup.value;
-    if (this.upstreamModelOptions.length)
-      return '已按 OpenAI 账号组筛选可用模型，请从候选模型中选择。';
-    if (!group) return '当前 OpenAI 账号没有模型记录，请手动输入上游模型名。';
-    return '当前范围下没有账号支持模型记录，请手动输入上游模型名。';
-  }
-
-  private get matchedAccounts(): Account[] {
-    const group = this.form.controls.accountGroup.value;
-    return this.relatedAccounts.filter((item) => {
-      if (item.provider !== 'openai') return false;
-      if (group && (item.accountGroup || '') !== group) return false;
-      return true;
-    });
-  }
-
-  private enterCreateMode(): void {
-    const queryGroup = (this.route.snapshot.queryParamMap.get('group') || '').trim();
-    this.mergeSelectOptions([], queryGroup ? [queryGroup] : []);
-    this.formMode = 'create';
-    this.modelGuid = '';
-    this.model = null;
-    this.form.reset({
-      publicModel: '',
-      aliases: '',
-      upstreamModel: '',
-      provider: 'openai',
-      accountGroup: queryGroup,
-      stream: true,
-      timeoutSec: 120,
-    });
-    this.syncUpstreamModelOptions();
-    this.cdr.markForCheck();
-  }
-
-  private enterEditMode(guid: string): void {
-    this.formMode = 'edit';
-    this.modelGuid = guid;
+  private loadModel(): void {
     this.loading = true;
     this.modelsService
-      .get(guid)
+      .get(this.modelGuid)
       .pipe(
         finalize(() => {
           this.loading = false;
@@ -201,66 +140,30 @@ export class ModelEditComponent implements OnInit {
       )
       .subscribe((model) => {
         this.model = model;
-        this.mergeSelectOptions([], [model.accountGroup]);
+        this.accountGroupOptions = mergeStringOptions(this.accountGroupOptions, [
+          model.accountGroup,
+        ]);
         this.form.reset({
-          publicModel: model.publicModel ?? '',
-          aliases: model.aliases ?? '',
-          upstreamModel: model.upstreamModel ?? '',
-          provider: 'openai',
-          accountGroup: model.accountGroup ?? '',
-          stream: Boolean(model.stream),
+          publicModel: model.publicModel || model.remoteModelId,
+          aliases: model.aliases || '',
+          accountGroup: model.accountGroup || '',
           timeoutSec: model.timeoutSec || 120,
+          enabled: model.enabled,
+          visible: model.visible,
         });
-        this.syncUpstreamModelOptions();
       });
   }
 
-  private loadSelectOptions(): void {
-    forkJoin({
-      accounts: this.accountsService.listAll(),
-      groups: this.accountsService.listGroups(),
-    }).subscribe({
-      next: ({ accounts, groups }) => {
-        this.relatedAccounts = (accounts ?? []).filter((item) => item.provider === 'openai');
-        this.mergeSelectOptions(
-          [],
+  private loadGroups(): void {
+    this.accountsService
+      .listGroups()
+      .pipe(catchError(() => of([])))
+      .subscribe((groups) => {
+        this.accountGroupOptions = mergeStringOptions(
+          DEFAULT_ACCOUNT_GROUP_OPTIONS,
           groups.filter((item) => item.enabled).map((item) => item.name),
         );
-        this.syncUpstreamModelOptions();
         this.cdr.markForCheck();
-      },
-      error: () => undefined,
-    });
-  }
-
-  private mergeSelectOptions(_providers: string[], accountGroups: string[]): void {
-    this.providerOptions = mergeProviderOptions([]);
-    this.accountGroupOptions = mergeStringOptions(DEFAULT_ACCOUNT_GROUP_OPTIONS, accountGroups);
-  }
-
-  private syncUpstreamModelOptions(): void {
-    this.upstreamModelOptions = Array.from(
-      new Set(
-        this.matchedAccounts
-          .flatMap((account) => this.parseSupportedModels(account.supportedModels))
-          .map((item) => item.trim())
-          .filter(Boolean),
-      ),
-    ).sort((a, b) => a.localeCompare(b));
-    this.cdr.markForCheck();
-  }
-
-  private parseSupportedModels(value?: string): string[] {
-    if (!value) return [];
-    try {
-      const parsed = JSON.parse(value);
-      if (Array.isArray(parsed)) return parsed.map((item) => String(item)).filter(Boolean);
-    } catch {
-      return value
-        .split(',')
-        .map((item) => item.trim())
-        .filter(Boolean);
-    }
-    return [];
+      });
   }
 }

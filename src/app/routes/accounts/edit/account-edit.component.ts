@@ -6,154 +6,315 @@ import {
   OnInit,
   inject,
 } from '@angular/core';
-import { ActivatedRoute, Router } from '@angular/router';
 import { FormBuilder, Validators } from '@angular/forms';
+import { ActivatedRoute, Router } from '@angular/router';
 import { SHARED_IMPORTS, TitleLabelComponent } from '@shared';
 import { NzMessageService } from 'ng-zorro-antd/message';
-import { catchError, finalize, forkJoin, of } from 'rxjs';
+import { NzModalService } from 'ng-zorro-antd/modal';
+import { NzSegmentedModule } from 'ng-zorro-antd/segmented';
+import { Subscription, catchError, finalize, of, switchMap, timer } from 'rxjs';
 
 import {
-  AccountSelectOption,
   DEFAULT_ACCOUNT_GROUP_OPTIONS,
-  getAccountTypeLabel,
-  getProviderLabel,
-  mergeAccountTypeOptions,
-  mergeProviderOptions,
+  DEFAULT_OFFICIAL_VENDOR_CODE,
+  OFFICIAL_VENDOR_OPTIONS,
   mergeStringOptions,
+  normalizeOfficialVendorCode,
 } from '../account-options';
-import { Account, AccountPayload } from '../account.model';
+import {
+  Account,
+  AccountImportPayload,
+  AccountManualPayload,
+  AccountOAuthMode,
+  AccountOAuthSession,
+  AccountPayload,
+  AccountPoolPayload,
+} from '../account.model';
 import { AccountsService } from '../accounts.service';
 
 type AccountFormMode = 'create' | 'edit';
+type AccountCreateMode = 'oauth' | 'manual' | 'file';
 
-const OPENAI_API_BASE_URL = 'https://api.openai.com/v1';
-const OPENAI_OAUTH_AUTHORIZE_URL = 'https://auth.openai.com/oauth/authorize';
-const OPENAI_OAUTH_CLIENT_ID = 'app_EMoamEEZ73f0CkXaXp7hrann';
-const OPENAI_OAUTH_REDIRECT_URI = 'http://localhost:1455/auth/callback';
-const OPENAI_OAUTH_SCOPE =
-  'openid profile email offline_access api.connectors.read api.connectors.invoke';
-const OPENAI_OAUTH_VERIFIER_STORAGE_KEY = 'freeai.openai.oauth.codeVerifier';
+interface AccountCreateGuideOption {
+  title: string;
+  badge: string;
+  description: string;
+}
+
+interface AccountCreateGuide {
+  eyebrow: string;
+  title: string;
+  description: string;
+  optionTitle: string;
+  optionDescription: string;
+  options: AccountCreateGuideOption[];
+  steps: string[];
+  notice: string;
+}
 
 @Component({
   selector: 'app-account-edit',
   templateUrl: './account-edit.component.html',
   styleUrls: ['./account-edit.component.less'],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [SHARED_IMPORTS, TitleLabelComponent],
+  imports: [SHARED_IMPORTS, TitleLabelComponent, NzSegmentedModule],
 })
 export class AccountEditComponent implements OnInit, OnDestroy {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly accountsService = inject(AccountsService);
   private readonly message = inject(NzMessageService);
+  private readonly modal = inject(NzModalService);
   private readonly cdr = inject(ChangeDetectorRef);
   private readonly fb = inject(FormBuilder);
 
   protected loading = false;
   protected saving = false;
+  protected fetchingModels = false;
+  protected refreshingUsage = false;
+  protected probing = false;
   protected formMode: AccountFormMode = 'create';
   protected accountGuid = '';
   protected account: Account | null = null;
-  protected providerOptions: AccountSelectOption[] = mergeProviderOptions([]);
   protected accountGroupOptions = [...DEFAULT_ACCOUNT_GROUP_OPTIONS];
-  protected accountTypeOptions: AccountSelectOption[] = mergeAccountTypeOptions([]);
-  protected modelOptions: string[] = [];
-  protected fetchingModels = false;
-  protected parsingCallback = false;
-  protected loginCallbackHint = '';
-  protected openAIAuthorizeUrl = '';
+  protected accountFileName = '';
+  protected accountFile: Record<string, unknown> | null = null;
+  protected accountFileSummary = '';
+  protected createMode: AccountCreateMode = 'oauth';
+  protected authorizing = false;
+  protected completingCallback = false;
+  protected oauthSession: AccountOAuthSession | null = null;
+  protected callbackUrl = '';
+  protected readonly officialVendorOptions = OFFICIAL_VENDOR_OPTIONS;
+  protected readonly createModeOptions: Array<{ label: string; value: AccountCreateMode }> = [
+    { label: '官方授权', value: 'oauth' },
+    { label: '手动凭据', value: 'manual' },
+    { label: '导入文件', value: 'file' },
+  ];
+  protected readonly createGuides: Record<AccountCreateMode, AccountCreateGuide> = {
+    oauth: {
+      eyebrow: '推荐添加方式',
+      title: 'OpenAI 官方授权',
+      description:
+        '由 OpenAI 完成身份验证，FreeAi 只接收授权结果。适合首次添加账号，也能避免手工复制敏感凭据。',
+      optionTitle: '选择授权通道',
+      optionDescription: '两种方式最终都会生成同一类官方 OAuth 账号。',
+      options: [
+        {
+          title: '浏览器 PKCE',
+          badge: '首选',
+          description: '自动打开官方登录页，并通过一次性 State 与 PKCE 校验授权回调。',
+        },
+        {
+          title: '设备码授权',
+          badge: '备用',
+          description: '适合本机回调端口被占用、浏览器与服务不在同一设备的情况。',
+        },
+        {
+          title: '密码完全隔离',
+          badge: '安全',
+          description: '账号密码只在 OpenAI 页面输入，本系统不会读取或保存邮箱密码。',
+        },
+      ],
+      steps: [
+        '校验授权回调、一次性 State 和 PKCE 会话，避免授权结果串用。',
+        '解析官方账号、邮箱、工作区与令牌到期时间。',
+        '使用后端主密钥加密凭据；相同官方账号会原地更新。',
+        '账号入池后自动同步 7 天额度、订阅到期时间和官方模型目录。',
+      ],
+      notice: '通常优先选择浏览器授权；只有回调端口不可用时，再改用设备码。',
+    },
+    manual: {
+      eyebrow: '适合已有凭据',
+      title: '手动 OAuth 凭据',
+      description:
+        '至少填写 Access Token 或 Refresh Token。系统会验证凭据、补全官方身份，并将账号加入统一调度池。',
+      optionTitle: '凭据填写优先级',
+      optionDescription: '凭据越完整，身份识别和后续自动续期越稳定。',
+      options: [
+        {
+          title: 'Refresh Token',
+          badge: '推荐',
+          description: '建议优先填写，用于获取或续期 Access Token，适合长期运行。',
+        },
+        {
+          title: 'Access Token',
+          badge: '至少一项',
+          description: '可直接校验账号；若已过期或即将过期，还需要 Refresh Token。',
+        },
+        {
+          title: 'ID Token / 账号 ID',
+          badge: '身份补充',
+          description: '用于补全邮箱与账号身份；有效 JWT 能解析时可以留空。',
+        },
+      ],
+      steps: [
+        '检查 OAuth Token 完整性，并拒绝 OpenAI Platform API Key。',
+        'Access Token 缺失或临近过期时，优先使用 Refresh Token 自动续期。',
+        '解析官方账号身份并加密保存，相同账号不会重复创建。',
+        '保存成功后后台同步 7 天额度、订阅信息和官方模型目录。',
+      ],
+      notice: '不要把 OAuth Token 粘贴到聊天、日志或工单；保存后前端不会再次展示明文。',
+    },
+    file: {
+      eyebrow: '批量迁移友好',
+      title: '导入 OAuth 账号文件',
+      description:
+        '适合从 FreeAi、Codex-Manager 或兼容工具迁移账号。选择文件后会先在本地完成结构检查。',
+      optionTitle: '导入前检查',
+      optionDescription: '文件需要是规范 JSON，并包含能够唯一识别账号的官方凭据。',
+      options: [
+        {
+          title: '必须字段',
+          badge: '必需',
+          description: '需要包含 Access Token，以及官方账号 ID 或可解析账号 ID 的信息。',
+        },
+        {
+          title: '推荐字段',
+          badge: '建议',
+          description: '包含 Refresh Token、ID Token 和订阅元数据，可减少首次同步等待。',
+        },
+        {
+          title: '兼容来源',
+          badge: 'JSON',
+          description: '支持 FreeAi 规范文件以及可被当前账号解析器识别的兼容格式。',
+        },
+      ],
+      steps: [
+        '浏览器只读取文件并检查必要字段，同时显示脱敏账号摘要。',
+        '后端规范化 OAuth 数据，解析账号、工作区与令牌有效期。',
+        '凭据加密后写入账号池；相同官方账号会更新原记录。',
+        '导入完成后自动同步 7 天额度、订阅信息和官方模型目录。',
+      ],
+      notice: '原始文件不会保存在浏览器中；导入完成后仍请妥善保管或安全删除本地副本。',
+    },
+  };
+  private oauthPolling?: Subscription;
 
   protected readonly form = this.fb.nonNullable.group({
-    name: ['', [Validators.required]],
-    email: [''],
-    provider: ['openai', [Validators.required]],
-    apiBaseUrl: [''],
-    supplierName: [''],
-    officialUrl: [''],
-    usageQueryType: [''],
-    usageApiUrl: [''],
-    accountType: [''],
-    authType: ['api_key', [Validators.required]],
-    secret: [''],
-    callbackUrl: [''],
-    supportedModels: [''],
+    name: [''],
+    vendorCode: [DEFAULT_OFFICIAL_VENDOR_CODE],
     accountGroup: [''],
     priority: [0],
-    weight: [1],
-    subscriptionExpiredAt: [0],
+    weight: [1, [Validators.min(1)]],
     remark: [''],
   });
 
-  private readonly handleOAuthCallbackMessage = (event: MessageEvent): void => {
-    if (!this.isOpenAICallbackOrigin(event.origin)) {
-      return;
-    }
-    const data = event.data as Partial<{ type: string; callbackUrl: string }> | null;
-    if (data?.type !== 'freeai.openai.oauth.callback' || !data.callbackUrl) {
-      return;
-    }
-    this.form.controls.authType.setValue('login_callback');
-    this.form.controls.callbackUrl.setValue(data.callbackUrl);
-    this.loginCallbackHint = '已收到 OpenAI 本地回调，正在解析认证信息。';
-    this.parseLoginCallback();
-    this.cdr.markForCheck();
-  };
+  protected readonly manualForm = this.fb.nonNullable.group({
+    refreshToken: [''],
+    accessToken: [''],
+    idToken: [''],
+    accountId: [''],
+  });
 
   ngOnInit(): void {
-    window.addEventListener('message', this.handleOAuthCallbackMessage);
-    this.form.controls.provider.valueChanges.subscribe(() => {
-      this.syncOfficialProviderFields();
-      this.cdr.markForCheck();
-    });
-    this.form.controls.authType.valueChanges.subscribe(() => {
-      this.syncSecretValidators();
-      this.cdr.markForCheck();
-    });
-    this.syncOfficialProviderFields();
-    this.loadSelectOptions();
+    this.loadGroups();
     const guid = this.route.snapshot.paramMap.get('guid');
     if (guid) {
       this.enterEditMode(guid);
-      return;
+    } else {
+      this.formMode = 'create';
+      this.form.controls.accountGroup.setValue(
+        (this.route.snapshot.queryParamMap.get('group') || '').trim(),
+      );
     }
-    this.enterCreateMode();
   }
 
   ngOnDestroy(): void {
-    window.removeEventListener('message', this.handleOAuthCallbackMessage);
+    this.oauthPolling?.unsubscribe();
+  }
+
+  protected changeCreateMode(value: string | number): void {
+    const nextMode = String(value) as AccountCreateMode;
+    if (nextMode === this.createMode) return;
+    const activeSession = this.oauthSession;
+    this.createMode = nextMode;
+    this.stopOAuthPolling();
+    this.oauthSession = null;
+    this.callbackUrl = '';
+    if (activeSession && !this.isOAuthTerminal(activeSession.status)) {
+      this.accountsService.cancelOAuth(activeSession.id).subscribe({ error: () => undefined });
+    }
+    this.cdr.markForCheck();
+  }
+
+  protected onAccountFileSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const parsed = JSON.parse(String(reader.result || '')) as Record<string, unknown>;
+        const tokens = parsed['tokens'] as Record<string, unknown> | undefined;
+        const meta = parsed['meta'] as Record<string, unknown> | undefined;
+        if (!tokens || typeof tokens['access_token'] !== 'string') {
+          throw new Error('缺少 tokens.access_token');
+        }
+        if (
+          typeof tokens['account_id'] !== 'string' &&
+          typeof meta?.['chatgptAccountId'] !== 'string'
+        ) {
+          throw new Error('缺少 ChatGPT 账号 ID');
+        }
+        this.accountFile = parsed;
+        this.accountFileName = file.name;
+        const label = String(meta?.['label'] || '');
+        const accountID = String(tokens['account_id'] || meta?.['chatgptAccountId'] || '');
+        this.accountFileSummary = `${label || 'OAuth 账号'} · ${this.maskAccountID(accountID)}`;
+        if (!this.form.controls.name.value && label) this.form.controls.name.setValue(label);
+        this.message.success('OAuth 账号文件解析成功');
+      } catch (error) {
+        this.accountFile = null;
+        this.accountFileName = '';
+        this.accountFileSummary = '';
+        this.message.error(error instanceof Error ? error.message : '账号文件格式错误');
+      }
+      this.cdr.markForCheck();
+    };
+    reader.onerror = () => this.message.error('读取账号文件失败');
+    reader.readAsText(file);
   }
 
   protected save(): void {
-    Object.values(this.form.controls).forEach((control) => {
-      control.markAsDirty();
-      control.updateValueAndValidity();
-    });
-    if (this.form.invalid) return;
-
-    const value = this.form.getRawValue();
-    const payload: AccountPayload = {
-      ...value,
-      provider: 'openai',
-      apiBaseUrl: OPENAI_API_BASE_URL,
-      supplierName: 'OpenAI',
-      officialUrl: 'https://openai.com',
-      usageQueryType: '',
-      usageApiUrl: '',
-      supportedModels: value.supportedModels ? JSON.stringify([value.supportedModels]) : '',
-      priority: Number(value.priority || 0),
-      weight: Math.max(Number(value.weight || 1), 1),
-      subscriptionExpiredAt: Number(value.subscriptionExpiredAt || 0),
-    };
-
-    if (this.formMode === 'edit' && !payload.secret) {
-      delete payload.secret;
+    if (!this.validatePoolForm()) return;
+    if (this.formMode === 'create' && this.createMode === 'oauth') {
+      this.message.warning('请先完成官方授权登录');
+      return;
     }
-
+    if (this.formMode === 'create' && this.createMode === 'file' && !this.accountFile) {
+      this.message.warning('请先选择 Codex OAuth 账号 JSON 文件');
+      return;
+    }
+    if (this.formMode === 'create' && this.createMode === 'manual') {
+      const credentials = this.manualForm.getRawValue();
+      if (!credentials.accessToken.trim() && !credentials.refreshToken.trim()) {
+        this.message.warning('Access Token 和 Refresh Token 至少填写一项');
+        return;
+      }
+    }
+    const value = this.form.getRawValue();
     this.saving = true;
+    const pool = this.poolPayload();
     const request =
-      this.formMode === 'create'
-        ? this.accountsService.create(payload)
-        : this.accountsService.update(this.accountGuid, payload);
+      this.formMode === 'create' && this.createMode === 'file'
+        ? this.accountsService.importAccount({
+            accountFile: this.accountFile!,
+            ...pool,
+          } satisfies AccountImportPayload)
+        : this.formMode === 'create'
+          ? this.accountsService.addManual({
+              ...pool,
+              ...this.manualForm.getRawValue(),
+            } satisfies AccountManualPayload)
+          : this.accountsService.update(this.accountGuid, {
+              name: value.name.trim(),
+              vendorCode: value.vendorCode,
+              accountGroup: value.accountGroup,
+              priority: Number(value.priority || 0),
+              weight: Math.max(Number(value.weight || 1), 1),
+              remark: value.remark,
+            } satisfies AccountPayload);
 
     request
       .pipe(
@@ -162,171 +323,109 @@ export class AccountEditComponent implements OnInit, OnDestroy {
           this.cdr.markForCheck();
         }),
       )
-      .subscribe((account) => {
-        this.account = account ?? this.account;
-        this.message.success(this.formMode === 'create' ? '账号已创建' : '账号已更新');
-        this.router.navigateByUrl('/accounts/list');
+      .subscribe(() => {
+        const message =
+          this.formMode === 'edit'
+            ? '账号调度配置已更新'
+            : this.createMode === 'file'
+              ? 'OAuth 账号已导入'
+              : 'OAuth 凭据已保存';
+        this.message.success(message);
+        void this.router.navigateByUrl('/accounts/list');
       });
   }
 
-  protected goList(): void {
-    this.router.navigateByUrl('/accounts/list');
-  }
-
-  protected get pageTitle(): string {
-    return this.formMode === 'create' ? '新增账号' : '编辑账号';
-  }
-
-  protected get pageDescription(): string {
-    return this.formMode === 'create'
-      ? '创建官方 OpenAI 账号，配置认证方式、支持模型与调度优先级。'
-      : '更新官方 OpenAI 账号的调度参数与 Secret；留空 Secret 表示继续使用当前值。';
-  }
-
-  protected get statusLabel(): string {
-    if (this.formMode === 'create') return '待创建';
-    return this.statusText(this.account?.status);
-  }
-
-  protected get enabledLabel(): string {
-    if (this.formMode === 'create') return '创建后设置';
-    return this.account?.enabled ? '已启用' : '已停用';
-  }
-
-  protected get secretHint(): string {
-    if (this.formMode === 'create') return '创建后生成';
-    return this.account?.secretHint || '未提供';
-  }
-
-  protected get authTypeLabel(): string {
-    const authType = this.form.controls.authType.value;
-    if (authType === 'login_callback') return '登录回调';
-    return authType === 'api_key' ? 'API Key' : 'Bearer Token';
-  }
-
-  protected get modelsLabel(): string {
-    return this.form.controls.supportedModels.value || '未限制';
-  }
-
-  protected get scheduleLabel(): string {
-    const priority = Number(this.form.controls.priority.value || 0);
-    const weight = Math.max(Number(this.form.controls.weight.value || 1), 1);
-    return `P${priority} / W${weight}`;
-  }
-
-  protected get secretPolicyLabel(): string {
-    return this.formMode === 'create' ? '首次创建需填写' : '留空保留当前值';
-  }
-
-  protected get accountTypeLabel(): string {
-    return getAccountTypeLabel(this.form.controls.accountType.value);
-  }
-
-  protected get providerLabel(): string {
-    return getProviderLabel(this.form.controls.provider.value);
-  }
-
-  protected get isLoginCallbackAuth(): boolean {
-    return this.form.controls.authType.value === 'login_callback';
-  }
-
-  protected get canOpenLoginAuth(): boolean {
-    return true;
-  }
-
-  protected get apiBaseUrlHint(): string {
-    return '系统固定使用 OpenAI 官方 Platform API 地址。';
-  }
-
-  protected async openLoginAuth(): Promise<void> {
-    if (!this.canOpenLoginAuth) {
-      this.message.warning('当前只支持 OpenAI 登录授权入口');
+  protected startOAuth(mode: AccountOAuthMode): void {
+    if (!this.validatePoolForm() || this.authorizing) return;
+    const activeSession = this.oauthSession;
+    if (activeSession && !this.isOAuthTerminal(activeSession.status)) {
+      this.accountsService.cancelOAuth(activeSession.id).subscribe({
+        next: () => this.beginOAuth(mode),
+        error: () => this.beginOAuth(mode),
+      });
       return;
     }
-    try {
-      const state = this.randomBase64Url(32);
-      const codeVerifier = this.randomBase64Url(64);
-      const codeChallenge = await this.sha256Base64Url(codeVerifier);
-      sessionStorage.setItem(this.oauthVerifierStorageKey(state), codeVerifier);
-      this.openAIAuthorizeUrl = this.buildOpenAIAuthorizeUrl(state, codeChallenge);
-      this.loginCallbackHint = `已打开 OpenAI OAuth 授权页；回调地址为 ${OPENAI_OAUTH_REDIRECT_URI}，登录后请复制浏览器地址栏中的完整回调 URL 到下方解析。`;
-      const authWindow = window.open(this.openAIAuthorizeUrl, '_blank');
-      if (!authWindow) {
-        this.message.warning('浏览器拦截了登录授权窗口，请允许弹出窗口后重试');
-        return;
-      }
-      this.cdr.markForCheck();
-    } catch {
-      this.message.error('生成 OpenAI OAuth 授权地址失败');
-    }
+    this.beginOAuth(mode);
   }
 
-  protected copyOpenAIAuthorizeUrl(): void {
-    if (!this.openAIAuthorizeUrl) {
-      this.message.warning('请先点击登录授权生成授权链接');
+  protected completeOAuth(): void {
+    const session = this.oauthSession;
+    const callbackUrl = this.callbackUrl.trim();
+    if (!session || session.mode !== 'browser' || !callbackUrl || this.completingCallback) {
+      this.message.warning('请填写浏览器最终跳转的完整回调地址');
       return;
     }
-    navigator.clipboard
-      .writeText(this.openAIAuthorizeUrl)
-      .then(() => this.message.success('授权链接已复制'))
-      .catch(() => this.message.error('复制失败，请手动选择链接复制'));
-  }
-
-  protected parseLoginCallback(): void {
-    const callbackUrl = this.form.controls.callbackUrl.value.trim();
-    if (!callbackUrl) {
-      this.message.warning('请先粘贴浏览器跳转后的完整回调 URL');
-      return;
-    }
-    this.parsingCallback = true;
+    this.completingCallback = true;
     this.accountsService
-      .parseLoginCallback({
-        provider: this.form.controls.provider.value,
-        callbackUrl,
-        codeVerifier: this.getCodeVerifierFromCallback(callbackUrl),
-        redirectUri: OPENAI_OAUTH_REDIRECT_URI,
-      })
+      .completeOAuth(session.id, { callbackUrl })
       .pipe(
         finalize(() => {
-          this.parsingCallback = false;
+          this.completingCallback = false;
           this.cdr.markForCheck();
         }),
       )
-      .subscribe((result) => {
-        this.form.controls.authType.setValue(result.authType || 'login_callback');
-        this.form.controls.secret.setValue(result.secret || '');
-        this.loginCallbackHint = result.hasApiKeyToken
-          ? `已解析最终可用 token，Secret 提示：${result.secretHint || '-'}`
-          : result.hasAccessToken
-            ? result.apiKeyError
-              ? `已解析 OAuth access_token，但换取最终可用 token 失败：${result.apiKeyError}`
-              : '已解析 OAuth access_token，但没有拿到最终可用 token。'
-            : result.exchangeError
-              ? `已解析 code/state，但换取 access_token 失败：${result.exchangeError}`
-              : '已解析 code/state，但没有 access_token；请确认这是当前页面点击登录授权后生成的回调 URL。';
-        if (result.hasApiKeyToken || result.hasAccessToken) {
-          this.message.success('登录回调已解析');
-        } else {
-          this.message.warning('已解析回调，但未发现 access_token');
-        }
-      });
+      .subscribe((result) => this.applyOAuthSession(result));
+  }
+
+  protected cancelOAuth(): void {
+    const session = this.oauthSession;
+    if (!session || this.isOAuthTerminal(session.status)) return;
+    this.accountsService.cancelOAuth(session.id).subscribe((result) => {
+      this.applyOAuthSession(result);
+      this.message.info('授权会话已取消');
+    });
+  }
+
+  protected openOAuthUrl(url?: string): void {
+    if (!url) return;
+    window.open(url, '_blank', 'noopener,noreferrer');
+  }
+
+  protected async copy(value: string | undefined, label: string): Promise<void> {
+    if (!value) return;
+    try {
+      await navigator.clipboard.writeText(value);
+      this.message.success(`${label}已复制`);
+    } catch {
+      this.message.error(`复制${label}失败`);
+    }
+  }
+
+  protected oauthStatusText(status?: string): string {
+    const map: Record<string, string> = {
+      pending: '等待授权',
+      completing: '正在写入账号',
+      success: '授权成功',
+      failed: '授权失败',
+      cancelled: '已取消',
+      expired: '已过期',
+    };
+    return map[status || ''] || status || '-';
+  }
+
+  protected get createActionText(): string {
+    return this.createMode === 'file' ? '导入账号' : '保存凭据';
+  }
+
+  protected get activeCreateGuide(): AccountCreateGuide {
+    return this.createGuides[this.createMode];
+  }
+
+  protected get securityAlertMessage(): string {
+    if (this.formMode === 'edit') {
+      return 'OAuth 令牌由后端主密钥加密保存，账号操作不会在前端展示明文凭据。';
+    }
+    if (this.createMode === 'oauth') {
+      return '授权回调只在本机完成，系统不会保存 OpenAI 密码；获取的 OAuth 令牌由后端加密存储。';
+    }
+    return 'OAuth 凭据属于敏感信息，提交后由后端主密钥加密存储，请勿通过日志或聊天发送。';
   }
 
   protected fetchModels(): void {
-    const value = this.form.getRawValue();
-    if (!value.secret.trim() && this.formMode === 'create') {
-      this.message.warning('请先填写 Secret，拉取模型列表需要上游鉴权');
-      return;
-    }
+    if (!this.accountGuid) return;
     this.fetchingModels = true;
     this.accountsService
-      .fetchModels({
-        guid: this.formMode === 'edit' ? this.accountGuid : '',
-        provider: 'openai',
-        apiBaseUrl: OPENAI_API_BASE_URL,
-        authType: value.authType,
-        secret: value.secret,
-      })
+      .fetchModels({ guid: this.accountGuid })
       .pipe(
         finalize(() => {
           this.fetchingModels = false;
@@ -334,27 +433,93 @@ export class AccountEditComponent implements OnInit, OnDestroy {
         }),
       )
       .subscribe((result) => {
-        this.modelOptions = this.mergeModelOptions(result.models || []);
-        if (!this.form.controls.supportedModels.value && this.modelOptions.length) {
-          this.form.controls.supportedModels.setValue(this.modelOptions[0]);
-        }
-        this.message.success(`已获取 ${this.modelOptions.length} 个模型`);
+        this.message.success(`已同步 ${result.models?.length || 0} 个官方模型到模型目录`);
       });
+  }
+
+  protected refreshUsage(): void {
+    if (!this.accountGuid) return;
+    this.refreshingUsage = true;
+    this.accountsService
+      .refreshUsage(this.accountGuid)
+      .pipe(
+        finalize(() => {
+          this.refreshingUsage = false;
+          this.cdr.markForCheck();
+        }),
+      )
+      .subscribe((result) => {
+        this.message.success(`已同步 ${result.quotas?.length || 0} 个额度窗口`);
+        this.reloadAccount();
+      });
+  }
+
+  protected probe(): void {
+    if (!this.accountGuid) return;
+    this.probing = true;
+    this.accountsService
+      .probe(this.accountGuid, {})
+      .pipe(
+        finalize(() => {
+          this.probing = false;
+          this.cdr.markForCheck();
+        }),
+      )
+      .subscribe((result) => {
+        if (result.ok) {
+          this.message.success('主动探测成功，已采样额度响应头');
+        } else {
+          this.message.warning('主动探测返回异常');
+        }
+        this.reloadAccount();
+      });
+  }
+
+  protected exportAccount(): void {
+    if (!this.accountGuid) return;
+    this.modal.confirm({
+      nzTitle: '导出 OAuth 账号文件？',
+      nzContent:
+        '导出文件包含 access_token 和 refresh_token。请只保存到可信位置，不要通过聊天或工单发送。',
+      nzOkText: '确认导出',
+      nzOkDanger: true,
+      nzOnOk: () =>
+        new Promise<void>((resolve, reject) => {
+          this.accountsService.exportAccount(this.accountGuid).subscribe({
+            next: (blob) => {
+              const url = URL.createObjectURL(blob);
+              const anchor = document.createElement('a');
+              anchor.href = url;
+              anchor.download = `${this.account?.chatgptAccountId || this.accountGuid}.json`;
+              anchor.click();
+              URL.revokeObjectURL(url);
+              this.message.success('账号文件已导出');
+              resolve();
+            },
+            error: reject,
+          });
+        }),
+    });
+  }
+
+  protected goList(): void {
+    void this.router.navigateByUrl('/accounts/list');
+  }
+
+  protected get pageTitle(): string {
+    return this.formMode === 'create' ? '添加官方账号' : '账号设置';
+  }
+
+  protected get pageDescription(): string {
+    return this.formMode === 'create'
+      ? '通过官方授权、手动 OAuth 凭据或账号文件加入 Codex 账号池。'
+      : '查看账号身份与订阅状态，调整账号池调度参数并同步官方模型。';
   }
 
   protected formatTime(value?: number): string {
     if (!value) return '-';
     const date = new Date(value);
-    if (Number.isNaN(date.getTime())) return '-';
-    return date.toLocaleString('zh-CN', {
-      hour12: false,
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit',
-    });
+    return Number.isNaN(date.getTime()) ? '-' : date.toLocaleString('zh-CN', { hour12: false });
   }
 
   protected statusText(status?: string): string {
@@ -368,53 +533,29 @@ export class AccountEditComponent implements OnInit, OnDestroy {
       invalid: '失效',
       unknown: '未知',
     };
-    const value = (status || '').trim();
-    if (!value) return '--';
-    return map[value] || value;
+    return map[status || ''] || status || '-';
   }
 
-  private enterCreateMode(): void {
-    const queryGroup = (this.route.snapshot.queryParamMap.get('group') || '').trim();
-    this.mergeSelectOptions([], queryGroup ? [queryGroup] : [], []);
-    this.formMode = 'create';
-    this.accountGuid = '';
-    this.account = null;
-    this.modelOptions = [];
-    this.form.reset({
-      name: '',
-      email: '',
-      provider: 'openai',
-      apiBaseUrl: OPENAI_API_BASE_URL,
-      supplierName: 'OpenAI',
-      officialUrl: 'https://openai.com',
-      usageQueryType: '',
-      usageApiUrl: '',
-      accountType: 'manual',
-      authType: 'api_key',
-      secret: '',
-      callbackUrl: '',
-      supportedModels: '',
-      accountGroup: queryGroup,
-      priority: 0,
-      weight: 1,
-      subscriptionExpiredAt: 0,
-      remark: '',
-    });
-    this.form.controls.secret.setValidators([Validators.required]);
-    this.form.controls.secret.updateValueAndValidity();
-    this.tryParseLoginCallbackFromLocation();
-    this.cdr.markForCheck();
+  protected tokenStatusText(status?: string): string {
+    const map: Record<string, string> = {
+      active: '有效',
+      refresh_needed: '需要刷新',
+      refresh_failed: '刷新失败',
+      invalid: '无效',
+    };
+    return map[status || ''] || status || '-';
   }
 
   private enterEditMode(guid: string): void {
     this.formMode = 'edit';
     this.accountGuid = guid;
-    this.form.controls.secret.clearValidators();
-    this.form.controls.secret.updateValueAndValidity();
+    this.reloadAccount();
+  }
 
+  private reloadAccount(): void {
     this.loading = true;
     this.accountsService
-      .get(guid)
+      .get(this.accountGuid)
       .pipe(
         finalize(() => {
           this.loading = false;
@@ -423,196 +564,109 @@ export class AccountEditComponent implements OnInit, OnDestroy {
       )
       .subscribe((account) => {
         this.account = account;
-        this.mergeSelectOptions([], [account.accountGroup], [account.accountType]);
-        this.modelOptions = this.mergeModelOptions([
-          this.firstSupportedModel(account.supportedModels),
+        this.accountGroupOptions = mergeStringOptions(this.accountGroupOptions, [
+          account.accountGroup,
         ]);
         this.form.reset({
-          name: account.name ?? '',
-          email: account.email ?? '',
-          provider: 'openai',
-          apiBaseUrl: OPENAI_API_BASE_URL,
-          supplierName: 'OpenAI',
-          officialUrl: 'https://openai.com',
-          usageQueryType: '',
-          usageApiUrl: '',
-          accountType: account.accountType ?? '',
-          authType: account.authType || 'api_key',
-          secret: '',
-          callbackUrl: '',
-          supportedModels: this.firstSupportedModel(account.supportedModels),
-          accountGroup: account.accountGroup ?? '',
-          priority: account.priority ?? 0,
+          name: account.name || '',
+          vendorCode: normalizeOfficialVendorCode(account.vendorCode),
+          accountGroup: account.accountGroup || '',
+          priority: account.priority || 0,
           weight: account.weight || 1,
-          subscriptionExpiredAt: account.subscriptionExpiredAt ?? 0,
-          remark: account.remark ?? '',
+          remark: account.remark || '',
         });
-        this.tryParseLoginCallbackFromLocation();
       });
   }
 
-  private loadSelectOptions(): void {
-    forkJoin({
-      accounts: this.accountsService.listAll().pipe(catchError(() => of([]))),
-      groups: this.accountsService.listGroups().pipe(catchError(() => of([]))),
-    }).subscribe({
-      next: ({ accounts, groups }) => {
-        this.mergeSelectOptions(
-          [],
+  private loadGroups(): void {
+    this.accountsService
+      .listGroups()
+      .pipe(catchError(() => of([])))
+      .subscribe((groups) => {
+        this.accountGroupOptions = mergeStringOptions(
+          DEFAULT_ACCOUNT_GROUP_OPTIONS,
           groups.map((item) => item.name),
-          accounts.map((item) => item.accountType),
         );
         this.cdr.markForCheck();
-      },
-      error: () => undefined,
+      });
+  }
+
+  private validatePoolForm(): boolean {
+    Object.values(this.form.controls).forEach((control) => {
+      control.markAsDirty();
+      control.updateValueAndValidity();
     });
+    return this.form.valid;
   }
 
-  private mergeSelectOptions(
-    _providers: string[],
-    accountGroups: string[],
-    accountTypes: string[],
-  ): void {
-    this.providerOptions = mergeProviderOptions([]);
-    this.accountGroupOptions = mergeStringOptions(DEFAULT_ACCOUNT_GROUP_OPTIONS, accountGroups);
-    this.accountTypeOptions = mergeAccountTypeOptions(accountTypes);
+  private poolPayload(): AccountPoolPayload {
+    const value = this.form.getRawValue();
+    return {
+      vendorCode: value.vendorCode,
+      name: value.name.trim(),
+      accountGroup: value.accountGroup,
+      priority: Number(value.priority || 0),
+      weight: Math.max(Number(value.weight || 1), 1),
+      remark: value.remark,
+    };
   }
 
-  private firstSupportedModel(raw?: string): string {
-    const value = (raw || '').trim();
-    if (!value || value === '*') return '';
-    try {
-      const parsed = JSON.parse(value);
-      if (Array.isArray(parsed)) return String(parsed[0] || '');
-    } catch {
-      return (
-        value
-          .split(',')
-          .map((item) => item.trim())
-          .filter(Boolean)[0] || ''
-      );
+  private beginOAuth(mode: AccountOAuthMode): void {
+    this.stopOAuthPolling();
+    this.oauthSession = null;
+    this.callbackUrl = '';
+    this.authorizing = true;
+    this.accountsService
+      .startOAuth({ mode, ...this.poolPayload() })
+      .pipe(
+        finalize(() => {
+          this.authorizing = false;
+          this.cdr.markForCheck();
+        }),
+      )
+      .subscribe((session) => {
+        this.oauthSession = session;
+        this.startOAuthPolling(session.id);
+        this.openOAuthUrl(session.authorizationUrl || session.verificationUrl);
+        this.cdr.markForCheck();
+      });
+  }
+
+  private startOAuthPolling(id: string): void {
+    this.stopOAuthPolling();
+    this.oauthPolling = timer(1200, 1500)
+      .pipe(switchMap(() => this.accountsService.oauthStatus(id)))
+      .subscribe({
+        next: (session) => this.applyOAuthSession(session),
+        error: () => {
+          this.stopOAuthPolling();
+          this.cdr.markForCheck();
+        },
+      });
+  }
+
+  private applyOAuthSession(session: AccountOAuthSession): void {
+    this.oauthSession = session;
+    if (this.isOAuthTerminal(session.status)) {
+      this.stopOAuthPolling();
     }
-    return value;
-  }
-
-  private mergeModelOptions(values: Array<string | null | undefined>): string[] {
-    return Array.from(
-      new Set([...this.modelOptions, ...values].map((item) => (item || '').trim()).filter(Boolean)),
-    );
-  }
-
-  private syncOfficialProviderFields(): void {
-    this.form.controls.provider.setValue('openai', { emitEvent: false });
-    this.form.controls.apiBaseUrl.setValue(OPENAI_API_BASE_URL, { emitEvent: false });
-    this.form.controls.supplierName.setValue('OpenAI', { emitEvent: false });
-    this.form.controls.officialUrl.setValue('https://openai.com', { emitEvent: false });
-    this.form.controls.usageQueryType.setValue('', { emitEvent: false });
-    this.form.controls.usageApiUrl.setValue('', { emitEvent: false });
-  }
-
-  private syncSecretValidators(): void {
-    if (this.formMode === 'create') {
-      this.form.controls.secret.setValidators([Validators.required]);
-    } else {
-      this.form.controls.secret.clearValidators();
+    if (session.status === 'success' && session.accountGuid) {
+      this.message.success('官方账号授权成功，正在同步额度与模型');
+      void this.router.navigate(['/accounts/edit', session.accountGuid]);
     }
-    this.form.controls.secret.updateValueAndValidity({ emitEvent: false });
+    this.cdr.markForCheck();
   }
 
-  private tryParseLoginCallbackFromLocation(): void {
-    const callbackUrl = window.location.href;
-    if (!this.hasLoginCallbackParams(callbackUrl) || this.form.controls.callbackUrl.value) {
-      return;
-    }
-    this.form.controls.authType.setValue('login_callback');
-    this.form.controls.callbackUrl.setValue(callbackUrl);
-    this.parseLoginCallback();
+  private stopOAuthPolling(): void {
+    this.oauthPolling?.unsubscribe();
+    this.oauthPolling = undefined;
   }
 
-  private hasLoginCallbackParams(rawUrl: string): boolean {
-    try {
-      const parsed = new URL(rawUrl);
-      const keys = ['access_token', 'token', 'id_token', 'code', 'state'];
-      if (keys.some((key) => parsed.searchParams.has(key))) {
-        return true;
-      }
-      const fragment = parsed.hash.replace(/^#/, '');
-      if (!fragment) {
-        return false;
-      }
-      const fragmentParams = new URLSearchParams(fragment);
-      return keys.some((key) => fragmentParams.has(key));
-    } catch {
-      return false;
-    }
+  private isOAuthTerminal(status: string): boolean {
+    return ['success', 'failed', 'cancelled', 'expired'].includes(status);
   }
 
-  private buildOpenAIAuthorizeUrl(state: string, codeChallenge: string): string {
-    const params = new URLSearchParams({
-      response_type: 'code',
-      client_id: OPENAI_OAUTH_CLIENT_ID,
-      redirect_uri: OPENAI_OAUTH_REDIRECT_URI,
-      scope: OPENAI_OAUTH_SCOPE,
-      code_challenge: codeChallenge,
-      code_challenge_method: 'S256',
-      id_token_add_organizations: 'true',
-      codex_cli_simplified_flow: 'true',
-      state,
-      originator: 'codex_cli_rs',
-    });
-    return `${OPENAI_OAUTH_AUTHORIZE_URL}?${params.toString()}`;
-  }
-
-  private getCodeVerifierFromCallback(rawUrl: string): string {
-    const state = this.getCallbackParam(rawUrl, 'state');
-    if (!state) {
-      return '';
-    }
-    return sessionStorage.getItem(this.oauthVerifierStorageKey(state)) || '';
-  }
-
-  private getCallbackParam(rawUrl: string, key: string): string {
-    try {
-      const parsed = new URL(rawUrl);
-      const value = parsed.searchParams.get(key);
-      if (value) {
-        return value;
-      }
-      const fragment = parsed.hash.replace(/^#/, '');
-      if (!fragment) {
-        return '';
-      }
-      return new URLSearchParams(fragment).get(key) || '';
-    } catch {
-      return '';
-    }
-  }
-
-  private oauthVerifierStorageKey(state: string): string {
-    return `${OPENAI_OAUTH_VERIFIER_STORAGE_KEY}.${state}`;
-  }
-
-  private isOpenAICallbackOrigin(origin: string): boolean {
-    return origin === 'http://localhost:1455' || origin === 'http://127.0.0.1:1455';
-  }
-
-  private randomBase64Url(byteLength: number): string {
-    const bytes = new Uint8Array(byteLength);
-    crypto.getRandomValues(bytes);
-    return this.bytesToBase64Url(bytes);
-  }
-
-  private async sha256Base64Url(value: string): Promise<string> {
-    const bytes = new TextEncoder().encode(value);
-    const digest = await crypto.subtle.digest('SHA-256', bytes);
-    return this.bytesToBase64Url(new Uint8Array(digest));
-  }
-
-  private bytesToBase64Url(bytes: Uint8Array): string {
-    let binary = '';
-    bytes.forEach((byte) => {
-      binary += String.fromCharCode(byte);
-    });
-    return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  private maskAccountID(value: string): string {
+    return value.length > 12 ? `${value.slice(0, 5)}…${value.slice(-6)}` : value || '-';
   }
 }

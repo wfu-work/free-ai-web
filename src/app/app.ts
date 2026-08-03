@@ -11,6 +11,8 @@ import { environment } from '@env/environment';
 import { NzModalService } from 'ng-zorro-antd/modal';
 import { VERSION as VERSION_ZORRO } from 'ng-zorro-antd/version';
 
+import { ThemeColorService } from './shared/services/theme-color.service';
+
 @Component({
   selector: 'app-root',
   template: `<router-outlet />`,
@@ -24,12 +26,15 @@ export class App {
   private readonly router = inject(Router);
   private readonly titleSrv = inject(TitleService);
   private readonly modalSrv = inject(NzModalService);
+  private readonly themeColor = inject(ThemeColorService);
   protected ngAlainVersion = VERSION_ALAIN.full;
   protected ngZorroVersion = VERSION_ZORRO.full;
 
   private donePreloader = stepPreloader();
 
   constructor() {
+    // 根组件启动时恢复外观，保证登录页和工作台使用同一套主题。
+    this.themeColor.restore();
     let configLoad = false;
     this.router.events.subscribe((ev) => {
       if (ev instanceof RouteConfigLoadStart) {

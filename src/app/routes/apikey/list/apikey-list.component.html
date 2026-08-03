@@ -1,0 +1,171 @@
+<section class="apikey-page">
+  <div class="header-row">
+    <title-label
+      title="API 密钥"
+      description="管理业务客户端访问 /v1 代理入口使用的本地API 密钥。"
+    />
+    <div class="header-actions">
+      <button
+        nz-button
+        nz-popover
+        nzPopoverPlacement="bottomRight"
+        nzPopoverTrigger="click"
+        [nzPopoverContent]="gatewayPanel"
+      >
+        <i nz-icon nzType="link"></i>
+        网关端点
+      </button>
+      <button nz-button (click)="q.page = 1; getData()">
+        <i nz-icon nzType="reload"></i>
+        刷新
+      </button>
+      <button nz-button (click)="openCodexConfig()">
+        <i nz-icon nzType="code"></i>
+        Codex配置
+      </button>
+      <button nz-button nzType="primary" (click)="add()">
+        <i nz-icon nzType="plus"></i>
+        创建密钥
+      </button>
+    </div>
+  </div>
+
+  <ng-template #gatewayPanel>
+    <div class="gateway-panel">
+      <div class="gateway-panel__title">复制调用地址</div>
+      <button
+        type="button"
+        class="gateway-option gateway-option-active"
+        (click)="copy(openAiGatewayEndpoint, 'OpenAI / Codex 端点')"
+      >
+        <i nz-icon nzType="copy"></i>
+        <span>
+          <strong>复制 OpenAI / Codex 端点</strong>
+          <code>{{ openAiGatewayEndpoint }}</code>
+        </span>
+      </button>
+    </div>
+  </ng-template>
+
+  <div class="usage-summary-grid">
+    <article class="usage-summary-card">
+      <div>
+        <span>总使用 Token</span>
+        <strong>{{ formatTokens(stats.totalTokens) }}</strong>
+        <p>按全部API 密钥累计</p>
+      </div>
+      <i nz-icon nzType="thunderbolt"></i>
+    </article>
+    <article class="usage-summary-card">
+      <div>
+        <span>总费用</span>
+        <strong>{{ formatAmount(stats.totalAmount) }}</strong>
+        <p>按全部API 密钥累计</p>
+      </div>
+      <i nz-icon nzType="dollar"></i>
+    </article>
+  </div>
+
+  <nz-alert
+    nzType="info"
+    nzShowIcon
+    nzMessage="列表默认展示脱敏密钥前缀；点击复制图标时，服务端会临时解密完整 API 密钥并写入剪贴板，请妥善保管。"
+  />
+
+  <nz-card class="key-card" [nzBordered]="false">
+    <div class="list-toolbar">
+      <div class="list-summary">
+        <h2>API 密钥</h2>
+        <span>共 {{ totalCount }} 把密钥</span>
+      </div>
+      <div class="filter-controls">
+        <nz-select
+          class="status-filter"
+          [(ngModel)]="q.enabled"
+          placeholder="启用状态"
+          (ngModelChange)="q.page = 1; getData()"
+        >
+          <nz-option [nzValue]="''" [nzLabel]="'全部'" />
+          <nz-option [nzValue]="1" [nzLabel]="'启用'" />
+          <nz-option [nzValue]="0" [nzLabel]="'禁用'" />
+        </nz-select>
+        <nz-input-wrapper class="search-input">
+          <nz-icon nzInputPrefix nzType="search" />
+          <input
+            nz-input
+            [(ngModel)]="q.content"
+            name="content"
+            [placeholder]="'请输入搜索内容'"
+            (keydown.enter)="q.page = 1; getData()"
+          />
+        </nz-input-wrapper>
+        <div class="filter-actions">
+          <button nz-button (click)="q.page = 1; getData()" nzType="primary">
+            {{ '搜索' }}
+          </button>
+          <button nz-button (click)="q.page = 1; q.content = ''; q.enabled = ''; getData()">
+            {{ '重置' }}
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <st
+      [data]="data"
+      [columns]="columns"
+      [loading]="loading"
+      [pi]="q.page"
+      [ps]="q.size"
+      [total]="totalCount"
+      (change)="tableChange($event)"
+      [scroll]="{ x: 'max-content' }"
+    >
+      <ng-template st-row="keyRender" let-item>
+        <div class="key-secret-cell">
+          <code class="key-prefix">{{ item.keyPrefix || '-' }}••••••••</code>
+          <button
+            nz-button
+            nzType="text"
+            nzSize="small"
+            class="copy-key-button"
+            nz-tooltip
+            nzTooltipTitle="复制完整 API 密钥"
+            [attr.aria-label]="'复制完整 API 密钥 ' + (item.name || item.keyPrefix || '')"
+            [nzLoading]="copyingKeyGuid === item.guid"
+            [disabled]="!!copyingKeyGuid && copyingKeyGuid !== item.guid"
+            (click)="copyFullKey(item)"
+          >
+            <i nz-icon nzType="copy"></i>
+          </button>
+        </div>
+      </ng-template>
+
+      <ng-template st-row="nameRender" let-item>
+        <div class="key-name">{{ item.name || '-' }}</div>
+      </ng-template>
+
+      <ng-template st-row="strategyRender" let-item>
+        <div class="policy-main">{{ item.accountGroupFilter || '全部官方账号' }}</div>
+      </ng-template>
+
+      <ng-template st-row="boundModelRender" let-item>
+        <span class="models-text">{{ boundModelLabel(item) }}</span>
+      </ng-template>
+
+      <ng-template st-row="usageRender" let-item>
+        <div class="usage-main">{{ formatTokens(item.usedTokens) }}</div>
+        <div class="usage-sub">
+          已花费 {{ formatAmount(item.usedAmount) }} · {{ formatTokenLimitText(item) }}
+        </div>
+      </ng-template>
+
+      <ng-template st-row="lastUsedRender" let-item>
+        {{ formatTime(item.lastUsedAt) }}
+      </ng-template>
+
+      <ng-template st-row="remarkRender" let-item>
+        <span class="muted">{{ item.remark || '-' }}</span>
+      </ng-template>
+    </st>
+  </nz-card>
+</section>

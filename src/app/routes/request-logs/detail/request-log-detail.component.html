@@ -1,6 +1,10 @@
 <section class="log-detail-page">
   <div class="d-flex justify-content-between header-row">
-    <title-label title="请求详情" description="查看单次网关请求的路由、密钥、账号、模型等级和耗时用量。" [showBack]="true" />
+    <title-label
+      title="请求详情"
+      description="查看单次网关请求的路由、密钥、账号、模型等级和耗时用量。"
+      [showBack]="true"
+    />
     <div class="header-actions">
       <button nz-button (click)="goList()">返回列表</button>
     </div>
@@ -11,7 +15,9 @@
       <div class="metric-grid">
         <article class="metric-card">
           <span>状态</span>
-          <strong [class.danger-text]="record.statusCode >= 400">{{ record.statusCode || '-' }}</strong>
+          <strong [class.danger-text]="record.statusCode >= 400">{{
+            record.statusCode || '-'
+          }}</strong>
         </article>
         <article class="metric-card">
           <span>请求耗时</span>
@@ -47,7 +53,11 @@
             </div>
             <div>
               <span>路径</span>
-              <button type="button" class="copy-text" (click)="copy(requestPath(record), '请求路径')">
+              <button
+                type="button"
+                class="copy-text"
+                (click)="copy(requestPath(record), '请求路径')"
+              >
                 {{ requestPath(record) }}
               </button>
             </div>
@@ -62,18 +72,16 @@
               <strong>{{ record.accountName || record.accountGuid || '-' }}</strong>
             </div>
             <div>
-              <span>平台密钥</span>
+              <span>API 密钥</span>
               <strong>{{ record.platformKey || '-' }}</strong>
               <small>{{ record.keyPrefix || record.platformKeyId || '-' }}</small>
             </div>
             <div>
-              <span>供应商</span>
-              <strong>{{ record.provider || '-' }}</strong>
-            </div>
-            <div>
               <span>路由切换</span>
               <strong>{{ record.switched ? '已切换' : '未切换' }}</strong>
-              <small>{{ record.switchCount || 0 }} 次 · {{ record.switchReason || '无原因' }}</small>
+              <small
+                >{{ record.switchCount || 0 }} 次 · {{ record.switchReason || '无原因' }}</small
+              >
             </div>
           </div>
         </nz-card>
@@ -116,8 +124,12 @@
               <strong [class.danger-text]="record.errorType">{{ record.errorType || '无' }}</strong>
             </div>
             <div>
-              <span>平台密钥 GUID</span>
-              <button type="button" class="copy-text" (click)="copy(record.platformKeyId, '平台密钥 GUID')">
+              <span>API 密钥 GUID</span>
+              <button
+                type="button"
+                class="copy-text"
+                (click)="copy(record.platformKeyId, 'API 密钥 GUID')"
+              >
                 {{ record.platformKeyId || '-' }}
               </button>
             </div>
@@ -127,42 +139,31 @@
         <nz-card class="detail-card cost-card" [nzBordered]="false">
           <div class="cost-title">
             <div>
-              <span>费用明细</span>
-              <em>{{ costPricing(record).modelLabel }} 每百万 Token 定价</em>
+              <span>官方参考成本</span>
+              <em>{{ record.upstreamModel || record.model || '-' }}</em>
             </div>
-            @if (isEstimatedCost(record)) {
-              <strong>估算</strong>
-            }
+            <strong>{{ record.pricingMatched ? '已匹配' : '暂无定价' }}</strong>
           </div>
 
           <div class="cost-layout">
-            <div class="cost-table">
-              <div class="cost-table-head">
-                <span>类型</span>
-                <span>Token</span>
-                <span>单价</span>
-                <span>金额</span>
-              </div>
-              @for (row of costRows(record); track row.label) {
-                <div class="cost-row">
-                  <span class="cost-label">{{ row.label }}</span>
-                  <span class="cost-tokens">{{ formatNumber(row.tokens) }}</span>
-                  <span class="cost-price">{{ formatPrice(row.pricePerMillion) }}</span>
-                  <span class="cost-amount">{{ formatMoney(row.amount) }}</span>
-                </div>
-              }
-            </div>
-
             <div class="cost-summary">
               <div>
-                <span>小计</span>
-                <strong>{{ formatMoney(subtotalCost(record)) }}</strong>
+                <span>普通输入 / 缓存输入 / 输出</span>
+                <strong
+                  >{{ formatNumber(record.inputTokens - (record.cachedInputTokens || 0)) }} /
+                  {{ formatNumber(record.cachedInputTokens) }} /
+                  {{ formatNumber(record.outputTokens) }}</strong
+                >
               </div>
               <div class="charged-line">
-                <span>已收费</span>
-                <strong class="charged">{{ formatMoney(chargedCost(record), 2) }}</strong>
+                <span>估算成本</span>
+                <strong class="charged">{{ formatMoney(record.costAmount) }}</strong>
               </div>
-              <small>{{ isEstimatedCost(record) ? '按当前内置定价估算，实际扣费以后端或上游返回为准' : '已使用日志中的费用字段' }}</small>
+              <small
+                >来源：{{
+                  record.pricingSource || '未匹配官方定价'
+                }}。该金额只用于成本估算，不代表账号订阅额度。</small
+              >
             </div>
           </div>
         </nz-card>

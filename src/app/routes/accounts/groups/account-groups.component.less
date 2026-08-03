@@ -1,3 +1,7 @@
+@import '../../../../styles/list-toolbar.less';
+
+.list-toolbar-layout();
+
 :host {
   display: block;
 }
@@ -32,12 +36,12 @@
   padding: 18px 20px;
   border: 1px solid rgb(var(--nm-primary-rgb) / 10%);
   border-radius: 8px;
-  background: rgb(255 255 255 / 92%);
+  background: var(--nm-surface-glass);
 }
 
 .metric-card span {
   display: block;
-  color: #697684;
+  color: var(--nm-text-secondary);
   font-size: 13px;
   font-weight: 700;
 }
@@ -51,26 +55,30 @@
 }
 
 .metric-success strong {
-  color: #14856e;
+  color: var(--nm-success);
 }
 
 .metric-warning strong {
-  color: #b7791f;
+  color: var(--nm-warning);
 }
 
 .metric-danger strong {
-  color: #c24141;
+  color: var(--nm-danger);
 }
 
 .groups-card {
   min-width: 0;
   overflow: hidden;
   border: 1px solid rgb(var(--nm-primary-rgb) / 10%);
-  border-radius: 8px;
-  background: #fff;
+  border-radius: 10px;
+  background: var(--nm-surface);
 }
 
 .groups-card ::ng-deep {
+  .ant-card-body {
+    padding: 20px;
+  }
+
   .ant-card-body,
   st,
   .st,
@@ -96,14 +104,14 @@
 
 .group-name,
 .stat-line {
-  color: #1d2b3f;
+  color: var(--nm-text);
   font-weight: 700;
 }
 
 .muted {
   display: block;
   overflow: hidden;
-  color: #7b8794;
+  color: var(--nm-text-secondary);
   font-size: 12px;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -125,11 +133,11 @@
   padding: 2px 8px;
   overflow: hidden;
   border-radius: 999px;
-  color: #415166;
+  color: var(--nm-text-secondary);
   font-size: 12px;
   text-overflow: ellipsis;
   white-space: nowrap;
-  background: #eef2f7;
+  background: var(--nm-surface-muted);
 }
 
 .chip-soft {
@@ -144,27 +152,27 @@
   border-radius: 999px;
   font-size: 12px;
   font-weight: 700;
-  background: #eef2f7;
+  background: var(--nm-surface-raised);
 }
 
 .tone-success {
-  color: #14856e;
-  background: #e8f7f0;
+  color: var(--nm-success);
+  background: var(--nm-success-bg);
 }
 
 .tone-warning {
-  color: #b7791f;
-  background: #fff6df;
+  color: var(--nm-warning);
+  background: var(--nm-warning-bg);
 }
 
 .tone-danger {
-  color: #c24141;
-  background: #fdecec;
+  color: var(--nm-danger);
+  background: var(--nm-danger-bg);
 }
 
 .tone-muted {
-  color: #697684;
-  background: #eef2f7;
+  color: var(--nm-text-secondary);
+  background: var(--nm-surface-raised);
 }
 
 .action-row {
@@ -179,7 +187,7 @@
 }
 
 .danger-link {
-  color: #c24141;
+  color: var(--nm-danger);
 }
 
 .group-form ::ng-deep nz-input-number,

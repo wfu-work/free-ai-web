@@ -1,40 +1,49 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
+import { PageEntity } from '@shared';
 import { Observable } from 'rxjs';
 
-import { ModelMapping, ModelPayload, ModelRouteState } from './model.model';
-import { PageEntity } from '@shared';
+import {
+  ModelAccountItem,
+  ModelCatalogItem,
+  ModelPolicyPayload,
+  ModelPricingSyncResult,
+  ModelSyncPayload,
+  ModelSyncResult,
+} from './model.model';
 
 @Injectable({ providedIn: 'root' })
 export class ModelsService {
   private readonly http = inject(HttpClient);
 
-  list(params: any): Observable<PageEntity<ModelMapping>> {
-    return this.http.get<PageEntity<ModelMapping>>('/models/list', { params });
+  list(
+    params: Record<string, string | number | boolean>,
+  ): Observable<PageEntity<ModelCatalogItem>> {
+    return this.http.get<PageEntity<ModelCatalogItem>>('/models/list', { params });
   }
 
-  listAll(): Observable<ModelMapping[]> {
-    return this.http.get<ModelMapping[]>('/models/list/all');
+  listAll(): Observable<ModelCatalogItem[]> {
+    return this.http.get<ModelCatalogItem[]>('/models/list/all');
   }
 
-  routeStates(): Observable<ModelRouteState[]> {
-    return this.http.get<ModelRouteState[]>('/ops/routes');
+  get(guid: string): Observable<ModelCatalogItem> {
+    return this.http.get<ModelCatalogItem>(`/models/${guid}`);
   }
 
-  get(guid: string): Observable<ModelMapping> {
-    return this.http.get<ModelMapping>(`/models/${guid}`);
+  update(guid: string, payload: ModelPolicyPayload): Observable<ModelCatalogItem> {
+    return this.http.put<ModelCatalogItem>(`/models/${guid}`, payload);
   }
 
-  create(payload: ModelPayload): Observable<ModelMapping> {
-    return this.http.post<ModelMapping>('/models', payload);
+  sync(payload: ModelSyncPayload = {}): Observable<ModelSyncResult> {
+    return this.http.post<ModelSyncResult>('/models/sync', payload);
   }
 
-  update(guid: string, payload: ModelPayload): Observable<ModelMapping> {
-    return this.http.put<ModelMapping>(`/models/${guid}`, payload);
+  syncPricing(): Observable<ModelPricingSyncResult> {
+    return this.http.post<ModelPricingSyncResult>('/models/pricing/sync', {});
   }
 
-  delete(guid: string): Observable<boolean> {
-    return this.http.delete<boolean>(`/models/${guid}`);
+  accounts(guid: string): Observable<ModelAccountItem[]> {
+    return this.http.get<ModelAccountItem[]>(`/models/${guid}/accounts`);
   }
 
   enable(guid: string): Observable<boolean> {

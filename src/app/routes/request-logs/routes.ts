@@ -8,11 +8,11 @@ export const routes: Routes = [
   {
     path: 'list',
     component: RequestLogListComponent,
-    data: { title: '请求日志' },
+    data: { title: '请求记录' },
   },
   {
     path: 'detail/:guid',
     component: RequestLogDetailComponent,
-    data: { title: '请求详情' },
+    data: { title: '调用详情' },
   },
 ];

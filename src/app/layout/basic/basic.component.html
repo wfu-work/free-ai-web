@@ -4,19 +4,14 @@
     nzCollapsible
     [nzCollapsed]="isCollapsed"
     [nzTrigger]="null"
-    nzTheme="light"
+    [nzTheme]="themeColor.effectiveMode()"
     nzWidth="220px"
     [nzCollapsedWidth]="80"
   >
-    <basic-menus
-      [isCollapsed]="isCollapsed"
-      [spin]="spin"
-      (loadResourcesChange)="setLoadResources($event)"
-      (logout)="logout()"
-    />
+    <basic-menus />
   </nz-sider>
   <nz-layout [ngClass]="isCollapsed ? 'content-close' : 'content'">
-    <basic-header [isCollapsed]="isCollapsed" (collapsClick)="nzCollapsedChange()" />
+    <basic-header [isCollapsed]="isCollapsed" (collapsClick)="toggleNavigation()" />
     <nz-content>
       <div class="inner-content-no">
         <router-outlet />
@@ -24,3 +19,18 @@
     </nz-content>
   </nz-layout>
 </nz-layout>
+
+<nz-drawer
+  nzPlacement="left"
+  [nzVisible]="mobileMenuVisible"
+  [nzWidth]="300"
+  [nzClosable]="false"
+  [nzBodyStyle]="mobileDrawerBodyStyle"
+  (nzOnClose)="closeMobileMenu()"
+>
+  <ng-container *nzDrawerContent>
+    <div class="mobile-menu-shell">
+      <basic-menus (navigate)="closeMobileMenu()" />
+    </div>
+  </ng-container>
+</nz-drawer>

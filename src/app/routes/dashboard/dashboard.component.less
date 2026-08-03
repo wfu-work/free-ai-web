@@ -26,7 +26,7 @@
     min-width: 0;
     border: 1px solid rgb(var(--nm-primary-rgb) / 12%);
     border-radius: 8px;
-    background: rgb(255 255 255 / 92%);
+    background: var(--nm-surface-glass);
   }
 
   .readiness-card {
@@ -35,24 +35,24 @@
     justify-content: space-between;
     gap: 20px;
     padding: 22px 24px;
-    border-color: #cce8df;
-    background: #f0fbf7;
+    border-color: var(--nm-success-border);
+    background: var(--nm-success-bg);
   }
 
   .readiness-warning {
-    border-color: #f0dccd;
-    background: #fff8f1;
+    border-color: var(--nm-warning-border);
+    background: var(--nm-warning-bg);
   }
 
   .readiness-danger {
-    border-color: #f1cccc;
-    background: #fff5f5;
+    border-color: var(--nm-danger-border);
+    background: var(--nm-danger-bg);
   }
 
   .readiness-card span,
   .insight-card span {
     display: block;
-    color: #697684;
+    color: var(--nm-text-secondary);
     font-size: 13px;
     font-weight: 750;
   }
@@ -60,7 +60,7 @@
   .readiness-card strong {
     display: block;
     margin-top: 6px;
-    color: #1f3148;
+    color: var(--nm-text);
     font-size: 28px;
     font-weight: 880;
     line-height: 1.2;
@@ -69,7 +69,7 @@
   .readiness-card p {
     max-width: 420px;
     margin: 8px 0 0;
-    color: #526174;
+    color: var(--nm-text-secondary);
     font-size: 13px;
     line-height: 1.7;
   }
@@ -87,7 +87,7 @@
   .insight-card strong {
     display: block;
     margin-top: 8px;
-    color: #1f3148;
+    color: var(--nm-text);
     font-size: 24px;
     font-weight: 850;
     line-height: 1.15;
@@ -96,17 +96,17 @@
   .insight-card small {
     display: block;
     margin-top: 8px;
-    color: #607086;
+    color: var(--nm-text-secondary);
     font-size: 12px;
     line-height: 1.6;
   }
 
   .insight-warning strong {
-    color: #b7791f;
+    color: var(--nm-warning);
   }
 
   .insight-danger strong {
-    color: #c24141;
+    color: var(--nm-danger);
   }
 
   .dashboard-panels {
@@ -144,14 +144,14 @@
 
   .card-head h2 {
     margin: 0;
-    color: #1f3148;
+    color: var(--nm-text);
     font-size: 16px;
     font-weight: 850;
   }
 
   .card-head p {
     margin: 4px 0 0;
-    color: #64748b;
+    color: var(--nm-text-secondary);
     font-size: 12px;
     line-height: 1.6;
   }
@@ -163,7 +163,7 @@
     font-weight: 800;
   }
 
-  .provider-list,
+  .group-list,
   .error-list,
   .recent-list,
   .route-list {
@@ -171,7 +171,7 @@
     gap: 10px;
   }
 
-  .provider-row,
+  .group-row,
   .error-row,
   .recent-row,
   .route-row {
@@ -182,10 +182,10 @@
     padding: 12px;
     border: 1px solid rgb(var(--nm-primary-rgb) / 10%);
     border-radius: 8px;
-    background: #f8fafc;
+    background: var(--nm-surface-muted);
   }
 
-  .provider-row,
+  .group-row,
   .error-row {
     grid-template-columns: minmax(0, 1fr) minmax(90px, 0.6fr) 48px;
   }
@@ -195,49 +195,49 @@
     grid-template-columns: minmax(0, 1fr) auto;
   }
 
-  .provider-row strong,
+  .group-row strong,
   .error-row strong,
   .recent-row strong,
   .route-row strong {
     display: block;
     overflow: hidden;
-    color: #213149;
+    color: var(--nm-text);
     font-size: 14px;
     font-weight: 850;
     text-overflow: ellipsis;
     white-space: nowrap;
   }
 
-  .provider-row span,
+  .group-row span,
   .error-row span,
   .recent-row span,
   .route-row span {
     display: block;
     margin-top: 3px;
     overflow: hidden;
-    color: #687789;
+    color: var(--nm-text-secondary);
     font-size: 12px;
     text-overflow: ellipsis;
     white-space: nowrap;
   }
 
-  .provider-row b,
+  .group-row b,
   .error-row b {
-    color: #213149;
+    color: var(--nm-text);
     font-size: 13px;
     font-weight: 850;
     text-align: right;
   }
 
-  .provider-meter,
+  .group-meter,
   .error-meter {
     height: 8px;
     overflow: hidden;
     border-radius: 999px;
-    background: #e6edf3;
+    background: var(--nm-surface-raised);
   }
 
-  .provider-meter span,
+  .group-meter span,
   .error-meter span {
     display: block;
     height: 100%;
@@ -247,7 +247,7 @@
   }
 
   .error-meter span {
-    background: #c24141;
+    background: var(--nm-danger);
   }
 
   .recent-meta {
@@ -256,24 +256,24 @@
 
   .recent-meta b {
     display: block;
-    color: #14856e;
+    color: var(--nm-success);
     font-size: 13px;
     font-weight: 850;
   }
 
   .recent-meta .recent-error {
-    color: #c24141;
+    color: var(--nm-danger);
   }
 
   .empty-state {
     padding: 28px 16px;
     border: 1px solid rgb(var(--nm-primary-rgb) / 10%);
     border-radius: 8px;
-    color: #7b8794;
+    color: var(--nm-text-secondary);
     font-size: 13px;
     font-weight: 700;
     text-align: center;
-    background: #f8fafc;
+    background: var(--nm-surface-muted);
   }
 }
 
@@ -308,14 +308,14 @@
       display: grid;
     }
 
-    .provider-row,
+    .group-row,
     .error-row,
     .recent-row,
     .route-row {
       grid-template-columns: 1fr;
     }
 
-    .provider-row b,
+    .group-row b,
     .error-row b,
     .recent-meta {
       text-align: left;

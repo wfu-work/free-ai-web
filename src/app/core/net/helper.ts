@@ -32,9 +32,32 @@ export function goTo(injector: Injector, url: string): void {
   setTimeout(() => injector.get(Router).navigateByUrl(url));
 }
 
+let loginRedirectPending = false;
+
+/** 清理失效登录态，并跳转到登录页；并发 401 只触发一次跳转。 */
 export function toLogin(injector: Injector): void {
+  const router = injector.get(Router);
+  const tokenService = injector.get(DA_SERVICE_TOKEN);
+  const loginUrl = tokenService.login_url || '/passport/login';
+
+  tokenService.clear();
+  if (router.url === loginUrl || router.url.startsWith(`${loginUrl}?`)) {
+    loginRedirectPending = false;
+    return;
+  }
+  if (loginRedirectPending) {
+    return;
+  }
+  loginRedirectPending = true;
+  if (tokenService.referrer) {
+    tokenService.referrer.url = router.url;
+  }
   injector.get(NzNotificationService).error(`未登录或登录已过期，请重新登录。`, ``);
-  goTo(injector, injector.get(DA_SERVICE_TOKEN).login_url!);
+  setTimeout(() => {
+    void router.navigateByUrl(loginUrl).finally(() => {
+      loginRedirectPending = false;
+    });
+  });
 }
 
 export function getAdditionalHeaders(headers?: HttpHeaders): Record<string, string> {

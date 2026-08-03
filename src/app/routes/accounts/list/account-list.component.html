@@ -1,8 +1,8 @@
 <section class="account-page">
-  <div class="d-flex justify-content-between header-row">
+  <div class="header-row">
     <title-label
-      title="账号列表"
-      description="维护上游 AI 账号、Token、供应商、账号组、权重和可用状态。"
+      title="官方账号"
+      description="维护 ChatGPT/Codex OAuth 账号池、额度窗口、订阅状态和调度权重。"
     />
     <div class="header-actions">
       <button nz-button (click)="q.page = 1; getData()">
@@ -11,7 +11,7 @@
       </button>
       <button nz-button nzType="primary" (click)="add()">
         <i nz-icon nzType="plus"></i>
-        新增账号
+        添加账号
       </button>
     </div>
   </div>
@@ -19,14 +19,29 @@
   <nz-alert
     nzType="info"
     nzShowIcon
-    nzMessage="上游 Secret 只写入后端加密存储，列表和详情只展示 secretHint。"
+    nzMessage="账号池支持官方授权、手动 OAuth 凭据和账号 JSON 导入；所有令牌均由后端加密保存。"
   />
 
-  <nz-card class="account-card" [nzBordered]="false">
-    <div class="d-flex justify-content-between mb-md">
-      <h2>{{ '账号列表' }}</h2>
-      <div class=" d-flex text-right">
+  <div class="account-list-shell">
+    <div class="filter-bar">
+      <div class="list-summary">
+        <h2>官方账号</h2>
+        <span>共 {{ totalCount }} 个账号</span>
+      </div>
+      <div class="filter-controls">
         <nz-select
+          class="vendor-filter"
+          [(ngModel)]="q.vendorCode"
+          nzPlaceHolder="官方类型"
+          (ngModelChange)="q.page = 1; getData()"
+        >
+          <nz-option [nzValue]="''" [nzLabel]="'全部官方类型'" />
+          @for (vendor of officialVendorOptions; track vendor.value) {
+            <nz-option [nzValue]="vendor.value" [nzLabel]="vendor.label" />
+          }
+        </nz-select>
+        <nz-select
+          class="status-filter"
           [(ngModel)]="q.enabled"
           placeholder="启用状态"
           (ngModelChange)="q.page = 1; getData()"
@@ -35,7 +50,7 @@
           <nz-option [nzValue]="1" [nzLabel]="'启用'" />
           <nz-option [nzValue]="0" [nzLabel]="'禁用'" />
         </nz-select>
-        <nz-input-wrapper class="ml-lg">
+        <nz-input-wrapper class="search-input">
           <nz-icon nzInputPrefix nzType="search" />
           <input
             nz-input
@@ -45,76 +60,201 @@
             (keydown.enter)="q.page = 1; getData()"
           />
         </nz-input-wrapper>
-        <div class="d-flex ml-lg">
+        <div class="filter-actions">
           <button nz-button (click)="q.page = 1; getData()" nzType="primary">
             {{ '搜索' }}
           </button>
-          <button nz-button (click)="q.page = 1; q.content = ''; q.enabled = ''; getData()">
+          <button
+            nz-button
+            (click)="q.page = 1; q.content = ''; q.enabled = ''; q.vendorCode = ''; getData()"
+          >
             {{ '重置' }}
           </button>
         </div>
       </div>
     </div>
 
-    <st
-      [data]="data"
-      [columns]="columns"
-      [loading]="loading"
-      [pi]="q.page"
-      [ps]="q.size"
-      [total]="totalCount"
-      (change)="tableChange($event)"
-      [scroll]="{ x: 'max-content' }"
+    <nz-list
+      class="account-list"
+      [nzDataSource]="data"
+      [nzRenderItem]="accountItem"
+      [nzLoading]="loading"
+      [nzSplit]="false"
+      [nzGrid]="{ gutter: 16, xs: 24, sm: 24, md: 12, lg: 12, xl: 12, xxl: 8 }"
+      [nzPagination]="paginationTemplate"
+      nzNoResult="暂无符合条件的账号"
     >
-      <ng-template st-row="nameRender" let-item>
-        <div class="account-name">{{ item.name || '-' }}</div>
-        <button
-          type="button"
-          class="copy-text"
-          nz-tooltip
-          nzTooltipTitle="复制账号 GUID"
-          (click)="copy(item.guid, '账号 GUID')"
-        >
-          {{ item.guid }}
-        </button>
+      <ng-template #accountItem let-item>
+        <nz-list-item>
+          <nz-card
+            class="account-item-card"
+            [ngClass]="vendorCardClass(item.vendorCode)"
+            [nzBordered]="true"
+          >
+            <div class="account-card-header">
+              <nz-avatar
+                class="account-avatar"
+                nzShape="square"
+                [nzText]="vendorMark(item.vendorCode)"
+              />
+              <div class="account-heading">
+                <div class="account-title-line">
+                  <div class="account-name" [title]="item.name || '-'">
+                    {{ item.name || '-' }}
+                  </div>
+                  <span class="vendor-badge">{{ vendorLabel(item.vendorCode) }}</span>
+                </div>
+                <div class="account-email" [title]="item.email || item.credentialHint || '-'">
+                  {{ item.email || item.credentialHint || '-' }}
+                </div>
+              </div>
+              <div class="account-statuses">
+                <span class="status-pill" [class]="statusTone(item.status)">
+                  {{ statusText(item.status) }}
+                </span>
+                <span class="enabled-pill" [class.enabled-pill-off]="!item.enabled">
+                  {{ item.enabled ? '已启用' : '已停用' }}
+                </span>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              class="copy-text"
+              nz-tooltip
+              nzTooltipTitle="复制账号 GUID"
+              (click)="copy(item.guid, '账号 GUID')"
+            >
+              <i nz-icon nzType="copy"></i>
+              {{ item.guid }}
+            </button>
+
+            <div class="account-info-grid">
+              <div class="info-item">
+                <span>账号组</span>
+                <strong>{{ item.accountGroup || 'default' }}</strong>
+              </div>
+              <div class="info-item">
+                <span>调度参数</span>
+                <strong>优先级 {{ item.priority || 0 }} · 权重 {{ item.weight || 1 }}</strong>
+              </div>
+              <div class="info-item">
+                <span>订阅套餐</span>
+                <strong>{{ item.planType || item.subscriptionPlan || '未知套餐' }}</strong>
+              </div>
+              <div class="info-item">
+                <span>访问令牌状态</span>
+                <strong>{{ tokenStatusText(item.tokenStatus) }}</strong>
+              </div>
+              <div class="info-item">
+                <span>支持模型</span>
+                <strong>{{ modelCount(item.availableModelCount) }}</strong>
+              </div>
+              <div class="info-item">
+                <span>失败次数</span>
+                <strong [class.text-danger]="item.failureCount > 0">{{
+                  item.failureCount || 0
+                }}</strong>
+              </div>
+            </div>
+
+            <div class="card-section quota-section">
+              <div class="section-title">
+                <span>7 天官方额度</span>
+                <button nz-button nzType="link" nzSize="small" (click)="refresh(item)">
+                  同步额度
+                </button>
+              </div>
+              <div class="quota-list">
+                @if (officialSevenDayQuota(item.quotas); as quota) {
+                  <div class="quota-item" [class]="quotaTone(quota)">
+                    <nz-progress
+                      nzSize="small"
+                      [nzPercent]="quotaRemainingPercent(quota)"
+                      [nzStrokeColor]="quotaProgressColor(quota)"
+                      [nzFormat]="quotaProgressFormat"
+                    />
+                    <div class="quota-meta">
+                      <span>已使用 {{ quotaUsedPercent(quota) }}%</span>
+                      <span>重置时间 {{ formatTime(quota.resetAt) }}</span>
+                    </div>
+                  </div>
+                } @else {
+                  <span class="empty-value">暂无 7 天官方额度</span>
+                }
+              </div>
+            </div>
+
+            <div class="activity-grid">
+              <div>
+                <span>最近使用</span>
+                <strong>{{ formatTime(item.lastUsedAt) }}</strong>
+              </div>
+              <div>
+                <span>最近同步</span>
+                <strong>{{ formatTime(item.lastRefreshedAt) }}</strong>
+              </div>
+              <div>
+                <span>订阅到期</span>
+                <strong>{{ formatTime(item.subscriptionExpiredAt) }}</strong>
+              </div>
+            </div>
+
+            @if (item.remark || item.lastError) {
+              <div class="account-note" [class.account-note-error]="!!item.lastError">
+                {{ item.lastError || item.remark }}
+              </div>
+            }
+
+            <div class="card-actions">
+              <button nz-button nzType="text" nzSize="small" (click)="edit(item)">编辑</button>
+              <button nz-button nzType="text" nzSize="small" (click)="openTest(item)">
+                主动探测
+              </button>
+              <button nz-button nzType="text" nzSize="small" (click)="exportAccount(item)">
+                导出
+              </button>
+              @if (item.enabled) {
+                <button nz-button nzType="text" nzSize="small" (click)="setEnabled(item, false)">
+                  停用
+                </button>
+              } @else {
+                <button nz-button nzType="text" nzSize="small" (click)="setEnabled(item, true)">
+                  启用
+                </button>
+              }
+              <button
+                nz-button
+                nzType="text"
+                nzSize="small"
+                class="danger-link"
+                (click)="delete(item)"
+              >
+                删除
+              </button>
+            </div>
+          </nz-card>
+        </nz-list-item>
       </ng-template>
 
-      <ng-template st-row="providerRender" let-item>
-        <div class="provider-line">{{ item.provider || '-' }}</div>
-        <span class="muted">{{ item.accountGroup || '默认账号组' }}</span>
+      <ng-template #paginationTemplate>
+        <nz-pagination
+          [nzPageIndex]="q.page"
+          [nzPageSize]="q.size"
+          [nzTotal]="totalCount"
+          [nzPageSizeOptions]="[10, 20, 50]"
+          [nzShowTotal]="paginationTotal"
+          nzShowSizeChanger
+          nzResponsive
+          nzAlign="end"
+          (nzPageIndexChange)="pageIndexChange($event)"
+          (nzPageSizeChange)="pageSizeChange($event)"
+        />
       </ng-template>
 
-      <ng-template st-row="weightRender" let-item>
-        <div>{{ item.weight || 1 }}</div>
-        <span class="muted">优先级 {{ item.priority || 0 }}</span>
-      </ng-template>
-
-      <ng-template st-row="lastUsedRender" let-item>
-        <div>{{ formatTime(item.lastUsedAt) }}</div>
-        <span class="muted">刷新 {{ formatTime(item.lastRefreshedAt) }}</span>
-      </ng-template>
-
-      <ng-template st-row="quotaRender" let-item>
-        <div class="quota-list">
-          @for (quota of item.quotas || []; track quota.guid) {
-            <span class="quota-chip" [class]="quotaTone(quota)">
-              {{ quota.windowType || 'window' }} · {{ quotaPercent(quota) }} ·
-              {{ formatQuotaValue(quota) }}
-            </span>
-          }
-          @if (!item.quotas?.length) {
-            <span class="muted">无额度窗口</span>
-          }
-        </div>
-      </ng-template>
-
-      <ng-template st-row="secretRender" let-item>
-        <div>{{ item.secretHint || '-' }}</div>
-        <span class="muted">{{ modelCount(item.supportedModels) }}</span>
-      </ng-template>
-
-    </st>
-  </nz-card>
+      <ng-template #paginationTotal let-total>共 {{ total }} 个账号</ng-template>
+    </nz-list>
+  </div>
 </section>
 
 <nz-modal
@@ -129,7 +269,9 @@
   <ng-container *nzModalContent>
     <form nz-form [formGroup]="testForm" class="account-form">
       <nz-form-item>
-        <nz-form-label nzFor="testModel" nzLabelAlign="right" [nzSm]="4" [nzXs]="24">模型</nz-form-label>
+        <nz-form-label nzFor="testModel" nzLabelAlign="right" [nzSm]="4" [nzXs]="24"
+          >模型</nz-form-label
+        >
         <nz-form-control [nzSm]="20" [nzXs]="24" [nzExtra]="testModelExtra">
           <nz-select
             id="testModel"
@@ -137,6 +279,7 @@
             nzShowSearch
             nzAllowClear
             nzPlaceHolder="请选择测试模型"
+            [nzLoading]="testModelsLoading"
           >
             @for (model of testModelOptions; track model) {
               <nz-option [nzValue]="model" [nzLabel]="model" />
@@ -145,7 +288,9 @@
         </nz-form-control>
       </nz-form-item>
       <nz-form-item>
-        <nz-form-label nzFor="testPrompt" nzLabelAlign="right" [nzSm]="4" [nzXs]="24">Prompt</nz-form-label>
+        <nz-form-label nzFor="testPrompt" nzLabelAlign="right" [nzSm]="4" [nzXs]="24"
+          >Prompt</nz-form-label
+        >
         <nz-form-control [nzSm]="20" [nzXs]="24">
           <input id="testPrompt" nz-input formControlName="prompt" placeholder="ping" />
         </nz-form-control>
@@ -159,24 +304,8 @@
           <strong>{{ testResult.ok ? '通过' : '未通过' }}</strong>
         </div>
         <div>
-          <span>检查方式</span>
-          <strong>{{ modeText(testResult.mode) }}</strong>
-        </div>
-        <div>
-          <span>供应商</span>
-          <strong>{{ testResult.provider || '-' }}</strong>
-        </div>
-        <div>
-          <span>状态</span>
-          <strong>{{ statusText(testResult.status) }}</strong>
-        </div>
-        <div>
           <span>模型</span>
           <strong>{{ testResult.model || '-' }}</strong>
-        </div>
-        <div>
-          <span>上游模型</span>
-          <strong>{{ testResult.upstreamModel || '-' }}</strong>
         </div>
         <div>
           <span>延迟</span>
@@ -184,15 +313,11 @@
         </div>
         <div>
           <span>上游状态</span>
-          <strong>{{ testResult.upstreamStatusCode ?? '-' }}</strong>
+          <strong>{{ testResult.statusCode ?? '-' }}</strong>
         </div>
         <div>
           <span>错误类型</span>
-          <strong>{{ errorText(testResult.upstreamErrorType) }}</strong>
-        </div>
-        <div class="test-message">
-          <span>说明</span>
-          <strong>{{ testResult.message || '-' }}</strong>
+          <strong>{{ errorText(testResult.errorType) }}</strong>
         </div>
       </div>
     }

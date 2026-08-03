@@ -1,24 +1,26 @@
-export interface AccountSelectOption {
-  value: string;
+export const DEFAULT_ACCOUNT_GROUP_OPTIONS = ['default'];
+
+export type OfficialVendorCode = 'openai' | 'google' | 'anthropic';
+
+export interface OfficialVendorOption {
+  value: OfficialVendorCode;
   label: string;
 }
 
-export const DEFAULT_PROVIDER_OPTIONS: AccountSelectOption[] = [
+export const DEFAULT_OFFICIAL_VENDOR_CODE: OfficialVendorCode = 'openai';
+
+export const OFFICIAL_VENDOR_OPTIONS: readonly OfficialVendorOption[] = [
   { value: 'openai', label: 'OpenAI' },
+  { value: 'google', label: 'Gemini' },
+  { value: 'anthropic', label: 'Claude Code' },
 ];
 
-export const DEFAULT_PROVIDER_VALUES = DEFAULT_PROVIDER_OPTIONS.map((item) => item.value);
-
-export const DEFAULT_ACCOUNT_GROUP_OPTIONS = ['default'];
-
-export const DEFAULT_ACCOUNT_TYPE_OPTIONS: AccountSelectOption[] = [
-  { value: 'manual', label: '手动录入' },
-  { value: 'shared', label: '共享池' },
-  { value: 'dedicated', label: '独享账号' },
-  { value: 'pool', label: '轮询池' },
-];
-
-export const DEFAULT_USAGE_QUERY_OPTIONS: AccountSelectOption[] = [{ value: '', label: '不启用' }];
+export function normalizeOfficialVendorCode(value?: string): OfficialVendorCode {
+  const normalized = (value || '').trim().toLowerCase();
+  return OFFICIAL_VENDOR_OPTIONS.some((item) => item.value === normalized)
+    ? (normalized as OfficialVendorCode)
+    : DEFAULT_OFFICIAL_VENDOR_CODE;
+}
 
 export function mergeStringOptions(
   defaults: string[],
@@ -26,43 +28,5 @@ export function mergeStringOptions(
 ): string[] {
   return Array.from(
     new Set([...defaults, ...values].map((item) => (item || '').trim()).filter(Boolean)),
-  );
-}
-
-export function mergeProviderOptions(
-  _values: Array<string | null | undefined>,
-): AccountSelectOption[] {
-  return [...DEFAULT_PROVIDER_OPTIONS];
-}
-
-export function getProviderLabel(value?: string): string {
-  const normalized = (value || '').trim();
-  if (!normalized) return '-';
-  return (
-    DEFAULT_PROVIDER_OPTIONS.find((item) => item.value === normalized)?.label ||
-    `不支持（${normalized}）`
-  );
-}
-
-export function mergeAccountTypeOptions(
-  values: Array<string | null | undefined>,
-): AccountSelectOption[] {
-  const base = new Map(DEFAULT_ACCOUNT_TYPE_OPTIONS.map((item) => [item.value, item]));
-  values
-    .map((item) => (item || '').trim())
-    .filter(Boolean)
-    .forEach((value) => {
-      if (!base.has(value)) {
-        base.set(value, { value, label: value });
-      }
-    });
-  return Array.from(base.values());
-}
-
-export function getAccountTypeLabel(value?: string): string {
-  const normalized = (value || '').trim();
-  if (!normalized) return '未设置';
-  return (
-    DEFAULT_ACCOUNT_TYPE_OPTIONS.find((item) => item.value === normalized)?.label || normalized
   );
 }

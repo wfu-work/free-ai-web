@@ -1,0 +1,150 @@
+:host {
+  display: block;
+}
+
+.tasks-page {
+  display: grid;
+  gap: 18px;
+  min-width: 0;
+}
+
+.header-row {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+.task-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.task-card,
+.panel-card {
+  min-width: 0;
+  border: 1px solid rgb(var(--nm-primary-rgb) / 10%);
+  border-radius: 8px;
+  background: var(--nm-surface-glass);
+}
+
+.task-card {
+  display: flex;
+  gap: 14px;
+}
+
+.task-icon {
+  display: inline-flex;
+  flex: 0 0 40px;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  font-size: 20px;
+  color: var(--nm-primary);
+  background: rgb(var(--nm-primary-rgb) / 10%);
+}
+
+.task-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.task-title-row {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+.task-title-row h3 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--nm-text);
+}
+
+.task-title-row span,
+.task-meta,
+.task-content p {
+  font-size: 12px;
+  color: var(--nm-text-secondary);
+}
+
+.task-title-row span {
+  display: block;
+  margin-top: 4px;
+}
+
+.task-content p {
+  min-height: 58px;
+  margin: 14px 0;
+  line-height: 1.7;
+}
+
+.task-meta {
+  display: grid;
+  gap: 4px;
+  margin-bottom: 14px;
+}
+
+.task-meta span:last-child {
+  overflow: hidden;
+  color: var(--nm-text-secondary);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.task-content .ant-btn {
+  width: 100%;
+}
+
+.panel-title {
+  margin-bottom: 14px;
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--nm-text);
+}
+
+.boundary-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.boundary-grid div {
+  display: grid;
+  gap: 6px;
+  padding: 14px;
+  border-radius: 7px;
+  background: var(--nm-surface-muted);
+}
+
+.boundary-grid strong {
+  font-size: 14px;
+  color: var(--nm-text);
+}
+
+.boundary-grid span {
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--nm-text-secondary);
+}
+
+@media (max-width: 1000px) {
+  .task-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .task-content p {
+    min-height: 0;
+  }
+}
+
+@media (max-width: 640px) {
+  .boundary-grid {
+    grid-template-columns: 1fr;
+  }
+}

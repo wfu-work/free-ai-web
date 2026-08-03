@@ -13,6 +13,80 @@
   --nm-primary-soft: #eef3ff;
   --nm-primary-tint: #f6f8ff;
   --nm-primary-rgb: 52 72 244;
+  --nm-page-background: #f4f8fb;
+  --nm-surface: #fff;
+  --nm-surface-raised: #fff;
+  --nm-surface-muted: #f4f7fa;
+  --nm-surface-glass: rgb(255 255 255 / 88%);
+  --nm-border: rgb(36 52 71 / 10%);
+  --nm-text: #1f3148;
+  --nm-text-secondary: #697684;
+  --nm-control-shadow: 0 4px 12px rgb(41 99 119 / 10%);
+  --nm-success: #14856e;
+  --nm-success-bg: #f0fbf7;
+  --nm-success-border: #cce8df;
+  --nm-warning: #b7791f;
+  --nm-warning-bg: #fff8f1;
+  --nm-warning-border: #f0dccd;
+  --nm-danger: #c24141;
+  --nm-danger-bg: #fff5f5;
+  --nm-danger-border: #f1cccc;
+}
+
+[data-theme='dark'] {
+  --nm-page-background: #0b1016;
+  --nm-surface: #121923;
+  --nm-surface-raised: #18212c;
+  --nm-surface-muted: #0f161f;
+  --nm-surface-glass: rgb(18 25 35 / 90%);
+  --nm-border: rgb(255 255 255 / 10%);
+  --nm-text: rgb(255 255 255 / 88%);
+  --nm-text-secondary: rgb(255 255 255 / 58%);
+  --nm-control-shadow: 0 5px 16px rgb(0 0 0 / 28%);
+  --nm-success: #4fc6a4;
+  --nm-success-bg: rgb(20 133 110 / 14%);
+  --nm-success-border: rgb(79 198 164 / 26%);
+  --nm-warning: #e3a94f;
+  --nm-warning-bg: rgb(183 121 31 / 15%);
+  --nm-warning-border: rgb(227 169 79 / 26%);
+  --nm-danger: #ff7875;
+  --nm-danger-bg: rgb(194 65 65 / 16%);
+  --nm-danger-border: rgb(255 120 117 / 25%);
+
+  .item-title {
+    color: var(--nm-text);
+  }
+
+  .ant-segmented {
+    border: 1px solid var(--nm-border);
+    background: var(--nm-surface-muted);
+    box-shadow: none;
+  }
+
+  .ant-segmented-item {
+    color: var(--nm-text-secondary);
+  }
+
+  .ant-segmented-item-selected,
+  .ant-segmented-thumb {
+    color: var(--nm-primary);
+    background: var(--nm-surface-raised);
+    box-shadow: var(--nm-control-shadow);
+  }
+}
+
+body {
+  color: var(--nm-text);
+  background: var(--nm-page-background);
+}
+
+body,
+.ant-layout,
+.ant-popover-inner,
+.ant-drawer-content {
+  transition:
+    color 0.2s ease,
+    background-color 0.2s ease;
 }
 
 .ant-btn-primary:not(.ant-btn-dangerous) {

@@ -1,255 +1,320 @@
 <section class="account-edit-page">
-  <div class="d-flex justify-content-between header-row">
+  <div class="header-row">
     <title-label [title]="pageTitle" [description]="pageDescription" [showBack]="true" />
     <div class="header-actions">
+      @if (formMode === 'edit') {
+        <button nz-button nzDanger (click)="exportAccount()">
+          <i nz-icon nzType="export"></i>导出账号
+        </button>
+      }
       <button nz-button (click)="goList()">取消</button>
-      <button nz-button nzType="primary" [nzLoading]="saving" (click)="save()">保存账号</button>
+      @if (formMode === 'edit' || createMode !== 'oauth') {
+        <button nz-button nzType="primary" [nzLoading]="saving" (click)="save()">
+          {{ formMode === 'edit' ? '保存设置' : createActionText }}
+        </button>
+      }
     </div>
   </div>
 
+  <nz-alert nzType="warning" nzShowIcon [nzMessage]="securityAlertMessage" />
+
   <nz-spin [nzSpinning]="loading">
-    <div class="metric-grid">
-      <article class="metric-card">
-        <span>当前状态</span>
-        <strong>{{ statusLabel }}</strong>
-      </article>
-      <article class="metric-card">
-        <span>启用状态</span>
-        <strong>{{ enabledLabel }}</strong>
-      </article>
-      <article class="metric-card">
-        <span>Secret 提示</span>
-        <strong>{{ secretHint }}</strong>
-      </article>
-      <article class="metric-card">
-        <span>最近使用</span>
-        <strong>{{ formatTime(account?.lastUsedAt) }}</strong>
-      </article>
-    </div>
+    @if (formMode === 'edit' && account) {
+      <div class="metric-grid mt-lg">
+        <article class="metric-card">
+          <span>账号状态</span><strong>{{ statusText(account.status) }}</strong>
+        </article>
+        <article class="metric-card">
+          <span>套餐</span
+          ><strong>{{ account.planType || account.subscriptionPlan || '-' }}</strong>
+        </article>
+        <article class="metric-card">
+          <span>访问令牌状态</span><strong>{{ tokenStatusText(account.tokenStatus) }}</strong>
+        </article>
+        <article class="metric-card">
+          <span>订阅到期</span><strong>{{ formatTime(account.subscriptionExpiredAt) }}</strong>
+        </article>
+      </div>
+    }
 
     <div class="content-grid mt-lg">
       <nz-card class="form-card" [nzBordered]="false">
-        <form nz-form [formGroup]="form" class="account-form" (ngSubmit)="save()">
-          <section class="form-section">
-            <div class="section-title">基本信息</div>
-            <se-container col="2" nzLayout="vertical">
-              <se label="账号名称" required error="请输入账号名称">
-                <input id="name" nz-input formControlName="name" placeholder="例如 OpenAI 主账号" />
-              </se>
-
-              <se label="供应商" required error="请选择供应商">
-                <nz-select id="provider" formControlName="provider" [nzDisabled]="true">
-                  @for (provider of providerOptions; track provider) {
-                    <nz-option [nzValue]="provider.value" [nzLabel]="provider.label" />
-                  }
-                </nz-select>
-              </se>
-
-              <se label="API 请求地址">
-                <input
-                  id="apiBaseUrl"
-                  nz-input
-                  formControlName="apiBaseUrl"
-                  [readOnly]="true"
-                  placeholder="https://api.openai.com/v1"
-                />
-                <div class="field-extra">{{ apiBaseUrlHint }}</div>
-              </se>
-
-              <se label="账号组">
-                <nz-select
-                  id="accountGroup"
-                  formControlName="accountGroup"
-                  nzShowSearch
-                  nzPlaceHolder="请选择账号组"
-                >
-                  @for (group of accountGroupOptions; track group) {
-                    <nz-option [nzValue]="group" [nzLabel]="group" />
-                  }
-                </nz-select>
-              </se>
-
-              <se label="邮箱或备注名">
-                <input
-                  id="email"
-                  nz-input
-                  formControlName="email"
-                  placeholder="可填写邮箱、租户或用途"
-                />
-              </se>
-
-              <se label="账号类型">
-                <nz-select
-                  id="accountType"
-                  formControlName="accountType"
-                  nzShowSearch
-                  nzPlaceHolder="请选择账号类型"
-                >
-                  @for (type of accountTypeOptions; track type) {
-                    <nz-option [nzValue]="type.value" [nzLabel]="type.label" />
-                  }
-                </nz-select>
-              </se>
-            </se-container>
+        @if (formMode === 'create') {
+          <section class="create-method-section">
+            <div class="section-title">添加方式</div>
+            <nz-segmented
+              class="create-mode-control"
+              [nzOptions]="createModeOptions"
+              [ngModel]="createMode"
+              (ngModelChange)="changeCreateMode($event)"
+            />
           </section>
 
-          <section class="form-section">
-            <div class="section-title">认证与模型</div>
-            <se-container col="2" nzLayout="vertical">
-              <se label="认证类型" required>
-                <nz-select id="authType" formControlName="authType">
-                  <nz-option nzValue="bearer_token" nzLabel="Bearer Token" />
-                  <nz-option nzValue="api_key" nzLabel="API Key" />
-                  <nz-option nzValue="login_callback" nzLabel="登录回调" />
-                </nz-select>
-              </se>
-
-              <se
-                label="Secret"
-                [required]="formMode === 'create'"
-                [error]="formMode === 'create' ? '新增账号时 Secret 必填' : ''"
-              >
-                <input
-                  id="secret"
-                  nz-input
-                  type="password"
-                  formControlName="secret"
-                  autocomplete="off"
-                />
-                <div class="field-extra">
-                  {{
-                    formMode === 'edit'
-                      ? '留空表示保留当前 Secret。'
-                      : 'Secret 只会写入后端加密存储。'
-                  }}
+          @if (createMode === 'oauth') {
+            <section class="form-section oauth-section">
+              <div class="section-heading">
+                <div>
+                  <div class="section-title">OpenAI 官方授权</div>
+                  <p>使用浏览器 PKCE 登录；无法接收本机回调时可改用设备码。</p>
                 </div>
-              </se>
+                @if (oauthSession) {
+                  <span class="oauth-status" [attr.data-status]="oauthSession.status">
+                    {{ oauthStatusText(oauthSession.status) }}
+                  </span>
+                }
+              </div>
 
-              @if (isLoginCallbackAuth) {
-                <se class="span-2" label="登录授权">
+              @if (
+                !oauthSession ||
+                oauthSession.status === 'failed' ||
+                oauthSession.status === 'cancelled' ||
+                oauthSession.status === 'expired'
+              ) {
+                <div class="oauth-actions">
                   <button
                     nz-button
                     nzType="primary"
                     type="button"
-                    [disabled]="!canOpenLoginAuth"
-                    (click)="openLoginAuth()"
+                    [nzLoading]="authorizing"
+                    (click)="startOAuth('browser')"
                   >
                     <i nz-icon nzType="login"></i>
-                    登录授权
+                    浏览器授权登录
                   </button>
                   <button
                     nz-button
                     type="button"
-                    class="ml-sm"
-                    [disabled]="!openAIAuthorizeUrl"
-                    (click)="copyOpenAIAuthorizeUrl()"
+                    [disabled]="authorizing"
+                    (click)="startOAuth('device')"
                   >
-                    <i nz-icon nzType="copy"></i>
-                    复制授权链接
+                    <i nz-icon nzType="mobile"></i>
+                    使用设备码
                   </button>
-                  <div class="field-extra">
-                    将打开 OpenAI OAuth 授权页，并携带 client_id、redirect_uri、scope、state 和 PKCE
-                    参数；登录完成后复制浏览器地址栏中的完整回调 URL 到下方解析。
-                  </div>
-                  @if (openAIAuthorizeUrl) {
-                    <div class="field-extra">
-                      如果 OpenAI 登录页超时，可以复制授权链接到其它浏览器或网络环境打开。
-                    </div>
-                  }
-                </se>
-
-                <se class="span-2" label="手动解析回调">
-                  <div class="model-picker">
-                    <input
-                      id="callbackUrl"
-                      nz-input
-                      formControlName="callbackUrl"
-                      placeholder="粘贴浏览器跳转后的完整回调 URL（包含 state、code 或 access_token）"
-                    />
-                    <button
-                      nz-button
-                      type="button"
-                      [nzLoading]="parsingCallback"
-                      (click)="parseLoginCallback()"
-                    >
-                      解析
-                    </button>
-                  </div>
-                  <div class="field-extra">
-                    {{
-                      loginCallbackHint ||
-                        '解析成功后会自动写入 Secret；只有 access_token 可直接用于代理请求。'
-                    }}
-                  </div>
-                </se>
+                </div>
               }
 
-              <se class="span-2" label="支持模型">
-                <div class="model-picker">
-                  <nz-select
-                    id="supportedModels"
-                    formControlName="supportedModels"
-                    nzShowSearch
-                    nzAllowClear
-                    nzPlaceHolder="请选择支持模型"
-                  >
-                    @for (model of modelOptions; track model) {
-                      <nz-option [nzValue]="model" [nzLabel]="model" />
-                    }
-                  </nz-select>
-                  <button
-                    nz-button
-                    type="button"
-                    nzShape="circle"
-                    nz-tooltip
-                    nzTooltipTitle="从 API 请求地址获取模型列表"
-                    [nzLoading]="fetchingModels"
-                    (click)="fetchModels()"
-                  >
-                    <i nz-icon nzType="cloud-upload"></i>
-                  </button>
-                </div>
-                <div class="field-extra">
-                  留空表示不限制；点击右侧图标可从上游 API 拉取模型列表。
-                </div>
-              </se>
-            </se-container>
-          </section>
+              @if (
+                oauthSession &&
+                (oauthSession.status === 'pending' || oauthSession.status === 'completing')
+              ) {
+                @if (oauthSession.mode === 'browser') {
+                  <div class="oauth-session-panel">
+                    <div class="session-row">
+                      <span>授权地址</span>
+                      <button
+                        nz-button
+                        nzType="link"
+                        type="button"
+                        (click)="openOAuthUrl(oauthSession.authorizationUrl)"
+                      >
+                        <i nz-icon nzType="export"></i>
+                        重新打开
+                      </button>
+                    </div>
+                    <div class="callback-entry">
+                      <label for="oauth-callback-url">手动提交回调地址</label>
+                      <div class="callback-input-row">
+                        <input
+                          id="oauth-callback-url"
+                          nz-input
+                          [(ngModel)]="callbackUrl"
+                          placeholder="http://localhost:1455/auth/callback?code=...&state=..."
+                        />
+                        <button
+                          nz-button
+                          type="button"
+                          [nzLoading]="completingCallback"
+                          (click)="completeOAuth()"
+                        >
+                          提交
+                        </button>
+                      </div>
+                      <div class="field-extra">
+                        自动回调未完成时，粘贴浏览器地址栏中的最终 URL；地址必须包含当前会话的 code
+                        和 state。
+                      </div>
+                    </div>
+                  </div>
+                } @else {
+                  <div class="device-code-panel">
+                    <div class="device-code-copy">
+                      <span>设备码</span>
+                      <strong>{{ oauthSession.userCode }}</strong>
+                    </div>
+                    <div class="device-code-actions">
+                      <button
+                        nz-button
+                        type="button"
+                        (click)="copy(oauthSession.userCode, '设备码')"
+                        nz-tooltip
+                        nzTooltipTitle="复制设备码"
+                      >
+                        <i nz-icon nzType="copy"></i>
+                      </button>
+                      <button
+                        nz-button
+                        nzType="primary"
+                        type="button"
+                        (click)="openOAuthUrl(oauthSession.verificationUrl)"
+                      >
+                        <i nz-icon nzType="export"></i>
+                        打开授权页
+                      </button>
+                    </div>
+                  </div>
+                }
+                <button
+                  class="cancel-session-button"
+                  nz-button
+                  nzDanger
+                  type="button"
+                  (click)="cancelOAuth()"
+                >
+                  取消授权
+                </button>
+              }
 
+              @if (oauthSession?.error) {
+                <nz-alert
+                  nzType="error"
+                  nzShowIcon
+                  nzMessage="授权未完成"
+                  [nzDescription]="oauthSession?.error || null"
+                />
+              }
+            </section>
+          } @else if (createMode === 'manual') {
+            <section class="form-section" [formGroup]="manualForm">
+              <div class="section-title">OAuth 凭据</div>
+              <se-container col="1" nzLayout="vertical">
+                <se label="Refresh Token">
+                  <input
+                    nz-input
+                    type="password"
+                    formControlName="refreshToken"
+                    autocomplete="off"
+                    placeholder="推荐填写，可用于自动续期"
+                  />
+                  <div class="field-extra">
+                    用于获取和续期 Access Token，建议优先填写；保存后只以加密形式存储。
+                  </div>
+                </se>
+                <se label="Access Token">
+                  <input
+                    nz-input
+                    type="password"
+                    formControlName="accessToken"
+                    autocomplete="off"
+                    placeholder="可选；留空时使用 Refresh Token 获取"
+                  />
+                  <div class="field-extra">
+                    用于调用 Codex 官方接口；留空时由 Refresh Token 获取，临近过期会在保存时续期。
+                  </div>
+                </se>
+                <se label="ID Token">
+                  <input
+                    nz-input
+                    type="password"
+                    formControlName="idToken"
+                    autocomplete="off"
+                    placeholder="可选；用于补全邮箱和账号身份"
+                  />
+                  <div class="field-extra">
+                    只用于解析邮箱等身份信息，不参与上游请求鉴权；能够自动解析时可以留空。
+                  </div>
+                </se>
+                <se label="ChatGPT 账号 ID">
+                  <input
+                    nz-input
+                    formControlName="accountId"
+                    autocomplete="off"
+                    placeholder="Token 无法解析账号 ID 时填写"
+                  />
+                  <div class="field-extra">
+                    官方账号唯一标识，用于账号去重与路由；Token 无法解析时再手动填写。
+                  </div>
+                </se>
+              </se-container>
+            </section>
+          } @else {
+            <section class="form-section">
+              <div class="section-title">OAuth 账号文件</div>
+              <label class="file-picker">
+                <i nz-icon nzType="upload"></i>
+                <span>{{ accountFileName || '选择账号 JSON 文件' }}</span>
+                <input
+                  type="file"
+                  accept="application/json,.json"
+                  (change)="onAccountFileSelected($event)"
+                />
+              </label>
+              <div class="field-extra">
+                仅支持规范 OAuth JSON；选择后只在浏览器内校验并显示脱敏摘要，导入时由后端加密存储。
+              </div>
+              @if (accountFileName) {
+                <nz-alert
+                  nzType="success"
+                  nzShowIcon
+                  [nzMessage]="accountFileName"
+                  [nzDescription]="accountFileSummary"
+                />
+              }
+            </section>
+          }
+        }
+
+        <form nz-form [formGroup]="form" class="account-form" (ngSubmit)="save()">
           <section class="form-section">
-            <div class="section-title">调度与备注</div>
+            <div class="section-title">账号池设置</div>
             <se-container col="2" nzLayout="vertical">
+              <se label="显示名称">
+                <input nz-input formControlName="name" placeholder="留空时从官方身份推导" />
+                <div class="field-extra">
+                  仅作为管理台中的账号名称；留空时从官方身份或邮箱生成，不影响上游账号。
+                </div>
+              </se>
+              <se label="官方类型">
+                <nz-select formControlName="vendorCode" [nzDisabled]="formMode === 'create'">
+                  @for (vendor of officialVendorOptions; track vendor.value) {
+                    <nz-option [nzValue]="vendor.value" [nzLabel]="vendor.label" />
+                  }
+                </nz-select>
+                <div class="field-extra">
+                  用于账号分类、筛选和模型路由，应与 OAuth 凭据的真实官方来源保持一致。
+                </div>
+              </se>
+              <se label="账号组">
+                <nz-select formControlName="accountGroup" nzShowSearch nzAllowClear>
+                  @for (group of accountGroupOptions; track group) {
+                    <nz-option [nzValue]="group" [nzLabel]="group" />
+                  }
+                </nz-select>
+                <div class="field-extra">
+                  用于隔离不同业务的账号池；留空会归入 default，模型策略只从匹配分组中选择账号。
+                </div>
+              </se>
               <se label="优先级">
-                <nz-input-number
-                  id="priority"
-                  formControlName="priority"
-                  [nzMin]="0"
-                  [nzStep]="1"
-                />
+                <nz-input-number formControlName="priority" [nzMin]="0" />
+                <div class="field-extra">
+                  数值越小越优先；“优先级优先”策略会先选择更小值的可用账号。
+                </div>
               </se>
-
-              <se label="权重">
-                <nz-input-number id="weight" formControlName="weight" [nzMin]="1" [nzStep]="1" />
+              <se label="调度权重">
+                <nz-input-number formControlName="weight" [nzMin]="1" />
+                <div class="field-extra">
+                  仅在“加权轮询”策略下生效；数值越大，账号被选中的机会越多。
+                </div>
               </se>
-
-              <se label="订阅过期时间">
-                <nz-input-number
-                  id="subscriptionExpiredAt"
-                  formControlName="subscriptionExpiredAt"
-                  [nzMin]="0"
-                  [nzStep]="1000"
-                />
-                <div class="field-extra">毫秒时间戳；留空或 0 表示不设置。</div>
-              </se>
-
-              <se label="备注">
+              <se class="span-2" label="备注">
                 <textarea
-                  id="remark"
                   nz-input
-                  formControlName="remark"
                   rows="3"
-                  placeholder="记录用途、限制或运营备注"
+                  formControlName="remark"
+                  placeholder="填写用途、负责人或维护说明（可选）"
                 ></textarea>
+                <div class="field-extra">
+                  用于内部维护和列表搜索，不会随模型请求发送给官方上游。
+                </div>
               </se>
             </se-container>
           </section>
@@ -257,68 +322,115 @@
       </nz-card>
 
       <nz-card class="side-card" [nzBordered]="false">
-        <div class="aside-intro">
-          <strong>填写建议</strong>
-          <p>先确认供应商与认证方式，再补充模型限制、调度优先级和运营备注，联调时会更顺手。</p>
-        </div>
+        @if (formMode === 'create') {
+          <div class="create-guide">
+            <div class="aside-intro">
+              <span class="aside-eyebrow">{{ activeCreateGuide.eyebrow }}</span>
+              <strong>{{ activeCreateGuide.title }}</strong>
+              <p>{{ activeCreateGuide.description }}</p>
+            </div>
 
-        <div class="quick-grid">
-          <div class="quick-item">
-            <span>供应商</span>
-            <strong>{{ providerLabel }}</strong>
-          </div>
-          <div class="quick-item">
-            <span>模型限制</span>
-            <strong>{{ modelsLabel }}</strong>
-          </div>
-          <div class="quick-item">
-            <span>调度参数</span>
-            <strong>{{ scheduleLabel }}</strong>
-          </div>
-          <div class="quick-item">
-            <span>账号类型</span>
-            <strong>{{ accountTypeLabel }}</strong>
-          </div>
-          <div class="quick-item">
-            <span>接口地址</span>
-            <strong>{{ form.controls.apiBaseUrl.value || '-' }}</strong>
-          </div>
-        </div>
+            <section class="guide-section">
+              <div class="guide-section-heading">
+                <strong>{{ activeCreateGuide.optionTitle }}</strong>
+                <span>{{ activeCreateGuide.optionDescription }}</span>
+              </div>
+              <div class="guide-option-list">
+                @for (option of activeCreateGuide.options; track option.title) {
+                  <article class="guide-option">
+                    <div>
+                      <strong>{{ option.title }}</strong>
+                      <span>{{ option.badge }}</span>
+                    </div>
+                    <p>{{ option.description }}</p>
+                  </article>
+                }
+              </div>
+            </section>
 
-        <div class="section-title">填写建议</div>
-        <ul class="note-list">
-          <li>上游固定为 OpenAI 官方 Platform API，不支持第三方转发地址。</li>
-          <li>
-            支持模型可留空表示不限制；如果填了列表，请确保模型映射中的 public model 能匹配到这里。
-          </li>
-          <li>
-            登录回调会解析回调 URL 中的 token 或 code/state；只有 access_token
-            可以直接用于代理请求。
-          </li>
-          <li>权重越高越容易被选中，优先级用于做更粗粒度的先后顺序控制。</li>
-          <li>编辑账号时如果不打算更换 Secret，直接留空即可，后端会保留原值。</li>
-        </ul>
+            <section class="guide-section">
+              <div class="guide-section-heading">
+                <strong>保存后系统会做什么</strong>
+                <span>完成身份校验、加密入池和官方数据同步。</span>
+              </div>
+              <ol class="guide-step-list">
+                @for (step of activeCreateGuide.steps; track $index) {
+                  <li>
+                    <span class="guide-step-index">{{ $index + 1 }}</span>
+                    <p>{{ step }}</p>
+                  </li>
+                }
+              </ol>
+            </section>
 
-        @if (formMode === 'edit' && account) {
-          <div class="section-title section-title-spaced">当前账号概览</div>
+            <section class="guide-section">
+              <div class="guide-section-heading">
+                <strong>账号池调度字段</strong>
+                <span>下方设置只影响账号如何被选中，不会改变官方订阅。</span>
+              </div>
+              <dl class="pool-setting-list">
+                <div>
+                  <dt>账号组</dt>
+                  <dd>按业务或模型隔离账号，只在匹配的组内参与路由。</dd>
+                </div>
+                <div>
+                  <dt>优先级</dt>
+                  <dd>数值越小越优先，适用于“优先级优先”调度策略。</dd>
+                </div>
+                <div>
+                  <dt>调度权重</dt>
+                  <dd>加权轮询时数值越大，被分配到请求的机会越多。</dd>
+                </div>
+              </dl>
+            </section>
+
+            <div class="guide-notice">
+              <span>安全提醒</span>
+              <p>{{ activeCreateGuide.notice }}</p>
+            </div>
+          </div>
+        } @else if (account) {
+          <div class="section-title">账号身份</div>
           <div class="detail-grid">
             <div>
-              <span>账号 GUID</span>
-              <strong>{{ account.guid }}</strong>
+              <span>邮箱</span><strong>{{ account.email || '-' }}</strong>
             </div>
             <div>
-              <span>失败次数</span>
-              <strong>{{ account.failureCount || 0 }}</strong>
+              <span>账号 ID</span><strong>{{ account.chatgptAccountId || '-' }}</strong>
             </div>
             <div>
-              <span>刷新时间</span>
-              <strong>{{ formatTime(account.lastRefreshedAt) }}</strong>
+              <span>工作区 ID</span><strong>{{ account.workspaceId || '-' }}</strong>
             </div>
             <div>
-              <span>订阅过期</span>
-              <strong>{{ formatTime(account.subscriptionExpiredAt) }}</strong>
+              <span>访问令牌到期</span
+              ><strong>{{ formatTime(account.accessTokenExpiresAt) }}</strong>
+            </div>
+            <div>
+              <span>订阅到期</span><strong>{{ formatTime(account.subscriptionExpiredAt) }}</strong>
+            </div>
+            <div>
+              <span>最近同步</span><strong>{{ formatTime(account.lastRefreshedAt) }}</strong>
             </div>
           </div>
+          <div class="section-title section-title-spaced">账号操作</div>
+          <div class="account-operation-actions">
+            <button nz-button [nzLoading]="fetchingModels" (click)="fetchModels()">
+              同步官方模型
+            </button>
+            <button nz-button [nzLoading]="refreshingUsage" (click)="refreshUsage()">
+              同步额度与订阅
+            </button>
+            <button nz-button [nzLoading]="probing" (click)="probe()">主动额度探测</button>
+          </div>
+          @if (account.lastError) {
+            <nz-alert
+              class="mt-md"
+              nzType="error"
+              nzShowIcon
+              nzMessage="最近同步错误"
+              [nzDescription]="account.lastError"
+            />
+          }
         }
       </nz-card>
     </div>

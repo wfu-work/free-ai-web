@@ -2,7 +2,7 @@
   <div class="d-flex justify-content-between header-row">
     <title-label
       title="安全设置"
-      description="查看主密钥、代理边界、平台密钥和上游安全姿态，帮助你判断当前部署是否适合对外提供服务。"
+      description="查看主密钥、代理边界、API 密钥和上游安全姿态，帮助你判断当前部署是否适合对外提供服务。"
     />
     <div class="header-actions">
       <button nz-button (click)="load()">
@@ -20,7 +20,7 @@
         <small>{{ masterKey?.loaded ? '主密钥已就绪' : '主密钥异常时请优先处理' }}</small>
       </article>
       <article class="status-card">
-        <span>平台密钥</span>
+        <span>API 密钥</span>
         <strong>{{ enabledKeysLabel }}</strong>
         <small>当前启用的业务侧访问密钥</small>
       </article>
@@ -80,7 +80,7 @@
           <div class="panel-title">密钥保护建议</div>
           <div class="detail-grid compact-grid">
             <div>
-              <span>平台密钥数量</span>
+              <span>API 密钥数量</span>
               <strong>{{ enabledKeysLabel }}</strong>
             </div>
             <div>
@@ -103,8 +103,11 @@
         <nz-card class="panel-card" [nzBordered]="false">
           <div class="panel-title">安全边界</div>
           <ul class="note-list">
-            <li>上游账号 Secret 只在后端落库时加密保存，前端只能看到 `secretHint`，不会回显原始值。</li>
-            <li>平台密钥用于业务侧访问 `/v1/*` 代理接口，和后台管理登录鉴权是两条独立边界。</li>
+            <li>
+              OAuth 账号文件只在后端使用主密钥加密保存；前端只展示账号 ID、套餐和 Token
+              状态，不回显令牌。
+            </li>
+            <li>API 密钥用于业务侧访问 `/v1/*` 代理接口，和后台管理登录鉴权是两条独立边界。</li>
             <li>主密钥文件异常时，新增账号、刷新账号、解密 Secret 和导入备份都会受影响。</li>
             <li>开启上游代理后，OpenAI 登录、模型拉取与转发请求都会优先走代理地址。</li>
             <li>仅本机监听更适合单机部署；若暴露到局域网，建议叠加防火墙或反向代理鉴权。</li>

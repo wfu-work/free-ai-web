@@ -6,14 +6,12 @@ import {
   inject,
 } from '@angular/core';
 import { SHARED_IMPORTS } from '@shared';
+import { finalize, forkJoin } from 'rxjs';
 import { PanelComponent } from 'src/app/shared/components/panel/panel.component';
 import { TitleLabelComponent } from 'src/app/shared/components/title-label/title-label.component';
-import { finalize, forkJoin } from 'rxjs';
 
 import { AccountHealthItem } from '../accounts/account.model';
 import { AccountsService } from '../accounts/accounts.service';
-import { ModelRouteState } from '../models/model.model';
-import { ModelsService } from '../models/models.service';
 import { OpsMetrics, OpsStats, MasterKeyStatus } from '../ops/ops.model';
 import { OpsService } from '../ops/ops.service';
 import { RequestLog } from '../request-logs/request-log.model';
@@ -39,7 +37,6 @@ type TrendRangeValue = '1h' | '12h' | '1d' | '2d' | '3d' | '1w' | '1m';
 export class DashboardComponent implements OnInit {
   private readonly opsService = inject(OpsService);
   private readonly accountsService = inject(AccountsService);
-  private readonly modelsService = inject(ModelsService);
   private readonly requestLogsService = inject(RequestLogsService);
   private readonly cdr = inject(ChangeDetectorRef);
 
@@ -55,10 +52,15 @@ export class DashboardComponent implements OnInit {
   protected stats: OpsStats = { total: 0, success: 0, failures: 0, avgLatencyMs: 0 };
   protected masterKey: MasterKeyStatus | null = null;
   protected healthItems: AccountHealthItem[] = [];
-  protected routeStates: ModelRouteState[] = [];
   protected logs: RequestLog[] = [];
   protected trendRange: TrendRangeValue = '1h';
-  protected readonly trendRangeOptions: Array<{ label: string; value: TrendRangeValue; ms: number; buckets: number; limit: number }> = [
+  protected readonly trendRangeOptions: Array<{
+    label: string;
+    value: TrendRangeValue;
+    ms: number;
+    buckets: number;
+    limit: number;
+  }> = [
     { label: '最近 1 小时', value: '1h', ms: 60 * 60 * 1000, buckets: 8, limit: 1000 },
     { label: '最近 12 小时', value: '12h', ms: 12 * 60 * 60 * 1000, buckets: 12, limit: 3000 },
     { label: '最近 1 天', value: '1d', ms: 24 * 60 * 60 * 1000, buckets: 12, limit: 5000 },
@@ -79,7 +81,6 @@ export class DashboardComponent implements OnInit {
       stats: this.opsService.stats(),
       masterKey: this.opsService.masterKey(),
       healthItems: this.accountsService.health(),
-      routeStates: this.modelsService.routeStates(),
       logs: this.requestLogsService.list(this.selectedTrendRange.limit, this.trendStartAt),
     })
       .pipe(
@@ -88,12 +89,11 @@ export class DashboardComponent implements OnInit {
           this.cdr.markForCheck();
         }),
       )
-      .subscribe(({ metrics, stats, masterKey, healthItems, routeStates, logs }) => {
+      .subscribe(({ metrics, stats, masterKey, healthItems, logs }) => {
         this.metrics = metrics ?? this.metrics;
         this.stats = stats ?? this.stats;
         this.masterKey = masterKey ?? null;
         this.healthItems = healthItems ?? [];
-        this.routeStates = routeStates ?? [];
         this.logs = logs ?? [];
       });
   }
@@ -157,7 +157,9 @@ export class DashboardComponent implements OnInit {
 
   protected get abnormalAccounts(): number {
     return this.healthItems.filter((item) =>
-      ['limited', 'cooldown', 'exhausted', 'disabled', 'expired', 'invalid', 'unknown'].includes(item.status),
+      ['limited', 'cooldown', 'exhausted', 'disabled', 'expired', 'invalid', 'unknown'].includes(
+        item.status,
+      ),
     ).length;
   }
 
@@ -166,7 +168,9 @@ export class DashboardComponent implements OnInit {
   }
 
   protected get recentFailureCount(): number {
-    return this.logs.filter((log) => this.logTime(log) >= this.trendStartAt && this.isFailureLog(log)).length;
+    return this.logs.filter(
+      (log) => this.logTime(log) >= this.trendStartAt && this.isFailureLog(log),
+    ).length;
   }
 
   protected get latestRequestLabel(): string {
@@ -184,8 +188,8 @@ export class DashboardComponent implements OnInit {
     return '请求质量需排查';
   }
 
-  protected get providerHealthRows(): Array<{
-    provider: string;
+  protected get accountGroupHealthRows(): Array<{
+    group: string;
     total: number;
     available: number;
     abnormal: number;
@@ -193,16 +197,16 @@ export class DashboardComponent implements OnInit {
   }> {
     const map = new Map<string, { total: number; available: number; abnormal: number }>();
     for (const item of this.healthItems) {
-      const provider = item.provider || item.supplierName || 'unknown';
-      const current = map.get(provider) || { total: 0, available: 0, abnormal: 0 };
+      const group = item.accountGroup || 'default';
+      const current = map.get(group) || { total: 0, available: 0, abnormal: 0 };
       current.total += 1;
       if (item.enabled && item.status === 'available') current.available += 1;
       if (!item.enabled || item.status !== 'available') current.abnormal += 1;
-      map.set(provider, current);
+      map.set(group, current);
     }
     return Array.from(map.entries())
-      .map(([provider, item]) => ({
-        provider,
+      .map(([group, item]) => ({
+        group,
         ...item,
         percent: item.total ? Math.round((item.available / item.total) * 100) : 0,
       }))
@@ -232,13 +236,12 @@ export class DashboardComponent implements OnInit {
       .slice(0, 5);
   }
 
-  protected get routeRows(): ModelRouteState[] {
-    return [...this.routeStates]
-      .sort((a, b) => Number(b.updatedAtUnix || 0) - Number(a.updatedAtUnix || 0))
-      .slice(0, 5);
-  }
-
-  protected get insightCards(): Array<{ title: string; value: string; text: string; tone: 'success' | 'warning' | 'danger' | 'neutral' }> {
+  protected get insightCards(): Array<{
+    title: string;
+    value: string;
+    text: string;
+    tone: 'success' | 'warning' | 'danger' | 'neutral';
+  }> {
     return [
       {
         title: '最近请求',
@@ -272,8 +275,6 @@ export class DashboardComponent implements OnInit {
     const abnormal = this.healthItems.filter((item) =>
       ['exhausted', 'disabled', 'expired', 'invalid', 'unknown'].includes(item.status),
     ).length;
-    const staleRoutes = this.routeStates.filter((item) => Date.now() - (item.updatedAtUnix || 0) > 24 * 60 * 60 * 1000).length;
-
     return [
       {
         name: '主密钥状态',
@@ -294,15 +295,20 @@ export class DashboardComponent implements OnInit {
         tone: limited + cooldown + abnormal > 0 ? 'warning' : 'idle',
       },
       {
-        name: '路由状态',
-        flow: '核对 routeKey、游标和最近命中账号',
-        status: staleRoutes > 0 ? `${staleRoutes} 个陈旧` : '正常',
-        tone: staleRoutes > 0 ? 'warning' : 'idle',
+        name: '模型目录',
+        flow: '从官方账号同步模型并确认账号可用性',
+        status: `${this.metrics.enabledModels || 0} 个启用`,
+        tone: (this.metrics.enabledModels || 0) > 0 ? 'success' : 'warning',
       },
     ];
   }
 
-  protected get trendBars(): Array<{ time: string; value: number; active?: boolean; raw?: number }> {
+  protected get trendBars(): Array<{
+    time: string;
+    value: number;
+    active?: boolean;
+    raw?: number;
+  }> {
     const bucketCount = this.selectedTrendRange.buckets;
     const windowMs = this.selectedTrendRange.ms;
     const now = Date.now();
@@ -337,7 +343,9 @@ export class DashboardComponent implements OnInit {
   }
 
   protected onTrendRangeChange(value: string): void {
-    this.trendRange = this.trendRangeOptions.some((item) => item.value === value) ? (value as TrendRangeValue) : '1h';
+    this.trendRange = this.trendRangeOptions.some((item) => item.value === value)
+      ? (value as TrendRangeValue)
+      : '1h';
     this.logs = [];
     this.cdr.markForCheck();
     this.load();
@@ -375,8 +383,17 @@ export class DashboardComponent implements OnInit {
     return text.length > 18 ? `${text.slice(0, 14)}...` : text;
   }
 
-  private get selectedTrendRange(): { label: string; value: TrendRangeValue; ms: number; buckets: number; limit: number } {
-    return this.trendRangeOptions.find((item) => item.value === this.trendRange) || this.trendRangeOptions[0];
+  private get selectedTrendRange(): {
+    label: string;
+    value: TrendRangeValue;
+    ms: number;
+    buckets: number;
+    limit: number;
+  } {
+    return (
+      this.trendRangeOptions.find((item) => item.value === this.trendRange) ||
+      this.trendRangeOptions[0]
+    );
   }
 
   private get trendStartAt(): number {

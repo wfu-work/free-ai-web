@@ -1,8 +1,8 @@
 <section class="groups-page">
-  <div class="d-flex justify-content-between header-row">
+  <div class="header-row">
     <title-label
       title="账号分组"
-      description="维护后台账号分组，账号和模型映射在编辑时选择对应分组。"
+      description="维护后台账号分组，账号和模型对外策略可以限定对应分组。"
     />
     <div class="header-actions">
       <button nz-button (click)="q.page = 1; getData()">
@@ -38,14 +38,18 @@
   <nz-alert
     nzType="info"
     nzShowIcon
-    nzMessage="账号分组由后台保存维护；列表直接使用分页接口返回的数据，不再根据账号或模型映射做前端聚合。"
+    nzMessage="账号分组由后台保存维护；列表直接使用分页接口返回的数据，不再在前端重复聚合。"
   />
 
   <nz-card class="groups-card" [nzBordered]="false">
-    <div class="d-flex justify-content-between mb-md">
-      <h2>{{ '账号分组' }}</h2>
-      <div class=" d-flex text-right">
+    <div class="list-toolbar">
+      <div class="list-summary">
+        <h2>账号分组</h2>
+        <span>共 {{ totalCount }} 个分组</span>
+      </div>
+      <div class="filter-controls">
         <nz-select
+          class="status-filter"
           [(ngModel)]="q.enabled"
           placeholder="启用状态"
           (ngModelChange)="q.page = 1; getData()"
@@ -54,7 +58,7 @@
           <nz-option [nzValue]="1" [nzLabel]="'启用'" />
           <nz-option [nzValue]="0" [nzLabel]="'禁用'" />
         </nz-select>
-        <nz-input-wrapper class="ml-lg">
+        <nz-input-wrapper class="search-input">
           <nz-icon nzInputPrefix nzType="search" />
           <input
             nz-input
@@ -64,7 +68,7 @@
             (keydown.enter)="q.page = 1; getData()"
           />
         </nz-input-wrapper>
-        <div class="d-flex ml-lg">
+        <div class="filter-actions">
           <button nz-button (click)="q.page = 1; getData()" nzType="primary">
             {{ '搜索' }}
           </button>
@@ -82,7 +86,6 @@
       [pi]="q.page"
       [ps]="q.size"
       [total]="totalCount"
-      [scroll]="{ x: '1320px' }"
       (change)="tableChange($event)"
     >
       <ng-template st-row="groupRender" let-item>
@@ -90,20 +93,12 @@
         <span class="muted">{{ item.guid }}</span>
       </ng-template>
 
-      <ng-template st-row="providerRender" let-item>
-        <div class="chip-list">
-          @for (provider of summaryValues(item.providerSummary); track provider) {
-            <span class="chip">{{ provider }}</span>
-          }
-          @if (!summaryValues(item.providerSummary).length) {
-            <span class="muted">未配置</span>
-          }
-        </div>
-      </ng-template>
-
       <ng-template st-row="accountRender" let-item>
         <div class="stat-line">{{ item.accountCount || 0 }} 个账号</div>
-        <span class="muted">可用 {{ item.availableAccountCount || 0 }} · 启用 {{ item.enabledAccountCount || 0 }}</span>
+        <span class="muted"
+          >可用 {{ item.availableAccountCount || 0 }} · 启用
+          {{ item.enabledAccountCount || 0 }}</span
+        >
       </ng-template>
 
       <ng-template st-row="modelRender" let-item>
@@ -121,23 +116,11 @@
         </div>
       </ng-template>
 
-      <ng-template st-row="typeRender" let-item>
-        <div class="chip-list">
-          @for (type of summaryValues(item.accountTypeSummary); track type) {
-            <span class="chip chip-soft">{{ type }}</span>
-          }
-          @if (!summaryValues(item.accountTypeSummary).length) {
-            <span class="muted">未设置</span>
-          }
-        </div>
-      </ng-template>
-
       <ng-template st-row="descriptionRender" let-item>
         <div>{{ item.description || '-' }}</div>
         <span class="muted">{{ item.remark || '-' }}</span>
         <div class="muted">同步 {{ formatTime(item.summarySyncedAt) }}</div>
       </ng-template>
-
     </st>
   </nz-card>
 </section>
@@ -168,7 +151,7 @@
             nz-input
             formControlName="description"
             rows="3"
-            placeholder="描述这个分组适用的供应商、场景或路由策略"
+            placeholder="描述这个分组适用的账号、模型或路由策略"
           ></textarea>
         </se>
 

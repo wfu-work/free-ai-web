@@ -16,6 +16,7 @@ import { NzIconModule } from 'ng-zorro-antd/icon';
 import { filter } from 'rxjs';
 
 import { AvatarComponent } from './avatar';
+import { HeaderMessageService } from './header-message.service';
 import { HeaderMessage } from './message';
 import { ThemeColorComponent } from './theme-color';
 
@@ -28,12 +29,15 @@ import { ThemeColorComponent } from './theme-color';
       [class.header-container-scrolled]="hasScrolled"
     >
       <div class="header-left">
-        <span
+        <button
+          type="button"
           class="trigger"
-          nz-icon
-          [nzType]="isCollapsed ? 'menu-unfold' : 'menu-fold'"
+          aria-label="切换主导航"
+          title="切换主导航"
           (click)="collapsTap()"
-        ></span>
+        >
+          <i nz-icon [nzType]="isCollapsed ? 'menu-unfold' : 'menu-fold'"></i>
+        </button>
         <span class="font-weight-bold text-xl title">{{ pageTitle }}</span>
         <button
           type="button"
@@ -81,12 +85,13 @@ import { ThemeColorComponent } from './theme-color';
           left 0.2s ease;
       }
 
-      .header-container-scrolled {
-        border-color: rgb(255 255 255 / 74%);
-        background: rgb(255 255 255 / 82%);
+      .header-container-scrolled,
+      :host-context(html.cdk-global-scrollblock) .header-container {
+        border-color: var(--nm-border);
+        background: var(--nm-surface-glass);
         box-shadow:
           0 12px 32px rgb(41 99 119 / 10%),
-          inset 0 1px 0 rgb(255 255 255 / 88%);
+          inset 0 1px 0 var(--nm-border);
         backdrop-filter: blur(18px);
       }
 
@@ -115,6 +120,7 @@ import { ThemeColorComponent } from './theme-color';
         font-size: 18px;
         background: rgb(var(--nm-primary-rgb) / 8%);
         cursor: pointer;
+        padding: 0;
         transition:
           color 0.2s ease,
           background-color 0.2s ease,
@@ -139,12 +145,12 @@ import { ThemeColorComponent } from './theme-color';
         padding: 0 12px;
         border: 1px solid rgb(148 163 184 / 24%);
         border-radius: 999px;
-        color: #64748b;
+        color: var(--nm-text-secondary);
         font-size: 13px;
         font-weight: 760;
         line-height: 1;
         white-space: nowrap;
-        background: rgb(255 255 255 / 70%);
+        background: var(--nm-surface-glass);
         cursor: pointer;
         transition:
           border-color 0.2s ease,
@@ -165,13 +171,13 @@ import { ThemeColorComponent } from './theme-color';
 
       .gateway-status-error {
         border-color: rgb(194 65 65 / 18%);
-        color: #c24141;
+        color: var(--nm-danger);
         background: rgb(194 65 65 / 8%);
       }
 
       .gateway-status-checking {
         border-color: rgb(183 121 31 / 18%);
-        color: #b7791f;
+        color: var(--nm-warning);
         background: rgb(183 121 31 / 8%);
       }
 
@@ -181,7 +187,7 @@ import { ThemeColorComponent } from './theme-color';
         justify-content: flex-end;
         gap: 10px;
         min-width: 0;
-        color: #56657d;
+        color: var(--nm-text-secondary);
       }
 
       .header-actions > * {
@@ -233,10 +239,9 @@ export class BasicHeaderComponent implements OnInit {
   private readonly cdr = inject(ChangeDetectorRef);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
-  private gatewayHealthTimer: ReturnType<typeof setInterval> | null = null;
-  private destroyed = false;
+  private readonly messageService = inject(HeaderMessageService);
 
-  @Output() public readonly collapsClick = new EventEmitter<boolean>();
+  @Output() public readonly collapsClick = new EventEmitter<void>();
 
   @Input() isCollapsed = false;
 
@@ -248,14 +253,15 @@ export class BasicHeaderComponent implements OnInit {
 
   ngOnInit(): void {
     this.updatePageTitle();
-    this.checkGatewayHealth();
-    this.gatewayHealthTimer = setInterval(() => this.checkGatewayHealth(), 30000);
-    this.destroyRef.onDestroy(() => {
-      this.destroyed = true;
-      if (this.gatewayHealthTimer) {
-        clearInterval(this.gatewayHealthTimer);
-      }
-    });
+    this.messageService
+      .metricsStream()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((metrics) => {
+        this.gatewayStatus = metrics?.ok ? 'ok' : 'error';
+        this.gatewayCheckedAt = Date.now();
+        this.gatewayStatusTitle = this.buildGatewayStatusTitle();
+        this.detectGatewayStatusChanges();
+      });
     this.router.events
       .pipe(
         filter((event): event is NavigationEnd => event instanceof NavigationEnd),
@@ -272,38 +278,15 @@ export class BasicHeaderComponent implements OnInit {
   }
 
   protected collapsTap(): void {
-    this.isCollapsed = !this.isCollapsed;
-    this.collapsClick.emit(this.isCollapsed);
+    this.collapsClick.emit();
   }
 
-  protected async checkGatewayHealth(): Promise<void> {
-    if (this.gatewayStatus === 'checking' && this.gatewayCheckedAt > 0) return;
+  protected checkGatewayHealth(): void {
+    if (this.gatewayStatus === 'checking') return;
     this.gatewayStatus = 'checking';
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 2500);
-    try {
-      const response = await fetch('/api/ops/metrics', {
-        cache: 'no-store',
-        signal: controller.signal,
-      });
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}`);
-      }
-      const body = (await response.json().catch(() => null)) as Partial<{
-        code: number;
-        data: Partial<{ ok: boolean }>;
-        ok: boolean;
-      }> | null;
-      const ok = body?.data?.ok ?? body?.ok ?? response.ok;
-      this.gatewayStatus = ok ? 'ok' : 'error';
-    } catch {
-      this.gatewayStatus = 'error';
-    } finally {
-      clearTimeout(timer);
-      this.gatewayCheckedAt = Date.now();
-      this.gatewayStatusTitle = this.buildGatewayStatusTitle();
-      this.detectGatewayStatusChanges();
-    }
+    this.gatewayStatusTitle = this.buildGatewayStatusTitle();
+    this.detectGatewayStatusChanges();
+    this.messageService.refreshMetrics();
   }
 
   protected get gatewayStatusText(): string {
@@ -329,12 +312,13 @@ export class BasicHeaderComponent implements OnInit {
   }
 
   private buildGatewayStatusTitle(): string {
-    const checkedAt = this.gatewayCheckedAt ? new Date(this.gatewayCheckedAt).toLocaleTimeString('zh-CN', { hour12: false }) : '尚未完成';
+    const checkedAt = this.gatewayCheckedAt
+      ? new Date(this.gatewayCheckedAt).toLocaleTimeString('zh-CN', { hour12: false })
+      : '尚未完成';
     return `${this.gatewayStatusText}，最后检查：${checkedAt}`;
   }
 
   private detectGatewayStatusChanges(): void {
-    if (this.destroyed) return;
     this.cdr.detectChanges();
   }
 

@@ -1,7 +1,6 @@
 import { Routes } from '@angular/router';
 
 import { SettingsGatewayComponent } from './gateway/settings-gateway.component';
-import { SettingsIntegrationComponent } from './integration/settings-integration.component';
 import { SettingsMineComponent } from './mine/settings-mine.component';
 import { SettingsRetentionComponent } from './retention/settings-retention.component';
 import { SettingsSecurityComponent } from './security/settings-security.component';
@@ -12,16 +11,6 @@ export const routes: Routes = [
     path: 'gateway',
     component: SettingsGatewayComponent,
     data: { title: '网关配置' },
-  },
-  {
-    path: 'integration',
-    redirectTo: 'gateway',
-    pathMatch: 'full',
-  },
-  {
-    path: 'guide',
-    component: SettingsIntegrationComponent,
-    data: { title: '接入指南' },
   },
   {
     path: 'mine',
@@ -36,6 +25,6 @@ export const routes: Routes = [
   {
     path: 'retention',
     component: SettingsRetentionComponent,
-    data: { title: '数据保留' },
+    data: { title: '数据管理' },
   },
 ];

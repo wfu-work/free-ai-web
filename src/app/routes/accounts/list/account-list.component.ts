@@ -1,3 +1,4 @@
+import { NgClass } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   ChangeDetectorRef,
@@ -5,16 +6,16 @@ import {
   OnInit,
   inject,
 } from '@angular/core';
-import { Router } from '@angular/router';
 import { FormBuilder } from '@angular/forms';
-import { STChange, STColumn, STColumnTag } from '@delon/abc/st';
+import { Router } from '@angular/router';
 import { SHARED_IMPORTS, TitleLabelComponent } from '@shared';
+import { NzListModule } from 'ng-zorro-antd/list';
 import { NzMessageService } from 'ng-zorro-antd/message';
 import { NzModalService } from 'ng-zorro-antd/modal';
+import { NzPaginationModule } from 'ng-zorro-antd/pagination';
 import { finalize } from 'rxjs';
 
-import { ModelMapping } from '../../models/model.model';
-import { ModelsService } from '../../models/models.service';
+import { OFFICIAL_VENDOR_OPTIONS, normalizeOfficialVendorCode } from '../account-options';
 import { Account, AccountQuota, AccountTestResult } from '../account.model';
 import { AccountsService } from '../accounts.service';
 
@@ -23,12 +24,11 @@ import { AccountsService } from '../accounts.service';
   templateUrl: './account-list.component.html',
   styleUrls: ['./account-list.component.less'],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [SHARED_IMPORTS, TitleLabelComponent],
+  imports: [SHARED_IMPORTS, TitleLabelComponent, NgClass, NzListModule, NzPaginationModule],
 })
 export class AccountListComponent implements OnInit {
   private readonly router = inject(Router);
   private readonly accountsService = inject(AccountsService);
-  private readonly modelsService = inject(ModelsService);
   private readonly message = inject(NzMessageService);
   private readonly modal = inject(NzModalService);
   private readonly cdr = inject(ChangeDetectorRef);
@@ -38,6 +38,7 @@ export class AccountListComponent implements OnInit {
     page: 1,
     size: 10,
     enabled: '',
+    vendorCode: '',
     content: '',
   };
 
@@ -46,32 +47,20 @@ export class AccountListComponent implements OnInit {
   totalCount = 0;
   protected testVisible = false;
   protected testing = false;
+  protected testModelsLoading = false;
   protected testTarget: Account | null = null;
   protected testResult: AccountTestResult | null = null;
-  protected modelMappings: ModelMapping[] = [];
   protected testModelOptions: string[] = [];
-  protected testModelSource: 'account' | 'global' | 'empty' = 'empty';
+  protected testModelSource: 'account' | 'empty' = 'empty';
+  protected readonly officialVendorOptions = OFFICIAL_VENDOR_OPTIONS;
 
   protected readonly testForm = this.fb.nonNullable.group({
     model: [''],
     prompt: ['ping'],
   });
 
-  protected readonly statusTag: STColumnTag = {
-    available: { text: '可用', color: 'green' },
-    limited: { text: '限流', color: 'orange' },
-    cooldown: { text: '冷却', color: 'gold' },
-    exhausted: { text: '耗尽', color: 'red' },
-    disabled: { text: '禁用', color: 'default' },
-    expired: { text: '过期', color: 'red' },
-    invalid: { text: '失效', color: 'red' },
-    unknown: { text: '未知', color: 'default' },
-  };
-
-  protected readonly enabledTag: STColumnTag = {
-    true: { text: '启用', color: 'green' },
-    false: { text: '停用', color: 'red' },
-  };
+  protected readonly quotaProgressFormat = (percent: number): string =>
+    `剩余 ${Number(percent || 0).toFixed(0)}%`;
 
   private readonly statusTextMap: Record<string, string> = {
     available: '可用',
@@ -95,70 +84,7 @@ export class AccountListComponent implements OnInit {
     no_available_account: '无可用账号',
   };
 
-  protected readonly columns: Array<STColumn<Account>> = [
-    { title: '账号', index: 'name', render: 'nameRender', width: 200, fixed: 'left' },
-    { title: '供应商 / 分组', index: 'provider', render: 'providerRender', width: 150 },
-    { title: '状态', index: 'status', type: 'tag', tag: this.statusTag, width: 92 },
-    { title: '启用', index: 'enabled', type: 'tag', tag: this.enabledTag, width: 86 },
-    { title: '权重', index: 'weight', render: 'weightRender', width: 92 },
-    { title: '失败', index: 'failureCount', width: 72 },
-    { title: '额度窗口', render: 'quotaRender', width: 280 },
-    { title: '最近使用', index: 'lastUsedAt', render: 'lastUsedRender', width: 170 },
-    { title: 'Secret', index: 'secretHint', render: 'secretRender', width: 180 },
-    {
-      title: '操作',
-      width: 230,
-      fixed: 'right',
-      buttons: [
-        {
-          text: '编辑',
-          click: (item: Account) => this.edit(item),
-        },
-        {
-          text: '测试',
-          click: (item: Account) => this.openTest(item),
-        },
-        {
-          text: '刷新',
-          click: (item: Account) => this.refresh(item),
-        },
-        {
-          text: '启用',
-          click: (item: Account) => this.setEnabled(item, true),
-          iif: (item: Account) => !item.enabled,
-          pop: {
-            title: '确定启用?',
-            okType: 'danger',
-            icon: 'star',
-          },
-        },
-        {
-          text: '禁用',
-          className: 'text-error',
-          click: (item: Account) => this.setEnabled(item, false),
-          iif: (item: Account) => item.enabled,
-          pop: {
-            title: '确定禁用?',
-            okType: 'danger',
-            icon: 'star',
-          },
-        },
-        {
-          text: '删除',
-          className: 'text-error',
-          click: (item: Account) => this.delete(item),
-          pop: {
-            title: '确定删除?',
-            okType: 'danger',
-            icon: 'star',
-          },
-        },
-      ],
-    },
-  ];
-
   ngOnInit(): void {
-    this.loadModelMappings();
     this.getData();
   }
 
@@ -211,7 +137,7 @@ export class AccountListComponent implements OnInit {
   }
 
   protected refresh(item: Account): void {
-    this.accountsService.refresh(item.guid).subscribe(() => {
+    this.accountsService.refreshUsage(item.guid).subscribe(() => {
       this.message.success('账号状态已刷新');
       this.getData();
     });
@@ -220,7 +146,7 @@ export class AccountListComponent implements OnInit {
   protected delete(item: Account): void {
     this.modal.confirm({
       nzTitle: '确定删除该账号？',
-      nzContent: '删除后账号 Secret 和路由能力将不可恢复，请确认没有模型映射仍依赖它。',
+      nzContent: '删除后加密 OAuth 账号文件和额度快照将不可恢复，请先确认已安全备份。',
       nzOkDanger: true,
       nzOnOk: () =>
         new Promise<void>((resolve, reject) => {
@@ -239,9 +165,24 @@ export class AccountListComponent implements OnInit {
   protected openTest(item: Account): void {
     this.testTarget = item;
     this.testResult = null;
-    this.syncTestModelOptions(item);
-    this.testForm.reset({ model: this.testModelOptions[0] || '', prompt: 'ping' });
+    this.testModelOptions = [];
+    this.testModelSource = 'empty';
+    this.testForm.reset({ model: '', prompt: 'ping' });
     this.testVisible = true;
+    this.testModelsLoading = true;
+    this.accountsService
+      .fetchModels({ guid: item.guid })
+      .pipe(
+        finalize(() => {
+          this.testModelsLoading = false;
+          this.cdr.markForCheck();
+        }),
+      )
+      .subscribe((result) => {
+        this.testModelOptions = Array.from(new Set((result.models || []).filter(Boolean)));
+        this.testModelSource = this.testModelOptions.length ? 'account' : 'empty';
+        this.testForm.controls.model.setValue(this.testModelOptions[0] || '');
+      });
   }
 
   protected closeTest(): void {
@@ -256,7 +197,7 @@ export class AccountListComponent implements OnInit {
     this.testing = true;
     this.testResult = null;
     this.accountsService
-      .test(this.testTarget.guid, this.testForm.getRawValue())
+      .probe(this.testTarget.guid, this.testForm.getRawValue())
       .pipe(
         finalize(() => {
           this.testing = false;
@@ -280,29 +221,73 @@ export class AccountListComponent implements OnInit {
     return this.statusTextMap[value] || value;
   }
 
+  protected statusTone(status?: string): string {
+    switch ((status || '').trim()) {
+      case 'available':
+        return 'status-success';
+      case 'limited':
+      case 'cooldown':
+        return 'status-warning';
+      case 'exhausted':
+      case 'expired':
+      case 'invalid':
+        return 'status-danger';
+      default:
+        return 'status-neutral';
+    }
+  }
+
+  protected tokenStatusText(status?: string): string {
+    const statusMap: Record<string, string> = {
+      active: '有效',
+      refresh_needed: '需要刷新',
+      refresh_failed: '刷新失败',
+      invalid: '无效',
+    };
+    const value = (status || '').trim();
+    return statusMap[value] || value || '-';
+  }
+
+  protected vendorLabel(vendorCode?: string): string {
+    const value = normalizeOfficialVendorCode(vendorCode);
+    return this.officialVendorOptions.find((item) => item.value === value)?.label || 'OpenAI';
+  }
+
+  protected vendorMark(vendorCode?: string): string {
+    switch (normalizeOfficialVendorCode(vendorCode)) {
+      case 'openai':
+        return 'AI';
+      case 'google':
+        return 'G';
+      case 'anthropic':
+        return 'C';
+    }
+  }
+
+  protected vendorCardClass(vendorCode?: string): string {
+    return `vendor-${normalizeOfficialVendorCode(vendorCode)}`;
+  }
+
   protected errorText(errorType?: string): string {
     const value = (errorType || '').trim();
     if (!value) return '-';
     return this.errorTextMap[value] || value;
   }
 
-  protected modeText(mode?: string): string {
-    return mode === 'upstream' ? '上游请求' : '基础检查';
-  }
-
   protected get testModelExtra(): string {
     switch (this.testModelSource) {
       case 'account':
-        return '当前账号已配置支持模型，测试时优先使用账号设置的模型。';
-      case 'global':
-        return '当前账号未单独设置模型，测试时使用全局模型映射。';
+        return '模型来自该账号刚刚同步的官方模型目录。';
       default:
-        return '暂无可选模型，留空只检查 Secret 解密和账号基础状态。';
+        return '暂无可选模型；主动探测前请先获取该账号的官方模型清单。';
     }
   }
 
   protected quotaTone(quota: AccountQuota): string {
     if (this.isQuotaExhausted(quota)) return 'quota-danger';
+    const remaining = 100 - Math.min(100, Math.max(0, Number(quota.usedPercent || 0)));
+    if (remaining <= 20) return 'quota-danger';
+    if (remaining <= 40) return 'quota-warning';
     switch (quota.status) {
       case 'available':
         return 'quota-success';
@@ -317,32 +302,34 @@ export class AccountListComponent implements OnInit {
 
   protected isQuotaExhausted(quota: AccountQuota): boolean {
     const usedPercent = Number(quota.usedPercent || 0);
-    const totalAmount = Number(quota.totalAmount || 0);
-    const remainingAmount = Number(quota.remainingAmount || 0);
-    const totalTokens = Number(quota.totalTokens || 0);
-    const remainingTokens = Number(quota.remainingTokens || 0);
     if (quota.status === 'exhausted') return true;
-    if (totalAmount > 0 && (remainingAmount <= 0 || usedPercent >= 99.5)) return true;
-    return totalTokens > 0 && (remainingTokens <= 0 || usedPercent >= 99.5);
+    return quota.limitReached === true || quota.allowed === false || usedPercent >= 99.5;
   }
 
-  protected quotaPercent(quota: AccountQuota): string {
-    return `${Number(quota.usedPercent || 0).toFixed(0)}%`;
+  protected quotaUsedPercent(quota: AccountQuota): number {
+    if (this.isQuotaExhausted(quota)) return 100;
+    return Math.round(Math.min(100, Math.max(0, Number(quota.usedPercent || 0))));
   }
 
-  protected formatTokens(value?: number): string {
-    const count = Number(value || 0);
-    if (!count) return '0';
-    if (count >= 1_000_000) return `${(count / 1_000_000).toFixed(1)}M`;
-    if (count >= 1_000) return `${(count / 1_000).toFixed(1)}K`;
-    return `${count}`;
+  protected quotaRemainingPercent(quota: AccountQuota): number {
+    return 100 - this.quotaUsedPercent(quota);
   }
 
-  protected formatQuotaValue(quota: AccountQuota): string {
-    if (quota.unit === 'usd') {
-      return `$${Number(quota.remainingAmount || 0).toFixed(2)}/$${Number(quota.totalAmount || 0).toFixed(2)}`;
-    }
-    return `${this.formatTokens(quota.remainingTokens)}/${this.formatTokens(quota.totalTokens)}`;
+  protected quotaProgressColor(quota: AccountQuota): string {
+    const remaining = this.quotaRemainingPercent(quota);
+    if (remaining <= 20) return '#d84a4a';
+    if (remaining <= 40) return '#d89614';
+    return '#20a77a';
+  }
+
+  protected officialSevenDayQuota(quotas?: AccountQuota[]): AccountQuota | null {
+    return (
+      (quotas || []).find((quota) => {
+        const source = (quota.source || '').trim().toLowerCase();
+        const windowType = (quota.windowType || '').trim().toLowerCase();
+        return source === 'wham' && (windowType === '7d' || windowType.endsWith(':7d'));
+      }) ?? null
+    );
   }
 
   protected formatTime(value?: number): string {
@@ -360,73 +347,8 @@ export class AccountListComponent implements OnInit {
     });
   }
 
-  protected modelCount(value?: string): string {
-    if (!value) return '未限制';
-    try {
-      const parsed = JSON.parse(value);
-      if (Array.isArray(parsed)) return `${parsed.length} 个模型`;
-    } catch {
-      return '自定义';
-    }
-    return '自定义';
-  }
-
-  protected firstSupportedModel(value?: string): string {
-    return this.parseModelList(value)[0] || '';
-  }
-
-  private loadModelMappings(): void {
-    this.modelsService.listAll().subscribe({
-      next: (models) => {
-        this.modelMappings = models ?? [];
-        if (this.testTarget) {
-          this.syncTestModelOptions(this.testTarget);
-          if (!this.testModelOptions.includes(this.testForm.controls.model.value)) {
-            this.testForm.controls.model.setValue(this.testModelOptions[0] || '');
-          }
-        }
-        this.cdr.markForCheck();
-      },
-      error: () => {
-        this.modelMappings = [];
-      },
-    });
-  }
-
-  private syncTestModelOptions(account: Account): void {
-    const accountModels = this.parseModelList(account.supportedModels);
-    if (accountModels.length) {
-      this.testModelOptions = accountModels;
-      this.testModelSource = 'account';
-      return;
-    }
-
-    this.testModelOptions = Array.from(
-      new Set(
-        this.modelMappings
-          .filter((item) => item.enabled !== false && !item.provider && !item.accountGroup)
-          .flatMap((item) => [item.publicModel, ...this.parseModelList(item.aliases)])
-          .map((item) => item.trim())
-          .filter(Boolean),
-      ),
-    );
-    this.testModelSource = this.testModelOptions.length ? 'global' : 'empty';
-  }
-
-  private parseModelList(value?: string): string[] {
-    if (!value) return [];
-    try {
-      const parsed = JSON.parse(value);
-      if (Array.isArray(parsed)) {
-        return parsed.map((item) => String(item).trim()).filter(Boolean);
-      }
-    } catch {
-      return value
-        .split(',')
-        .map((item) => item.trim())
-        .filter(Boolean);
-    }
-    return [];
+  protected modelCount(value?: number): string {
+    return `${Number(value || 0)} 个模型`;
   }
 
   protected async copy(value: string, label: string): Promise<void> {
@@ -439,18 +361,40 @@ export class AccountListComponent implements OnInit {
     }
   }
 
-  tableChange(event: STChange): void {
-    switch (event.type) {
-      case 'pi':
-      case 'ps':
-      case 'filter':
-      case 'sort':
-        this.q.page = event.pi;
-        this.q.size = event.ps;
-        this.getData();
-        break;
-      default:
-        break;
-    }
+  protected exportAccount(item: Account): void {
+    this.modal.confirm({
+      nzTitle: '导出敏感 OAuth 账号文件？',
+      nzContent: '文件包含 access_token 和 refresh_token，只能保存到可信位置。',
+      nzOkText: '确认导出',
+      nzOkDanger: true,
+      nzOnOk: () =>
+        new Promise<void>((resolve, reject) => {
+          this.accountsService.exportAccount(item.guid).subscribe({
+            next: (blob) => {
+              const url = URL.createObjectURL(blob);
+              const anchor = document.createElement('a');
+              anchor.href = url;
+              anchor.download = `${item.chatgptAccountId || item.guid}.json`;
+              anchor.click();
+              URL.revokeObjectURL(url);
+              resolve();
+            },
+            error: reject,
+          });
+        }),
+    });
+  }
+
+  protected pageIndexChange(page: number): void {
+    if (page === this.q.page) return;
+    this.q.page = page;
+    this.getData();
+  }
+
+  protected pageSizeChange(size: number): void {
+    if (size === this.q.size) return;
+    this.q.size = size;
+    this.q.page = 1;
+    this.getData();
   }
 }

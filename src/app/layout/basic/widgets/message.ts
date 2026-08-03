@@ -53,6 +53,7 @@ export interface HeaderMessageItem {
       nzTrigger="click"
       nzPlacement="bottomRight"
       [nzDropdownMenu]="menu"
+      (nzVisibleChange)="handleDropdownVisible($event)"
     >
       <nz-badge [nzCount]="unreadCount()" [nzOverflowCount]="99" nzSize="small">
         <button type="button" class="header-message__trigger" aria-label="消息通知">
@@ -148,7 +149,7 @@ export interface HeaderMessageItem {
     .header-message-panel {
       width: 360px;
       overflow: hidden;
-      background: rgb(255 255 255 / 96%);
+      background: var(--nm-surface-glass);
       border: 1px solid rgb(var(--nm-primary-rgb) / 8%);
       border-radius: 22px;
       box-shadow: 0 22px 44px rgb(var(--nm-primary-rgb) / 14%);
@@ -162,11 +163,11 @@ export interface HeaderMessageItem {
       gap: 12px;
       padding: 18px 18px 14px;
       border-bottom: 1px solid rgb(var(--nm-primary-rgb) / 7%);
-      background: linear-gradient(180deg, #fbfdfc 0%, #f5faf7 100%);
+      background: linear-gradient(180deg, var(--nm-surface) 0%, var(--nm-surface-muted) 100%);
     }
 
     .header-message-panel__title {
-      color: #203049;
+      color: var(--nm-text);
       font-size: 16px;
       font-weight: 800;
       line-height: 1.3;
@@ -174,7 +175,7 @@ export interface HeaderMessageItem {
 
     .header-message-panel__subtitle {
       margin-top: 4px;
-      color: #81908a;
+      color: var(--nm-text-secondary);
       font-size: 12px;
       font-weight: 600;
       line-height: 1.4;
@@ -234,12 +235,12 @@ export interface HeaderMessageItem {
     }
 
     .header-message-item.is-warning .header-message-item__dot {
-      background: #b7791f;
+      background: var(--nm-warning);
       box-shadow: 0 0 0 4px rgb(183 121 31 / 9%);
     }
 
     .header-message-item.is-error .header-message-item__dot {
-      background: #d14343;
+      background: var(--nm-danger);
       box-shadow: 0 0 0 4px rgb(209 67 67 / 9%);
     }
 
@@ -256,14 +257,14 @@ export interface HeaderMessageItem {
     }
 
     .header-message-item__title {
-      color: #233348;
+      color: var(--nm-text);
       font-size: 14px;
       font-weight: 700;
       line-height: 1.4;
     }
 
     .header-message-item__time {
-      color: #99a5b2;
+      color: var(--nm-text-secondary);
       font-size: 12px;
       font-weight: 600;
       white-space: nowrap;
@@ -271,7 +272,7 @@ export interface HeaderMessageItem {
 
     .header-message-item__content {
       margin-top: 6px;
-      color: #748191;
+      color: var(--nm-text-secondary);
       font-size: 13px;
       font-weight: 500;
       line-height: 1.5;
@@ -341,6 +342,12 @@ export class HeaderMessage implements OnInit {
   protected markAllRead(): void {
     this.messageService.markAllRead(this.messages());
     this.messages.update((list) => list.map((item) => ({ ...item, read: true })));
+  }
+
+  protected handleDropdownVisible(visible: boolean): void {
+    if (visible && !this.hasExternalItems) {
+      this.messageService.refreshMessages();
+    }
   }
 
   protected handleItemClick(item: HeaderMessageItem): void {

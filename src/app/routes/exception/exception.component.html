@@ -1,0 +1,101 @@
+<main
+  class="exception-page"
+  [style.--exception-accent]="view.accent"
+  [style.--exception-accent-soft]="view.accentSoft"
+>
+  <header class="exception-header">
+    <a class="brand" routerLink="/dashboard" aria-label="返回 FreeAi 工作台">
+      <logo class="brand-logo" />
+      <span class="brand-name">FreeAi</span>
+    </a>
+    <span class="brand-context">官方账号池网关</span>
+  </header>
+
+  <section class="exception-layout">
+    <div class="signal-board" aria-hidden="true">
+      <div class="signal-board-header">
+        <span>FREEAI CONSOLE</span>
+        <span class="signal-board-state">
+          <i nz-icon [nzType]="view.icon"></i>
+          {{ view.label }}
+        </span>
+      </div>
+
+      <div class="route-map">
+        <div class="route-node">
+          <span class="route-node-icon"><i nz-icon nzType="desktop"></i></span>
+          <strong>管理客户端</strong>
+          <small>Console</small>
+        </div>
+        <div class="route-connector"><i nz-icon nzType="arrow-right"></i></div>
+        <div class="route-node route-node-primary">
+          <span class="route-node-logo"><logo class="route-map-logo" /></span>
+          <strong>FreeAi</strong>
+          <small>{{ view.scope }}</small>
+        </div>
+        <div class="route-connector route-connector-alert">
+          <i nz-icon nzType="close"></i>
+        </div>
+        <div class="route-node">
+          <span class="route-node-icon"><i nz-icon nzType="cloud-server"></i></span>
+          <strong>官方账号池</strong>
+          <small>Account Pool</small>
+        </div>
+      </div>
+
+      <div class="status-readout">
+        <span class="status-label">HTTP STATUS</span>
+        <strong>{{ type }}</strong>
+        <code>{{ view.status }}</code>
+      </div>
+    </div>
+
+    <div class="exception-content">
+      <div class="exception-kicker">
+        <i nz-icon [nzType]="view.icon"></i>
+        <span>{{ view.label }}</span>
+      </div>
+      <p class="exception-code">{{ type }}</p>
+      <h1>{{ view.title }}</h1>
+      <p class="exception-description">{{ view.description }}</p>
+
+      <div class="exception-actions">
+        <a nz-button nzType="primary" nzSize="large" routerLink="/dashboard">
+          <i nz-icon nzType="home"></i>
+          回到工作台
+        </a>
+        @if (type === 500) {
+          <button nz-button nzSize="large" type="button" (click)="reloadPage()">
+            <i nz-icon nzType="reload"></i>
+            重新加载
+          </button>
+        } @else {
+          <button nz-button nzSize="large" type="button" (click)="goBack()">
+            <i nz-icon nzType="arrow-left"></i>
+            返回上一页
+          </button>
+        }
+      </div>
+
+      <nav class="quick-links" aria-label="常用入口">
+        <a routerLink="/accounts/list">
+          <i nz-icon nzType="team"></i>
+          官方账号
+        </a>
+        <a routerLink="/access/keys">
+          <i nz-icon nzType="key"></i>
+          API 密钥
+        </a>
+        <a routerLink="/request-logs/list">
+          <i nz-icon nzType="history"></i>
+          调用记录
+        </a>
+      </nav>
+    </div>
+  </section>
+
+  <footer class="exception-footer">
+    <span class="footer-status"><i></i>FreeAi 本地管理控制台</span>
+    <span>Official Account Pool Gateway</span>
+  </footer>
+</main>

@@ -30,10 +30,6 @@ import { NzMenuModule } from 'ng-zorro-antd/menu';
           <i nz-icon nzType="user" class="mr-sm"></i>
           个人中心
         </div>
-        <div nz-menu-item routerLink="/settings/security">
-          <i nz-icon nzType="safety-certificate" class="mr-sm"></i>
-          安全设置
-        </div>
         <li nz-menu-divider></li>
         <div nz-menu-item (click)="logout()">
           <i nz-icon nzType="logout" class="mr-sm"></i>

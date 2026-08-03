@@ -40,12 +40,9 @@ type PanelTrendType = 'up' | 'down' | 'neutral';
         min-width: 0;
         width: 100%;
         padding: 26px 28px 24px;
-        border: 1px solid rgb(255 255 255 / 74%);
-        border-radius: 24px;
-        background: rgb(255 255 255 / 88%);
-        box-shadow:
-          0 18px 46px rgb(var(--nm-primary-rgb) / 10%),
-          inset 0 1px 0 rgb(255 255 255 / 92%);
+        border: 1px solid rgb(var(--nm-primary-rgb) / 12%);
+        border-radius: 8px;
+        background: var(--nm-surface-glass);
       }
 
       .panel-header {
@@ -66,7 +63,7 @@ type PanelTrendType = 'up' | 'down' | 'neutral';
         border-radius: 14px;
         color: var(--nm-primary);
         font-size: 28px;
-        background: #f0f5ff;
+        background: var(--nm-primary-tint);
       }
 
       .panel-trend {
@@ -86,13 +83,13 @@ type PanelTrendType = 'up' | 'down' | 'neutral';
       }
 
       .panel-trend-down {
-        color: #c94747;
-        background: #ffe8e8;
+        color: var(--nm-danger);
+        background: var(--nm-danger-bg);
       }
 
       .panel-trend-neutral {
-        color: #65727f;
-        background: #edf2f7;
+        color: var(--nm-text-secondary);
+        background: var(--nm-surface-muted);
       }
 
       .panel-body {
@@ -101,7 +98,7 @@ type PanelTrendType = 'up' | 'down' | 'neutral';
       }
 
       .panel-title {
-        color: #7b8793;
+        color: var(--nm-text-secondary);
         font-size: 16px;
         font-weight: 700;
         line-height: 1.5;
@@ -109,7 +106,7 @@ type PanelTrendType = 'up' | 'down' | 'neutral';
 
       .panel-value {
         margin-top: 8px;
-        color: #253044;
+        color: var(--nm-text);
         font-size: 20px;
         font-weight: 800;
         line-height: 1.25;
@@ -119,7 +116,6 @@ type PanelTrendType = 'up' | 'down' | 'neutral';
       @media (max-width: 767px) {
         .panel {
           padding: 22px 22px 20px;
-          border-radius: 20px;
         }
 
         .panel-icon {

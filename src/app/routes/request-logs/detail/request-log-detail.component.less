@@ -29,7 +29,7 @@
 .detail-card {
   border: 1px solid rgb(var(--nm-primary-rgb) / 10%);
   border-radius: 8px;
-  background: #fff;
+  background: var(--nm-surface);
 }
 
 .metric-card {
@@ -40,7 +40,7 @@
 .metric-card span,
 .detail-grid span {
   display: block;
-  color: #697789;
+  color: var(--nm-text-secondary);
   font-size: 12px;
   font-weight: 700;
 }
@@ -48,7 +48,7 @@
 .metric-card strong {
   display: block;
   margin-top: 8px;
-  color: #1f3148;
+  color: var(--nm-text);
   font-size: 22px;
   font-weight: 850;
   line-height: 1.2;
@@ -66,7 +66,7 @@
 
 .section-title {
   margin-bottom: 14px;
-  color: #1f3148;
+  color: var(--nm-text);
   font-size: 15px;
   font-weight: 850;
 }
@@ -82,7 +82,7 @@
   padding: 12px;
   border: 1px solid rgb(var(--nm-primary-rgb) / 10%);
   border-radius: 8px;
-  background: #f8fafc;
+  background: var(--nm-surface-muted);
 }
 
 .detail-grid strong,
@@ -91,7 +91,7 @@
   display: block;
   margin-top: 4px;
   overflow: hidden;
-  color: #213149;
+  color: var(--nm-text);
   font-size: 14px;
   font-weight: 800;
   text-overflow: ellipsis;
@@ -99,7 +99,7 @@
 }
 
 .detail-grid small {
-  color: #7b8794;
+  color: var(--nm-text-secondary);
   font-size: 12px;
   font-weight: 600;
 }
@@ -119,7 +119,7 @@
 }
 
 .danger-text {
-  color: #c24141 !important;
+  color: var(--nm-danger) !important;
 }
 
 .cost-title {
@@ -132,7 +132,7 @@
 
 .cost-title span {
   display: block;
-  color: #1f3148;
+  color: var(--nm-text);
   font-size: 16px;
   font-weight: 850;
   line-height: 1.2;
@@ -141,7 +141,7 @@
 .cost-title em {
   display: block;
   margin-top: 5px;
-  color: #7b8794;
+  color: var(--nm-text-secondary);
   font-size: 12px;
   font-weight: 700;
   font-style: normal;
@@ -152,16 +152,16 @@
   flex: 0 0 auto;
   padding: 3px 10px;
   border-radius: 999px;
-  color: #7a5a1a;
+  color: var(--nm-warning);
   font-size: 12px;
   font-weight: 800;
   letter-spacing: 0;
-  background: #fff5d6;
+  background: var(--nm-warning-bg);
 }
 
 .cost-layout {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(260px, 340px);
+  grid-template-columns: 1fr;
   gap: 18px;
   align-items: stretch;
 }
@@ -169,9 +169,9 @@
 .cost-table {
   display: grid;
   overflow: hidden;
-  border: 1px solid #e8edf4;
+  border: 1px solid var(--nm-border);
   border-radius: 8px;
-  background: #fff;
+  background: var(--nm-surface);
 }
 
 .cost-table-head,
@@ -184,18 +184,18 @@
 
 .cost-table-head {
   padding: 10px 14px;
-  border-bottom: 1px solid #e8edf4;
-  color: #7b8794;
+  border-bottom: 1px solid var(--nm-border);
+  color: var(--nm-text-secondary);
   font-size: 12px;
   font-weight: 800;
-  background: #f8fafc;
+  background: var(--nm-surface-muted);
 }
 
 .cost-row {
   min-height: 48px;
   padding: 11px 14px;
-  border-bottom: 1px solid #edf1f6;
-  color: #0f1720;
+  border-bottom: 1px solid var(--nm-border);
+  color: var(--nm-text);
   font-size: 14px;
   line-height: 1.35;
 }
@@ -205,7 +205,7 @@
 }
 
 .cost-label {
-  color: #23344d;
+  color: var(--nm-text);
   font-weight: 800;
 }
 
@@ -219,11 +219,11 @@
 }
 
 .cost-price {
-  color: #a2abba;
+  color: var(--nm-text-secondary);
 }
 
 .cost-amount {
-  color: #111827;
+  color: var(--nm-text);
   font-weight: 850;
 }
 
@@ -234,7 +234,7 @@
   padding: 16px;
   border: 1px solid rgb(var(--nm-primary-rgb) / 12%);
   border-radius: 8px;
-  background: linear-gradient(180deg, rgb(var(--nm-primary-rgb) / 5%), #fff 58%);
+  background: linear-gradient(180deg, rgb(var(--nm-primary-rgb) / 5%), var(--nm-surface) 58%);
 }
 
 .cost-summary div {
@@ -245,13 +245,13 @@
 }
 
 .cost-summary span {
-  color: #536174;
+  color: var(--nm-text-secondary);
   font-size: 13px;
   font-weight: 800;
 }
 
 .cost-summary strong {
-  color: #111827;
+  color: var(--nm-text);
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   font-size: 16px;
   font-weight: 850;
@@ -272,7 +272,7 @@
 
 .cost-summary small {
   align-self: end;
-  color: #8a95a5;
+  color: var(--nm-text-secondary);
   font-size: 12px;
   font-weight: 700;
   line-height: 1.6;
@@ -283,10 +283,10 @@
   padding: 44px 24px;
   border: 1px solid rgb(var(--nm-primary-rgb) / 10%);
   border-radius: 8px;
-  color: #7b8794;
+  color: var(--nm-text-secondary);
   font-weight: 700;
   text-align: center;
-  background: #fff;
+  background: var(--nm-surface);
 }
 
 @media (max-width: 960px) {
@@ -357,7 +357,7 @@
   .cost-tokens::before,
   .cost-price::before,
   .cost-amount::before {
-    color: #7b8794;
+    color: var(--nm-text-secondary);
     font-family: initial;
     font-weight: 700;
   }
