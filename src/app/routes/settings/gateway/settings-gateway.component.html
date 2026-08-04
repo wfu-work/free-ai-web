@@ -2,7 +2,7 @@
   <div class="header-row">
     <title-label
       title="网关配置"
-      description="配置官方账号池选择策略、上游请求头和连接超时参数。"
+      description="配置账号池路由、上游网络、容量保护和连接超时参数。"
     />
     <div class="header-actions">
       <button nz-button (click)="resetDefaults()">恢复默认</button>
@@ -164,6 +164,56 @@
             <span>主动探测</span>
             <span>模型请求</span>
           </div>
+        </nz-card>
+
+        <nz-card class="config-section-card capacity-card" [nzBordered]="false">
+          <div class="section-head">
+            <span class="section-icon">
+              <i nz-icon nzType="thunderbolt"></i>
+            </span>
+            <div class="section-copy">
+              <h3>容量与保护</h3>
+              <p>限制网关同时处理的请求和单次请求大小，并控制过载等待与故障切换。</p>
+            </div>
+            <span class="section-status">{{ capacityLabel }}</span>
+          </div>
+
+          <se-container class="capacity-fields" col="4" nzLayout="vertical">
+            <se label="最大并发请求数" required error="请输入 1 至 4096">
+              <nz-input-number
+                formControlName="maxConcurrentRequests"
+                [nzMin]="1"
+                [nzMax]="4096"
+                [nzStep]="16"
+              />
+              <div class="field-extra">包含流式长连接；达到上限后进入排队或返回 429。</div>
+            </se>
+
+            <se label="最大请求体（MiB）" required error="请输入 1 至 512">
+              <nz-input-number
+                formControlName="maxRequestBodyMiB"
+                [nzMin]="1"
+                [nzMax]="512"
+                [nzStep]="1"
+              />
+              <div class="field-extra">限制单次 JSON 请求体大小，超限时返回 413。</div>
+            </se>
+
+            <se label="故障切换重试次数" required error="请输入 0 至 5">
+              <nz-input-number formControlName="maxRetries" [nzMin]="0" [nzMax]="5" [nzStep]="1" />
+              <div class="field-extra">填写 0 表示上游失败后不切换备用账号。</div>
+            </se>
+
+            <se label="过载排队时间（ms）" required error="请输入 0 至 60000">
+              <nz-input-number
+                formControlName="overloadQueueTimeoutMs"
+                [nzMin]="0"
+                [nzMax]="60000"
+                [nzStep]="100"
+              />
+              <div class="field-extra">填写 0 表示并发已满时立即返回 429。</div>
+            </se>
+          </se-container>
         </nz-card>
 
         <nz-card class="config-section-card connection-card" [nzBordered]="false">

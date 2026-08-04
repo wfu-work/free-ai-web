@@ -87,6 +87,7 @@
 }
 
 .listen-card,
+.capacity-card,
 .connection-card {
   grid-column: 1 / -1;
 }
@@ -247,6 +248,17 @@
   margin-top: 0;
 }
 
+.gateway-form ::ng-deep .capacity-fields {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.gateway-form ::ng-deep .capacity-fields .se__item {
+  width: auto;
+  min-width: 0;
+}
+
 .gateway-form ::ng-deep .se__item {
   margin-bottom: 0;
 }
@@ -289,6 +301,10 @@
   .summary-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
+
+  .gateway-form ::ng-deep .capacity-fields {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 @media (max-width: 1080px) {
@@ -297,6 +313,7 @@
   }
 
   .listen-card,
+  .capacity-card,
   .connection-card {
     grid-column: auto;
   }
@@ -317,6 +334,10 @@
 
   .summary-grid {
     grid-template-columns: 1fr;
+  }
+
+  .gateway-form ::ng-deep .capacity-fields {
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .listen-preview {

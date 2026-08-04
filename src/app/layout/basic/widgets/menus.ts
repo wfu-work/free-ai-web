@@ -101,8 +101,11 @@ export function resolveNavigationKey(url: string): NavigationKey {
   template: `
     <div class="sider-inner">
       <a routerLink="/dashboard" class="brand" aria-label="FreeAi 工作台" (click)="navigate.emit()">
-        <logo class="brand-logo" />
-        <span class="brand-name">FreeAi</span>
+        <span class="brand-heading">
+          <logo class="brand-logo" />
+          <span class="brand-name">FreeAi</span>
+        </span>
+        <span class="brand-description">统一管理 AI 账号、模型与调用</span>
       </a>
 
       <nav class="menu-scroll" aria-label="主导航">
@@ -151,12 +154,20 @@ export function resolveNavigationKey(url: string): NavigationKey {
       .brand {
         display: flex;
         flex: 0 0 auto;
+        flex-direction: column;
+        gap: 8px;
+        align-items: flex-start;
+        min-height: 78px;
+        padding: 0 8px 12px;
+        color: var(--nm-text);
+        text-decoration: none;
+      }
+
+      .brand-heading {
+        display: flex;
         gap: 8px;
         align-items: center;
         min-height: 50px;
-        padding: 0 8px 8px;
-        color: var(--nm-text);
-        text-decoration: none;
       }
 
       .brand-logo {
@@ -176,6 +187,16 @@ export function resolveNavigationKey(url: string): NavigationKey {
         font-weight: 720;
         letter-spacing: 0;
         white-space: nowrap;
+      }
+
+      .brand-description {
+        max-width: 100%;
+        padding-inline: 2px;
+        color: var(--nm-text-secondary);
+        font-size: 11px;
+        font-weight: 500;
+        line-height: 1.55;
+        letter-spacing: 0.01em;
       }
 
       .menu-scroll {
@@ -269,7 +290,10 @@ export function resolveNavigationKey(url: string): NavigationKey {
       }
 
       :host-context(.app-sider.ant-layout-sider-collapsed) .brand {
+        flex-direction: row;
         justify-content: center;
+        align-items: center;
+        min-height: 50px;
         padding-inline: 0;
       }
 
@@ -279,6 +303,7 @@ export function resolveNavigationKey(url: string): NavigationKey {
       }
 
       :host-context(.app-sider.ant-layout-sider-collapsed) .brand-name,
+      :host-context(.app-sider.ant-layout-sider-collapsed) .brand-description,
       :host-context(.app-sider.ant-layout-sider-collapsed) .menu-section-label {
         display: none;
       }

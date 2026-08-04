@@ -6,7 +6,7 @@ import {
   OnInit,
   inject,
 } from '@angular/core';
-import { FormBuilder } from '@angular/forms';
+import { FormBuilder, Validators } from '@angular/forms';
 import { SHARED_IMPORTS, TitleLabelComponent } from '@shared';
 import { NzMessageService } from 'ng-zorro-antd/message';
 import { finalize } from 'rxjs';
@@ -21,6 +21,10 @@ interface GatewayConfig {
   sseKeepAliveMs: number;
   upstreamTimeoutMs: number;
   upstreamStreamIdleTimeoutMs: number;
+  maxConcurrentRequests: number;
+  maxRequestBodyMiB: number;
+  maxRetries: number;
+  overloadQueueTimeoutMs: number;
 }
 
 const STORAGE_KEY = 'freeai.gateway.config';
@@ -35,6 +39,10 @@ const DEFAULT_GATEWAY_CONFIG: GatewayConfig = {
   sseKeepAliveMs: 15000,
   upstreamTimeoutMs: 120000,
   upstreamStreamIdleTimeoutMs: 1800000,
+  maxConcurrentRequests: 128,
+  maxRequestBodyMiB: 8,
+  maxRetries: 1,
+  overloadQueueTimeoutMs: 0,
 };
 
 @Component({
@@ -78,6 +86,22 @@ export class SettingsGatewayComponent implements OnInit {
     sseKeepAliveMs: [DEFAULT_GATEWAY_CONFIG.sseKeepAliveMs],
     upstreamTimeoutMs: [DEFAULT_GATEWAY_CONFIG.upstreamTimeoutMs],
     upstreamStreamIdleTimeoutMs: [DEFAULT_GATEWAY_CONFIG.upstreamStreamIdleTimeoutMs],
+    maxConcurrentRequests: [
+      DEFAULT_GATEWAY_CONFIG.maxConcurrentRequests,
+      [Validators.required, Validators.min(1), Validators.max(4096)],
+    ],
+    maxRequestBodyMiB: [
+      DEFAULT_GATEWAY_CONFIG.maxRequestBodyMiB,
+      [Validators.required, Validators.min(1), Validators.max(512)],
+    ],
+    maxRetries: [
+      DEFAULT_GATEWAY_CONFIG.maxRetries,
+      [Validators.required, Validators.min(0), Validators.max(5)],
+    ],
+    overloadQueueTimeoutMs: [
+      DEFAULT_GATEWAY_CONFIG.overloadQueueTimeoutMs,
+      [Validators.required, Validators.min(0), Validators.max(60000)],
+    ],
   });
 
   ngOnInit(): void {
@@ -86,6 +110,11 @@ export class SettingsGatewayComponent implements OnInit {
   }
 
   protected save(): void {
+    if (this.form.invalid) {
+      this.form.markAllAsTouched();
+      this.message.warning('请先修正超出允许范围的配置项');
+      return;
+    }
     const payload = this.normalizeConfig(this.form.getRawValue());
     if (payload.upstreamProxyEnabled && !payload.upstreamProxyUrl) {
       this.message.warning('开启翻墙代理后需要填写代理地址');
@@ -101,11 +130,16 @@ export class SettingsGatewayComponent implements OnInit {
           this.cdr.markForCheck();
         }),
       )
-      .subscribe((remote) => {
-        const saved = this.normalizeConfig({ ...payload, ...remote });
-        this.form.patchValue(saved);
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(saved));
-        this.message.success('网关配置已保存');
+      .subscribe({
+        next: (remote) => {
+          const saved = this.normalizeConfig({ ...payload, ...remote });
+          this.form.patchValue(saved);
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(saved));
+          this.message.success('网关配置已保存');
+        },
+        error: () => {
+          this.message.error('网关配置保存失败，请检查参数后重试');
+        },
       });
   }
 
@@ -140,6 +174,10 @@ export class SettingsGatewayComponent implements OnInit {
   protected get residencyLabel(): string {
     const value = this.form.controls.residency.value;
     return this.residencyOptions.find((item) => item.value === value)?.label || '-';
+  }
+
+  protected get capacityLabel(): string {
+    return `${this.form.controls.maxConcurrentRequests.value} 并发 · ${this.form.controls.maxRequestBodyMiB.value} MiB`;
   }
 
   private loadLocalConfig(): void {
@@ -187,6 +225,16 @@ export class SettingsGatewayComponent implements OnInit {
       upstreamTimeoutMs: Number(value.upstreamTimeoutMs || 0),
       upstreamStreamIdleTimeoutMs: Number(
         value.upstreamStreamIdleTimeoutMs || DEFAULT_GATEWAY_CONFIG.upstreamStreamIdleTimeoutMs,
+      ),
+      maxConcurrentRequests: Number(
+        value.maxConcurrentRequests ?? DEFAULT_GATEWAY_CONFIG.maxConcurrentRequests,
+      ),
+      maxRequestBodyMiB: Number(
+        value.maxRequestBodyMiB ?? DEFAULT_GATEWAY_CONFIG.maxRequestBodyMiB,
+      ),
+      maxRetries: Number(value.maxRetries ?? DEFAULT_GATEWAY_CONFIG.maxRetries),
+      overloadQueueTimeoutMs: Number(
+        value.overloadQueueTimeoutMs ?? DEFAULT_GATEWAY_CONFIG.overloadQueueTimeoutMs,
       ),
     };
   }

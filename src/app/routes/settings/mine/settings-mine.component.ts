@@ -25,6 +25,7 @@ export class SettingsMineComponent {
   private readonly tokenService: ITokenService = inject(DA_SERVICE_TOKEN);
 
   protected saving = false;
+  protected passwordVisible = false;
   protected readonly user = this.settingsService.user as User & {
     username?: string;
     email?: string;
@@ -36,16 +37,22 @@ export class SettingsMineComponent {
   ];
   protected readonly securityTips = [
     {
+      icon: 'lock',
+      eyebrow: '管理端鉴权',
       title: '后台登录密码',
-      desc: '用于进入 FreeAi 管理台，和API 密钥不是同一套鉴权。',
+      desc: '仅用于进入 FreeAI 管理台，与业务侧 API 密钥相互独立。',
     },
     {
+      icon: 'api',
+      eyebrow: '网关访问',
       title: 'API 密钥',
-      desc: '用于业务客户端访问 /v1 网关，不应该作为后台登录密码使用。',
+      desc: '用于业务客户端访问 /v1 网关，不应作为后台登录密码使用。',
     },
     {
+      icon: 'key',
+      eyebrow: '上游凭据',
       title: '上游账号 Secret',
-      desc: '只保存在后端加密字段中，前端不会回显原始 Secret。',
+      desc: '仅在后端加密保存，管理台不会回显原始 Secret。',
     },
   ];
 
@@ -66,6 +73,19 @@ export class SettingsMineComponent {
 
   protected get accountInitial(): string {
     return this.username.slice(0, 1).toUpperCase();
+  }
+
+  protected openPasswordModal(): void {
+    this.form.reset();
+    this.passwordVisible = true;
+    this.cdr.markForCheck();
+  }
+
+  protected closePasswordModal(): void {
+    if (this.saving) return;
+    this.passwordVisible = false;
+    this.form.reset();
+    this.cdr.markForCheck();
   }
 
   protected savePassword(): void {
@@ -101,6 +121,7 @@ export class SettingsMineComponent {
       )
       .subscribe({
         next: () => {
+          this.passwordVisible = false;
           this.message.success('密码已修改，请使用新密码重新登录');
           this.tokenService.clear();
           this.router.navigateByUrl(this.tokenService.login_url || '/passport/login');

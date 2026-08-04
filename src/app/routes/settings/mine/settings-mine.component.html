@@ -1,145 +1,196 @@
 <section class="mine-page">
-  <div class="d-flex justify-content-between header-row">
-    <title-label title="个人中心" description="管理当前后台账号的基础信息与登录密码。" />
+  <div class="header-row">
+    <title-label title="个人中心" description="查看管理端身份与安全边界。" />
+    <div class="account-context">
+      <i nz-icon nzType="safety-certificate"></i>
+      <span>管理端账号</span>
+    </div>
   </div>
 
-  <div class="mine-layout">
-    <nz-card class="profile-card" [nzBordered]="false">
-      <div class="profile-hero">
+  <main class="account-workspace">
+    <aside class="identity-rail">
+      <div class="identity-mark" aria-hidden="true">
+        <span></span>
+        <span></span>
+        <span></span>
+      </div>
+
+      <div class="identity-content">
+        <span class="identity-eyebrow">当前登录账号</span>
         <div class="profile-avatar">
           @if (user.avatar) {
-            <nz-avatar [nzSrc]="user.avatar" nzSize="large" nzShape="circle" />
+            <nz-avatar [nzSrc]="user.avatar" [nzSize]="88" nzShape="circle" />
           } @else {
             <span>{{ accountInitial }}</span>
           }
         </div>
         <div class="profile-copy">
-          <span>当前登录账号</span>
-          <strong>{{ username }}</strong>
-          <p>这个账号用于访问 FreeAi 后台管理台，负责维护账号池、API 密钥、模型路由与网关配置。</p>
+          <h2>{{ username }}</h2>
+          <p>后台管理员</p>
         </div>
-      </div>
 
-      <div class="profile-grid">
-        <div>
-          <span>登录身份</span>
-          <strong>后台管理员</strong>
-          <small>拥有本地控制台管理权限</small>
+        <div class="session-status">
+          <span class="status-dot"></span>
+          <span>会话正常</span>
         </div>
-        <div>
-          <span>账号状态</span>
-          <strong>已登录</strong>
-          <small>当前会话正常</small>
-        </div>
-        <div>
-          <span>安全边界</span>
-          <strong>管理端鉴权</strong>
-          <small>独立于 /v1 API 密钥</small>
-        </div>
-        <div>
-          <span>修改策略</span>
-          <strong>重新登录生效</strong>
-          <small>保存后自动清除当前登录态</small>
-        </div>
-      </div>
 
-      <div class="profile-note">
+        <button nz-button nzType="primary" nzSize="large" (click)="openPasswordModal()">
+          <i nz-icon nzType="lock"></i>
+          修改登录密码
+        </button>
+        <small class="identity-hint">修改成功后将退出当前登录</small>
+      </div>
+    </aside>
+
+    <section class="account-overview">
+      <header class="overview-header">
+        <div>
+          <h2>账号概览</h2>
+          <p>此身份拥有 FreeAI 本地控制台管理权限，可维护账号池、路由和网关配置。</p>
+        </div>
+        <span class="role-badge">
+          <i nz-icon nzType="check-circle"></i>
+          管理员
+        </span>
+      </header>
+
+      <dl class="account-meta">
+        <div>
+          <dt>登录账号</dt>
+          <dd>{{ username }}</dd>
+        </div>
+        <div>
+          <dt>联系邮箱</dt>
+          <dd>{{ userEmail === '-' ? '未配置' : userEmail }}</dd>
+        </div>
+        <div>
+          <dt>鉴权范围</dt>
+          <dd>本地管理端</dd>
+        </div>
+      </dl>
+
+      <section class="boundary-section">
+        <div class="section-heading">
+          <div>
+            <h3>凭据边界</h3>
+          </div>
+          <p>三类凭据各司其职，请勿交叉复用。</p>
+        </div>
+
+        <div class="boundary-list">
+          @for (item of securityTips; track item.title; let index = $index) {
+            <article class="boundary-item">
+              <span class="boundary-index">0{{ index + 1 }}</span>
+              <span class="boundary-icon">
+                <i nz-icon [nzType]="item.icon"></i>
+              </span>
+              <div>
+                <span>{{ item.eyebrow }}</span>
+                <strong>{{ item.title }}</strong>
+                <p>{{ item.desc }}</p>
+              </div>
+            </article>
+          }
+        </div>
+      </section>
+
+      <footer class="security-note">
         <i nz-icon nzType="safety-certificate"></i>
-        <span
-          >建议只在可信设备上修改密码；如果浏览器保存了旧密码，修改后请同步更新本地密码管理器。</span
-        >
-      </div>
-    </nz-card>
-
-    <nz-card class="info-card" [nzBordered]="false">
-      <div class="panel-title compact">
-        <strong>权限边界</strong>
-      </div>
-      <div class="tip-list">
-        @for (item of securityTips; track item.title) {
-          <article>
-            <strong>{{ item.title }}</strong>
-            <span>{{ item.desc }}</span>
-          </article>
-        }
-      </div>
-    </nz-card>
-
-    <nz-card class="password-card" [nzBordered]="false">
-      <div class="panel-title">
         <div>
-          <strong>修改密码</strong>
-          <span>修改后当前登录会失效，需要使用新密码重新登录。</span>
+          <strong>安全提示</strong>
+          <span>只在可信设备上修改密码，并及时更新浏览器或密码管理器中保存的旧密码。</span>
         </div>
-      </div>
-
-      <form
-        nz-form
-        [formGroup]="form"
-        nzLayout="vertical"
-        class="password-form"
-        (ngSubmit)="savePassword()"
-      >
-        <nz-form-item>
-          <nz-form-label nzRequired>当前密码</nz-form-label>
-          <nz-form-control nzErrorTip="请输入当前密码">
-            <app-password-input
-              formControlName="oldPassword"
-              placeholder="请输入当前密码"
-              autocomplete="current-password"
-            />
-          </nz-form-control>
-        </nz-form-item>
-
-        <nz-form-item>
-          <nz-form-label nzRequired>新密码</nz-form-label>
-          <nz-form-control nzErrorTip="请输入至少 6 位的新密码">
-            <app-password-input
-              formControlName="newPassword"
-              placeholder="请输入新密码"
-              autocomplete="new-password"
-            />
-          </nz-form-control>
-        </nz-form-item>
-
-        <nz-form-item>
-          <nz-form-label nzRequired>确认新密码</nz-form-label>
-          <nz-form-control [nzErrorTip]="confirmError">
-            <app-password-input
-              formControlName="confirmPassword"
-              placeholder="请再次输入新密码"
-              autocomplete="new-password"
-            />
-          </nz-form-control>
-        </nz-form-item>
-
-        <ng-template #confirmError let-control>
-          @if (control.hasError('mismatch')) {
-            两次输入的新密码不一致
-          } @else {
-            请再次输入新密码
-          }
-        </ng-template>
-
-        <div class="form-actions">
-          <button nz-button nzType="primary" [nzLoading]="saving" htmlType="submit">
-            保存新密码
-          </button>
-        </div>
-      </form>
-    </nz-card>
-
-    <div class="security-grid">
-      <nz-card class="info-card" [nzBordered]="false">
-        <div class="panel-title compact">
-          <strong>密码规则建议</strong>
-        </div>
-        <ul class="rule-list">
-          @for (rule of passwordRules; track rule) {
-            <li>{{ rule }}</li>
-          }
-        </ul>
-      </nz-card>
-    </div>
-  </div>
+      </footer>
+    </section>
+  </main>
 </section>
+
+<nz-modal
+  [nzTitle]="passwordModalTitle"
+  [nzVisible]="passwordVisible"
+  [nzOkLoading]="saving"
+  [nzMaskClosable]="!saving"
+  [nzClosable]="!saving"
+  [nzKeyboard]="!saving"
+  [nzWidth]="560"
+  nzClassName="mine-password-modal"
+  nzOkText="确认修改"
+  nzCancelText="取消"
+  (nzOnOk)="savePassword()"
+  (nzOnCancel)="closePasswordModal()"
+>
+  <ng-template #passwordModalTitle>
+    <span class="modal-title">
+      <i nz-icon nzType="lock"></i>
+      修改登录密码
+    </span>
+  </ng-template>
+
+  <ng-container *nzModalContent>
+    <div class="modal-intro">
+      <i nz-icon nzType="safety-certificate"></i>
+      <div>
+        <strong>这是管理端登录凭据</strong>
+        <span>修改成功后当前会话将立即失效，请使用新密码重新登录。</span>
+      </div>
+    </div>
+
+    <form
+      nz-form
+      [formGroup]="form"
+      nzLayout="vertical"
+      class="password-form"
+      (ngSubmit)="savePassword()"
+    >
+      <nz-form-item>
+        <nz-form-label nzRequired>当前密码</nz-form-label>
+        <nz-form-control nzErrorTip="请输入当前密码">
+          <app-password-input
+            formControlName="oldPassword"
+            placeholder="输入当前登录密码"
+            autocomplete="current-password"
+          />
+        </nz-form-control>
+      </nz-form-item>
+
+      <nz-form-item>
+        <nz-form-label nzRequired>新密码</nz-form-label>
+        <nz-form-control nzErrorTip="请输入至少 6 位的新密码">
+          <app-password-input
+            formControlName="newPassword"
+            placeholder="设置新的登录密码"
+            autocomplete="new-password"
+          />
+        </nz-form-control>
+      </nz-form-item>
+
+      <nz-form-item>
+        <nz-form-label nzRequired>确认新密码</nz-form-label>
+        <nz-form-control [nzErrorTip]="confirmError">
+          <app-password-input
+            formControlName="confirmPassword"
+            placeholder="再次输入新密码"
+            autocomplete="new-password"
+          />
+        </nz-form-control>
+      </nz-form-item>
+
+      <ng-template #confirmError let-control>
+        @if (control.hasError('mismatch')) {
+          两次输入的新密码不一致
+        } @else {
+          请再次输入新密码
+        }
+      </ng-template>
+    </form>
+
+    <ul class="password-rules">
+      @for (rule of passwordRules; track rule) {
+        <li>
+          <i nz-icon nzType="check-circle"></i>
+          <span>{{ rule }}</span>
+        </li>
+      }
+    </ul>
+  </ng-container>
+</nz-modal>
