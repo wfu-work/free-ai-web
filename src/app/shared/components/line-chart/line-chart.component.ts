@@ -9,12 +9,15 @@ import {
   OnDestroy,
   SimpleChanges,
   ViewChild,
+  effect,
+  inject,
 } from '@angular/core';
-import { ECharts, EChartsCoreOption, SeriesOption } from 'echarts';
-import * as echarts from 'echarts';
+import type { ECharts, EChartsCoreOption, SeriesOption } from 'echarts';
 import { NzEmptyModule } from 'ng-zorro-antd/empty';
 import { NzIconModule } from 'ng-zorro-antd/icon';
 import { NzSpinModule } from 'ng-zorro-antd/spin';
+
+import { ThemeColorService } from '../../services/theme-color.service';
 
 export interface LineChartSeriesItem {
   name: string;
@@ -27,6 +30,7 @@ export interface LineChartSeriesItem {
   yAxisIndex?: number;
   stack?: string;
   lineWidth?: number;
+  lineType?: 'solid' | 'dashed' | 'dotted';
   markPoint?: SeriesOption['markPoint'];
   markLine?: SeriesOption['markLine'];
   z?: number;
@@ -43,6 +47,8 @@ export interface LineChartSeriesItem {
 export class LineChartComponent implements AfterViewInit, OnChanges, OnDestroy {
   @ViewChild('chartRef', { static: false }) chartRef?: ElementRef<HTMLDivElement>;
 
+  private readonly themeColor = inject(ThemeColorService);
+
   @Input() title = '';
   @Input() subtitle = '';
   @Input() height = 360;
@@ -52,7 +58,7 @@ export class LineChartComponent implements AfterViewInit, OnChanges, OnDestroy {
   @Input() xAxisType: 'category' | 'time' | 'value' = 'category';
   @Input() xAxisData: Array<string | number | Date> = [];
   @Input() series: LineChartSeriesItem[] = [];
-  @Input() colors: string[] = ['#3448f4', '#6fa7ff', '#b8b5ff', '#fa8c16', '#13c2c2', '#722ed1'];
+  @Input() colors: string[] = [];
   @Input() yAxisName = '';
   @Input() xAxisName = '';
   @Input() yAxisMin?: number;
@@ -61,7 +67,7 @@ export class LineChartComponent implements AfterViewInit, OnChanges, OnDestroy {
   @Input() showArea = false;
   @Input() showToolbox = false;
   @Input() extraOptions?: EChartsCoreOption;
-  @Input() tooltipFormatter?: (params: any) => string;
+  @Input() tooltipFormatter?: (params: unknown) => string;
   @Input() xAxisLabelFormatter?: ((value: string | number) => string) | string;
   @Input() yAxisLabelFormatter?: ((value: number) => string) | string;
   @Input() titleAlign: 'left' | 'center' = 'center';
@@ -73,7 +79,18 @@ export class LineChartComponent implements AfterViewInit, OnChanges, OnDestroy {
   protected chart?: ECharts;
   protected chartReady = false;
 
+  private echarts?: typeof import('echarts');
+  private chartLoad?: Promise<void>;
+  private destroyed = false;
   private resizeObserver?: ResizeObserver;
+
+  constructor() {
+    effect(() => {
+      this.themeColor.current();
+      this.themeColor.effectiveMode();
+      queueMicrotask(() => void this.renderChart());
+    });
+  }
 
   protected get hasData(): boolean {
     return this.series.some(
@@ -88,9 +105,8 @@ export class LineChartComponent implements AfterViewInit, OnChanges, OnDestroy {
   }
 
   ngAfterViewInit(): void {
-    this.initChart();
     this.bindResize();
-    this.renderChart();
+    void this.renderChart();
   }
 
   ngOnChanges(changes: SimpleChanges): void {
@@ -119,27 +135,33 @@ export class LineChartComponent implements AfterViewInit, OnChanges, OnDestroy {
       changes['gridRight'] ||
       changes['gridBottom']
     ) {
-      this.renderChart();
+      void this.renderChart();
     }
   }
 
   ngOnDestroy(): void {
+    this.destroyed = true;
     this.resizeObserver?.disconnect();
     this.chart?.dispose();
   }
 
   protected retryRender(): void {
-    this.renderChart();
+    void this.renderChart();
   }
 
-  private initChart(): void {
+  private async initChart(): Promise<void> {
     const element = this.chartRef?.nativeElement;
     if (!element || this.chart) {
       return;
     }
 
-    this.chart = echarts.init(element);
-    this.chartReady = true;
+    this.chartLoad ??= import('echarts').then((module) => {
+      if (this.destroyed || this.chart || !element.isConnected) return;
+      this.echarts = module;
+      this.chart = module.init(element);
+      this.chartReady = true;
+    });
+    await this.chartLoad;
   }
 
   private bindResize(): void {
@@ -154,12 +176,12 @@ export class LineChartComponent implements AfterViewInit, OnChanges, OnDestroy {
     this.resizeObserver.observe(element);
   }
 
-  private renderChart(): void {
+  private async renderChart(): Promise<void> {
     if (!this.chartRef?.nativeElement) {
       return;
     }
 
-    this.initChart();
+    await this.initChart();
     if (!this.chart) {
       return;
     }
@@ -177,9 +199,13 @@ export class LineChartComponent implements AfterViewInit, OnChanges, OnDestroy {
   private buildOptions(): EChartsCoreOption {
     const legendNames = this.series.map((item) => item.name);
     const categoryAxisData = this.resolveCategoryAxisData();
+    const theme = this.resolveTheme();
+    const palette = this.colors.length
+      ? this.colors
+      : [theme.primary, theme.success, theme.warning, theme.info];
 
     return {
-      color: this.colors,
+      color: palette,
       animationDuration: 500,
       animationEasing: 'cubicOut',
       title: this.title
@@ -190,12 +216,12 @@ export class LineChartComponent implements AfterViewInit, OnChanges, OnDestroy {
             top: 0,
             textAlign: this.titleAlign,
             textStyle: {
-              color: '#1d2c28',
+              color: theme.text,
               fontSize: 18,
               fontWeight: 700,
             },
             subtextStyle: {
-              color: '#8a9c96',
+              color: theme.textSecondary,
               fontSize: 12,
             },
           }
@@ -203,18 +229,18 @@ export class LineChartComponent implements AfterViewInit, OnChanges, OnDestroy {
       tooltip: {
         trigger: 'axis',
         formatter: this.tooltipFormatter,
-        backgroundColor: 'rgba(255,255,255,0.96)',
-        borderColor: 'rgba(18,71,50,0.08)',
+        backgroundColor: theme.surface,
+        borderColor: theme.border,
         borderWidth: 1,
         textStyle: {
-          color: '#31423b',
+          color: theme.text,
         },
         padding: [10, 12],
-        extraCssText: 'box-shadow: 0 10px 24px rgba(15,52,38,0.08); border-radius: 12px;',
+        extraCssText: `box-shadow: ${theme.tooltipShadow}; border-radius: 8px;`,
         axisPointer: {
           type: 'line',
           lineStyle: {
-            color: 'rgba(11,140,94,0.24)',
+            color: theme.pointer,
             width: 1,
           },
         },
@@ -232,7 +258,7 @@ export class LineChartComponent implements AfterViewInit, OnChanges, OnDestroy {
             itemWidth: 10,
             itemHeight: 10,
             textStyle: {
-              color: '#61756e',
+              color: theme.textSecondary,
               fontSize: 12,
             },
             data: legendNames,
@@ -259,20 +285,20 @@ export class LineChartComponent implements AfterViewInit, OnChanges, OnDestroy {
         type: this.xAxisType,
         name: this.xAxisName,
         nameTextStyle: {
-          color: '#7f928b',
+          color: theme.textSecondary,
         },
         boundaryGap: this.xAxisType === 'category',
         data: this.xAxisType === 'category' ? categoryAxisData : undefined,
         axisLine: {
           lineStyle: {
-            color: 'rgba(18,71,50,0.12)',
+            color: theme.border,
           },
         },
         axisTick: {
           show: false,
         },
         axisLabel: {
-          color: '#7f928b',
+          color: theme.textSecondary,
           fontSize: 12,
           formatter: this.xAxisLabelFormatter,
         },
@@ -286,11 +312,11 @@ export class LineChartComponent implements AfterViewInit, OnChanges, OnDestroy {
         min: this.yAxisMin,
         max: this.yAxisMax,
         nameTextStyle: {
-          color: '#7f928b',
+          color: theme.textSecondary,
           padding: [0, 0, 4, 0],
         },
         axisLabel: {
-          color: '#7f928b',
+          color: theme.textSecondary,
           fontSize: 12,
           formatter:
             this.yAxisLabelFormatter ||
@@ -304,7 +330,7 @@ export class LineChartComponent implements AfterViewInit, OnChanges, OnDestroy {
         },
         splitLine: {
           lineStyle: {
-            color: 'rgba(18,71,50,0.08)',
+            color: theme.grid,
             type: 'dashed',
           },
         },
@@ -319,28 +345,23 @@ export class LineChartComponent implements AfterViewInit, OnChanges, OnDestroy {
         stack: item.stack,
         lineStyle: {
           width: item.lineWidth ?? 3,
-          color: item.color || this.colors[index % this.colors.length],
+          type: item.lineType ?? 'solid',
+          color: item.color || palette[index % palette.length],
         },
         itemStyle: {
-          color: item.color || this.colors[index % this.colors.length],
+          color: item.color || palette[index % palette.length],
         },
         areaStyle:
           (item.area ?? this.showArea)
             ? {
-                color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                color: new this.echarts!.graphic.LinearGradient(0, 0, 0, 1, [
                   {
                     offset: 0,
-                    color: this.withAlpha(
-                      item.color || this.colors[index % this.colors.length],
-                      0.26,
-                    ),
+                    color: this.withAlpha(item.color || palette[index % palette.length], 0.26),
                   },
                   {
                     offset: 1,
-                    color: this.withAlpha(
-                      item.color || this.colors[index % this.colors.length],
-                      0.02,
-                    ),
+                    color: this.withAlpha(item.color || palette[index % palette.length], 0.02),
                   },
                 ]),
               }
@@ -419,5 +440,35 @@ export class LineChartComponent implements AfterViewInit, OnChanges, OnDestroy {
     const blue = Number.parseInt(normalized.slice(4, 6), 16);
 
     return `rgba(${red}, ${green}, ${blue}, ${alpha})`;
+  }
+
+  private resolveTheme(): {
+    primary: string;
+    success: string;
+    warning: string;
+    info: string;
+    text: string;
+    textSecondary: string;
+    surface: string;
+    border: string;
+    grid: string;
+    pointer: string;
+    tooltipShadow: string;
+  } {
+    const dark = this.themeColor.effectiveMode() === 'dark';
+    const primary = this.themeColor.current().primary;
+    return {
+      primary,
+      success: dark ? '#4fc6a4' : '#14856e',
+      warning: dark ? '#e3a94f' : '#b7791f',
+      info: dark ? '#7aa2f7' : '#315c85',
+      text: dark ? '#e7edf4' : '#1f3148',
+      textSecondary: dark ? '#9ca8b6' : '#697684',
+      surface: dark ? '#18212c' : '#ffffff',
+      border: dark ? '#334252' : '#dfe6ed',
+      grid: dark ? '#283746' : '#e8edf2',
+      pointer: dark ? '#60758a' : '#9bacbd',
+      tooltipShadow: dark ? '0 12px 28px rgb(0 0 0 / 32%)' : '0 12px 28px rgb(31 49 72 / 12%)',
+    };
   }
 }

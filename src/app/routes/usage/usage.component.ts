@@ -5,7 +5,14 @@ import {
   OnInit,
   inject,
 } from '@angular/core';
-import { SHARED_IMPORTS, TitleLabelComponent } from '@shared';
+import {
+  ModelCallTrendChartComponent,
+  ModelCallTrendSeries,
+  SHARED_IMPORTS,
+  TitleLabelComponent,
+  TokenTrendChartComponent,
+  TokenTrendPoint,
+} from '@shared';
 import { NzMessageService } from 'ng-zorro-antd/message';
 import { finalize } from 'rxjs';
 
@@ -20,14 +27,19 @@ type AnalysisTone = 'good' | 'warn' | 'bad' | 'neutral';
   templateUrl: './usage.component.html',
   styleUrls: ['./usage.component.less'],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [SHARED_IMPORTS, TitleLabelComponent],
+  imports: [
+    SHARED_IMPORTS,
+    TitleLabelComponent,
+    TokenTrendChartComponent,
+    ModelCallTrendChartComponent,
+  ],
 })
 export class UsageComponent implements OnInit {
   private readonly usageService = inject(UsageService);
   private readonly message = inject(NzMessageService);
   private readonly cdr = inject(ChangeDetectorRef);
 
-  protected readonly ranges = [7, 30, 90];
+  protected readonly ranges = [1, 7, 30, 90];
   protected readonly dimensions: Array<{ key: UsageDimensionKey; label: string }> = [
     { key: 'models', label: '按模型' },
     { key: 'accounts', label: '按账号' },
@@ -163,11 +175,38 @@ export class UsageComponent implements OnInit {
   }
 
   protected get totalTokens(): number {
-    return (
-      Number(this.summary.inputTokens || 0) +
-      Number(this.summary.outputTokens || 0) +
-      Number(this.summary.cachedTokens || 0)
-    );
+    return Number(this.summary.inputTokens || 0) + Number(this.summary.outputTokens || 0);
+  }
+
+  protected get tokenTrendPoints(): TokenTrendPoint[] {
+    return (this.summary.timeline ?? []).map((point) => ({
+      label: this.formatTimelineLabel(point.bucketStart),
+      timestamp: point.bucketStart,
+      inputTokens: Number(point.inputTokens || 0),
+      outputTokens: Number(point.outputTokens || 0),
+      cachedTokens: Number(point.cachedTokens || 0),
+    }));
+  }
+
+  protected get modelTrendLabels(): string[] {
+    return this.modelTrendBucketStarts.map((value) => this.formatTimelineLabel(value));
+  }
+
+  protected get modelTrendSeries(): ModelCallTrendSeries[] {
+    const bucketStarts = this.modelTrendBucketStarts;
+    return (this.summary.modelTimeline ?? []).map((series) => {
+      const requestsByBucket = new Map(
+        (series.points ?? []).map((point) => [
+          Number(point.bucketStart),
+          Number(point.requests || 0),
+        ]),
+      );
+      return {
+        model: series.model || '未标识',
+        totalRequests: Number(series.totalRequests || 0),
+        data: bucketStarts.map((bucketStart) => requestsByBucket.get(bucketStart) || 0),
+      };
+    });
   }
 
   protected formatNumber(value?: number): string {
@@ -206,6 +245,26 @@ export class UsageComponent implements OnInit {
       models: [],
       accounts: [],
       platformKeys: [],
+      timeline: [],
+      modelTimeline: [],
     };
+  }
+
+  private get modelTrendBucketStarts(): number[] {
+    const timeline = this.summary.timeline ?? [];
+    if (timeline.length) return timeline.map((point) => Number(point.bucketStart));
+    return (this.summary.modelTimeline?.[0]?.points ?? []).map((point) =>
+      Number(point.bucketStart),
+    );
+  }
+
+  private formatTimelineLabel(value?: number): string {
+    if (!value) return '-';
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return '-';
+    return date.toLocaleDateString('zh-CN', {
+      month: '2-digit',
+      day: '2-digit',
+    });
   }
 }

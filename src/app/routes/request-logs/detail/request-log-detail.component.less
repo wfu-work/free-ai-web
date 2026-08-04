@@ -64,6 +64,21 @@
   grid-column: 1 / -1;
 }
 
+.performance-card {
+  grid-column: 1 / -1;
+}
+
+.performance-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.performance-note {
+  margin: -6px 0 14px;
+  color: var(--nm-text-secondary);
+  font-size: 12px;
+  line-height: 1.6;
+}
+
 .section-title {
   margin-bottom: 14px;
   color: var(--nm-text);
@@ -299,6 +314,10 @@
     grid-template-columns: 1fr;
   }
 
+  .performance-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .cost-layout {
     grid-template-columns: 1fr;
   }
@@ -311,6 +330,10 @@
 
   .metric-grid,
   .content-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .performance-grid {
     grid-template-columns: 1fr;
   }
 

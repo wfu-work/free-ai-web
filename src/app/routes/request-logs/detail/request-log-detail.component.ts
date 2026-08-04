@@ -90,6 +90,16 @@ export class RequestLogDetailComponent implements OnInit {
     return `${Number(value).toFixed(0)} ms`;
   }
 
+  protected formatStageMs(value?: number): string {
+    if (!value || Number.isNaN(Number(value))) return '-';
+    return `${Number(value).toFixed(0)} ms`;
+  }
+
+  protected connectionLabel(item: RequestLog): string {
+    if (!item.connectionTraced) return '-';
+    return item.connectionReused ? '已复用' : '新建连接';
+  }
+
   protected formatNumber(value?: number): string {
     return Number(value || 0).toLocaleString('zh-CN');
   }

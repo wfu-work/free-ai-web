@@ -1,0 +1,146 @@
+:host {
+  container-type: inline-size;
+  display: block;
+  min-width: 0;
+}
+
+.token-trend {
+  min-width: 0;
+  padding: 20px;
+  border: 1px solid rgb(var(--nm-primary-rgb) / 12%);
+  border-radius: 10px;
+  background: var(--nm-surface-glass);
+}
+
+.token-trend-header {
+  display: grid;
+  gap: 12px;
+}
+
+.token-trend-header h2 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 820;
+  line-height: 1.35;
+  color: var(--nm-text);
+}
+
+.token-trend-header p {
+  margin: 4px 0 0;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--nm-text-secondary);
+}
+
+.period-label {
+  width: fit-content;
+  padding: 5px 9px;
+  border: 1px solid rgb(var(--nm-primary-rgb) / 16%);
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 750;
+  line-height: 1.4;
+  color: var(--nm-primary);
+  background: rgb(var(--nm-primary-rgb) / 7%);
+}
+
+.token-summary {
+  display: grid;
+  gap: 14px;
+  margin-top: 18px;
+  padding: 14px 0;
+  border-top: 1px solid var(--nm-border);
+  border-bottom: 1px solid var(--nm-border);
+}
+
+.token-total span,
+.token-legend span {
+  font-size: 12px;
+  font-weight: 650;
+  color: var(--nm-text-secondary);
+}
+
+.token-total strong {
+  display: block;
+  margin-top: 3px;
+  font-size: 22px;
+  font-weight: 860;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.2;
+  color: var(--nm-text);
+}
+
+.token-legend {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.token-legend div {
+  display: grid;
+  grid-template-columns: 18px minmax(0, 1fr);
+  gap: 3px 7px;
+  align-items: center;
+  min-width: 0;
+}
+
+.token-legend i {
+  width: 18px;
+  height: 3px;
+  border-radius: 999px;
+}
+
+.token-legend strong {
+  overflow: hidden;
+  grid-column: 2;
+  font-size: 13px;
+  font-weight: 780;
+  font-variant-numeric: tabular-nums;
+  color: var(--nm-text);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+app-line-chart {
+  display: block;
+  margin-top: 10px;
+}
+
+footer {
+  padding-top: 8px;
+  font-size: 11px;
+  line-height: 1.5;
+  color: var(--nm-text-secondary);
+}
+
+.token-trend-compact {
+  padding: 18px;
+}
+
+.token-trend-compact .token-summary {
+  margin-top: 14px;
+}
+
+@container (min-width: 620px) {
+  .token-trend {
+    padding: 24px;
+  }
+
+  .token-trend-header,
+  .token-summary {
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: start;
+  }
+
+  .period-label {
+    justify-self: end;
+  }
+
+  .token-summary {
+    align-items: center;
+  }
+
+  .token-legend {
+    min-width: min(430px, 52cqw);
+  }
+}

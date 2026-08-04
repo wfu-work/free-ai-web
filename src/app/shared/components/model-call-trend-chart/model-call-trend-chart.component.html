@@ -1,0 +1,50 @@
+<section class="model-trend" [attr.aria-label]="title">
+  <header class="model-trend-header">
+    <div>
+      <h2>{{ title }}</h2>
+      <p>{{ subtitle }}</p>
+    </div>
+    @if (periodLabel) {
+      <span class="period-label">{{ periodLabel }}</span>
+    }
+  </header>
+
+  <div class="model-summary">
+    <div class="summary-total">
+      <span>窗口调用</span>
+      <strong>{{ formatCompact(totalRequests) }}</strong>
+      <small>主力模型 {{ topModelLabel }}</small>
+    </div>
+
+    <div class="model-legend" aria-label="模型调用图例">
+      @for (item of displaySeries; track item.model; let index = $index) {
+        <div>
+          <i
+            [class.legend-dashed]="item.model === '其他'"
+            [style.--legend-color]="palette[index]"
+          ></i>
+          <span [title]="item.model">{{ item.model }}</span>
+          <strong>{{ formatCompact(item.totalRequests) }}</strong>
+        </div>
+      }
+    </div>
+  </div>
+
+  <app-line-chart
+    [height]="height"
+    [loading]="loading"
+    [emptyText]="emptyText"
+    [xAxisData]="labels"
+    [series]="chartSeries"
+    [colors]="palette"
+    [legend]="false"
+    [gridLeft]="4"
+    [gridRight]="20"
+    [gridBottom]="8"
+    [yAxisLabelFormatter]="formatAxisRequests"
+    [tooltipFormatter]="formatTooltip"
+    [extraOptions]="chartOptions"
+  />
+
+  <footer>单独展示调用量最高的 5 个模型，其余模型合并为“其他”。</footer>
+</section>

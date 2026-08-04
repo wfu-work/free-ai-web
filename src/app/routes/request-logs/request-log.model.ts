@@ -18,7 +18,15 @@ export interface RequestLog {
   switchCount: number;
   switchReason: string;
   latencyMs: number;
+  preparationMs: number;
+  dnsMs: number;
+  connectMs: number;
+  tlsHandshakeMs: number;
+  upstreamHeaderMs: number;
+  firstEventMs: number;
   firstTokenMs: number;
+  connectionReused: boolean;
+  connectionTraced: boolean;
   inputTokens: number;
   outputTokens: number;
   cachedInputTokens?: number;

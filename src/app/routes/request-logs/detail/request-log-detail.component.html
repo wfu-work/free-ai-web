@@ -24,8 +24,8 @@
           <strong>{{ formatMs(record.latencyMs) }}</strong>
         </article>
         <article class="metric-card">
-          <span>首响</span>
-          <strong>{{ formatMs(record.firstTokenMs) }}</strong>
+          <span>首个正文 Token</span>
+          <strong>{{ formatStageMs(record.firstTokenMs) }}</strong>
         </article>
         <article class="metric-card">
           <span>Token 总量</span>
@@ -132,6 +132,47 @@
               >
                 {{ record.platformKeyId || '-' }}
               </button>
+            </div>
+          </div>
+        </nz-card>
+
+        <nz-card class="detail-card performance-card" [nzBordered]="false">
+          <div class="section-title">性能分段</div>
+          <p class="performance-note">
+            响应头耗时从发起上游请求开始计算；首个 SSE 与首个正文 Token 从本次代理请求开始累计。
+          </p>
+          <div class="detail-grid performance-grid">
+            <div>
+              <span>请求准备</span>
+              <strong>{{ formatStageMs(record.preparationMs) }}</strong>
+            </div>
+            <div>
+              <span>DNS 解析</span>
+              <strong>{{ formatStageMs(record.dnsMs) }}</strong>
+            </div>
+            <div>
+              <span>连接建立</span>
+              <strong>{{ formatStageMs(record.connectMs) }}</strong>
+            </div>
+            <div>
+              <span>TLS 握手</span>
+              <strong>{{ formatStageMs(record.tlsHandshakeMs) }}</strong>
+            </div>
+            <div>
+              <span>上游响应头</span>
+              <strong>{{ formatStageMs(record.upstreamHeaderMs) }}</strong>
+            </div>
+            <div>
+              <span>首个 SSE 事件</span>
+              <strong>{{ formatStageMs(record.firstEventMs) }}</strong>
+            </div>
+            <div>
+              <span>首个正文 Token</span>
+              <strong>{{ formatStageMs(record.firstTokenMs) }}</strong>
+            </div>
+            <div>
+              <span>连接方式</span>
+              <strong>{{ connectionLabel(record) }}</strong>
             </div>
           </div>
         </nz-card>

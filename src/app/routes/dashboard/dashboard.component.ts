@@ -5,21 +5,33 @@ import {
   OnInit,
   inject,
 } from '@angular/core';
-import { SHARED_IMPORTS } from '@shared';
+import {
+  ModelCallTrendChartComponent,
+  ModelCallTrendSeries,
+  SHARED_IMPORTS,
+  TitleLabelComponent,
+  TokenTrendChartComponent,
+  TokenTrendPoint,
+} from '@shared';
 import { finalize, forkJoin } from 'rxjs';
-import { PanelComponent } from 'src/app/shared/components/panel/panel.component';
-import { TitleLabelComponent } from 'src/app/shared/components/title-label/title-label.component';
 
 import { AccountHealthItem } from '../accounts/account.model';
 import { AccountsService } from '../accounts/accounts.service';
-import { OpsMetrics, OpsStats, MasterKeyStatus } from '../ops/ops.model';
+import { MasterKeyStatus, OpsMetrics, OpsStats } from '../ops/ops.model';
 import { OpsService } from '../ops/ops.service';
 import { RequestLog } from '../request-logs/request-log.model';
 import { RequestLogsService } from '../request-logs/request-logs.service';
-import { DashboardActiveRulesComponent } from './widgets/active-rules';
-import { DashboardTrafficTrendComponent } from './widgets/traffic-trend';
 
 type TrendRangeValue = '1h' | '12h' | '1d' | '2d' | '3d' | '1w' | '1m';
+type SignalTone = 'success' | 'idle' | 'warning';
+
+interface TrendRangeOption {
+  label: string;
+  value: TrendRangeValue;
+  ms: number;
+  buckets: number;
+  limit: number;
+}
 
 @Component({
   selector: 'app-dashboard',
@@ -29,9 +41,8 @@ type TrendRangeValue = '1h' | '12h' | '1d' | '2d' | '3d' | '1w' | '1m';
   imports: [
     SHARED_IMPORTS,
     TitleLabelComponent,
-    PanelComponent,
-    DashboardTrafficTrendComponent,
-    DashboardActiveRulesComponent,
+    TokenTrendChartComponent,
+    ModelCallTrendChartComponent,
   ],
 })
 export class DashboardComponent implements OnInit {
@@ -41,6 +52,9 @@ export class DashboardComponent implements OnInit {
   private readonly cdr = inject(ChangeDetectorRef);
 
   protected loading = false;
+  protected lastUpdatedAt = 0;
+  protected trendUntil = Date.now();
+  protected trendRange: TrendRangeValue = '1h';
   protected metrics: OpsMetrics = {
     ok: false,
     name: 'FreeAiGo',
@@ -53,15 +67,9 @@ export class DashboardComponent implements OnInit {
   protected masterKey: MasterKeyStatus | null = null;
   protected healthItems: AccountHealthItem[] = [];
   protected logs: RequestLog[] = [];
-  protected trendRange: TrendRangeValue = '1h';
-  protected readonly trendRangeOptions: Array<{
-    label: string;
-    value: TrendRangeValue;
-    ms: number;
-    buckets: number;
-    limit: number;
-  }> = [
-    { label: '最近 1 小时', value: '1h', ms: 60 * 60 * 1000, buckets: 8, limit: 1000 },
+
+  protected readonly trendRangeOptions: TrendRangeOption[] = [
+    { label: '最近 1 小时', value: '1h', ms: 60 * 60 * 1000, buckets: 12, limit: 1000 },
     { label: '最近 12 小时', value: '12h', ms: 12 * 60 * 60 * 1000, buckets: 12, limit: 3000 },
     { label: '最近 1 天', value: '1d', ms: 24 * 60 * 60 * 1000, buckets: 12, limit: 5000 },
     { label: '最近 2 天', value: '2d', ms: 2 * 24 * 60 * 60 * 1000, buckets: 12, limit: 8000 },
@@ -76,6 +84,7 @@ export class DashboardComponent implements OnInit {
 
   protected load(): void {
     this.loading = true;
+    this.trendUntil = Date.now();
     forkJoin({
       metrics: this.opsService.metrics(),
       stats: this.opsService.stats(),
@@ -95,37 +104,8 @@ export class DashboardComponent implements OnInit {
         this.masterKey = masterKey ?? null;
         this.healthItems = healthItems ?? [];
         this.logs = logs ?? [];
+        this.lastUpdatedAt = Date.now();
       });
-  }
-
-  protected get successRate(): string {
-    if (!this.stats.total) return '--';
-    return `${((this.stats.success / this.stats.total) * 100).toFixed(1)}%`;
-  }
-
-  protected get failureRate(): string {
-    if (!this.stats.total) return '--';
-    return `${((this.stats.failures / this.stats.total) * 100).toFixed(1)}%`;
-  }
-
-  protected get avgLatencyLabel(): string {
-    return `${Number(this.stats.avgLatencyMs || 0).toFixed(0)} ms`;
-  }
-
-  protected get availableAccountsLabel(): string {
-    return `${this.metrics.availableAccounts || 0} / ${this.metrics.accounts || 0}`;
-  }
-
-  protected get totalAccountsLabel(): string {
-    return `${this.metrics.accounts || 0}`;
-  }
-
-  protected get enabledModelsLabel(): string {
-    return `${this.metrics.enabledModels || 0}`;
-  }
-
-  protected get enabledKeysLabel(): string {
-    return `${this.metrics.enabledKeys || 0}`;
   }
 
   protected get readinessScore(): number {
@@ -139,12 +119,12 @@ export class DashboardComponent implements OnInit {
   }
 
   protected get readinessLabel(): string {
-    if (this.readinessScore >= 90) return '可接入';
-    if (this.readinessScore >= 65) return '需关注';
-    return '待配置';
+    if (this.readinessScore >= 90) return '运行就绪';
+    if (this.readinessScore >= 65) return '需要关注';
+    return '等待配置';
   }
 
-  protected get readinessTone(): string {
+  protected get readinessTone(): 'success' | 'warning' | 'danger' {
     if (this.readinessScore >= 90) return 'success';
     if (this.readinessScore >= 65) return 'warning';
     return 'danger';
@@ -164,28 +144,134 @@ export class DashboardComponent implements OnInit {
   }
 
   protected get recentRequestCount(): number {
-    return this.logs.filter((log) => this.logTime(log) >= this.trendStartAt).length;
+    return this.windowLogs.length;
   }
 
   protected get recentFailureCount(): number {
-    return this.logs.filter(
-      (log) => this.logTime(log) >= this.trendStartAt && this.isFailureLog(log),
-    ).length;
+    return this.windowLogs.filter((log) => this.isFailureLog(log)).length;
   }
 
-  protected get latestRequestLabel(): string {
-    const latest = this.sortedLogs[0];
-    if (!latest) return '暂无请求';
-    return this.formatTime(this.logTime(latest));
+  protected get recentSuccessRate(): string {
+    if (!this.recentRequestCount) return '--';
+    return `${(((this.recentRequestCount - this.recentFailureCount) / this.recentRequestCount) * 100).toFixed(1)}%`;
   }
 
-  protected get qualityLabel(): string {
-    if (!this.stats.total) return '等待请求数据';
-    const success = this.stats.total ? (this.stats.success / this.stats.total) * 100 : 0;
-    if (success >= 99) return '请求质量很好';
-    if (success >= 95) return '请求质量稳定';
-    if (success >= 85) return '请求质量需关注';
-    return '请求质量需排查';
+  protected get recentAverageLatencyLabel(): string {
+    if (!this.recentRequestCount) return '--';
+    const total = this.windowLogs.reduce((sum, log) => sum + Number(log.latencyMs || 0), 0);
+    return this.formatDuration(total / this.recentRequestCount);
+  }
+
+  protected get recentTokenCount(): number {
+    return this.windowLogs.reduce(
+      (total, log) => total + Number(log.inputTokens || 0) + Number(log.outputTokens || 0),
+      0,
+    );
+  }
+
+  protected get trendPeriodLabel(): string {
+    return `${this.selectedTrendRange.label} · ${this.recentRequestCount} 次请求`;
+  }
+
+  protected get tokenTrendPoints(): TokenTrendPoint[] {
+    const range = this.selectedTrendRange;
+    const start = this.trendUntil - range.ms;
+    const bucketSize = range.ms / range.buckets;
+    const points = Array.from({ length: range.buckets }, (_, index) => ({
+      label: this.formatTrendTime(new Date(start + index * bucketSize)),
+      timestamp: start + index * bucketSize,
+      inputTokens: 0,
+      outputTokens: 0,
+      cachedTokens: 0,
+    }));
+
+    for (const log of this.windowLogs) {
+      const index = Math.min(
+        points.length - 1,
+        Math.max(0, Math.floor((this.logTime(log) - start) / bucketSize)),
+      );
+      points[index].inputTokens += Number(log.inputTokens || 0);
+      points[index].outputTokens += Number(log.outputTokens || 0);
+      points[index].cachedTokens += Number(log.cachedInputTokens || 0);
+    }
+    return points;
+  }
+
+  protected get modelTrendLabels(): string[] {
+    return this.tokenTrendPoints.map((point) => point.label);
+  }
+
+  protected get modelTrendSeries(): ModelCallTrendSeries[] {
+    const totals = new Map<string, number>();
+    for (const log of this.windowLogs) {
+      const model = (log.model || '').trim() || '未标识';
+      totals.set(model, (totals.get(model) || 0) + 1);
+    }
+
+    const topModels = Array.from(totals.entries())
+      .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+      .slice(0, 5)
+      .map(([model]) => model);
+    const topModelSet = new Set(topModels);
+    const names = totals.size > topModels.length ? [...topModels, '其他'] : topModels;
+    const data = new Map(
+      names.map((model) => [model, Array(this.selectedTrendRange.buckets).fill(0)]),
+    );
+    const start = this.trendUntil - this.selectedTrendRange.ms;
+    const bucketSize = this.selectedTrendRange.ms / this.selectedTrendRange.buckets;
+
+    for (const log of this.windowLogs) {
+      const model = (log.model || '').trim() || '未标识';
+      const target = topModelSet.has(model) ? model : '其他';
+      const values = data.get(target);
+      if (!values) continue;
+      const index = Math.min(
+        values.length - 1,
+        Math.max(0, Math.floor((this.logTime(log) - start) / bucketSize)),
+      );
+      values[index] += 1;
+    }
+
+    return names.map((model) => ({
+      model,
+      totalRequests: data.get(model)?.reduce((sum, value) => sum + value, 0) || 0,
+      data: data.get(model) || [],
+    }));
+  }
+
+  protected get pendingSignals(): Array<{
+    name: string;
+    description: string;
+    status: string;
+    tone: SignalTone;
+  }> {
+    const accountTone: SignalTone = this.abnormalAccounts ? 'warning' : 'success';
+    return [
+      {
+        name: '主密钥',
+        description: '本地网关认证入口',
+        status: this.masterKey?.loaded ? '已加载' : '未加载',
+        tone: this.masterKey?.loaded ? 'success' : 'warning',
+      },
+      {
+        name: '账号池',
+        description: `${this.metrics.availableAccounts || 0} / ${this.metrics.accounts || 0} 个账号可用`,
+        status: this.abnormalAccounts ? `${this.abnormalAccounts} 个异常` : '状态正常',
+        tone: accountTone,
+      },
+      {
+        name: '窗口请求',
+        description: `${this.selectedTrendRange.label}请求质量`,
+        status: this.recentFailureCount ? `${this.recentFailureCount} 次失败` : '无失败',
+        tone: this.recentFailureCount ? 'warning' : 'success',
+      },
+      {
+        name: '模型与密钥',
+        description: `${this.metrics.enabledModels || 0} 个模型 · ${this.metrics.enabledKeys || 0} 个密钥`,
+        status: this.metrics.enabledModels && this.metrics.enabledKeys ? '可以接入' : '待配置',
+        tone: this.metrics.enabledModels && this.metrics.enabledKeys ? 'success' : 'idle',
+      },
+    ];
   }
 
   protected get accountGroupHealthRows(): Array<{
@@ -214,13 +300,9 @@ export class DashboardComponent implements OnInit {
       .slice(0, 5);
   }
 
-  protected get recentLogs(): RequestLog[] {
-    return this.sortedLogs.slice(0, 6);
-  }
-
   protected get errorRows(): Array<{ label: string; count: number; percent: number }> {
     const map = new Map<string, number>();
-    for (const log of this.logs) {
+    for (const log of this.windowLogs) {
       if (!this.isFailureLog(log)) continue;
       const label = log.errorType || String(log.statusCode || 'unknown');
       map.set(label, (map.get(label) || 0) + 1);
@@ -236,110 +318,8 @@ export class DashboardComponent implements OnInit {
       .slice(0, 5);
   }
 
-  protected get insightCards(): Array<{
-    title: string;
-    value: string;
-    text: string;
-    tone: 'success' | 'warning' | 'danger' | 'neutral';
-  }> {
-    return [
-      {
-        title: '最近请求',
-        value: `${this.recentRequestCount}`,
-        text: `${this.selectedTrendRange.label}失败 ${this.recentFailureCount} 次，最新请求 ${this.latestRequestLabel}。`,
-        tone: this.recentFailureCount > 0 ? 'warning' : 'success',
-      },
-      {
-        title: '账号风险',
-        value: `${this.abnormalAccounts}`,
-        text: `可用率 ${this.accountAvailabilityPercent}%，异常包含限流、冷却、过期、失效和禁用账号。`,
-        tone: this.abnormalAccounts > 0 ? 'warning' : 'success',
-      },
-      {
-        title: '请求质量',
-        value: this.successRate,
-        text: `${this.qualityLabel}，平均延迟 ${this.avgLatencyLabel}，失败率 ${this.failureRate}。`,
-        tone: this.stats.failures > 0 ? 'warning' : 'success',
-      },
-    ];
-  }
-
-  protected get pendingRules(): Array<{
-    name: string;
-    flow: string;
-    status: string;
-    tone: 'success' | 'idle' | 'warning';
-  }> {
-    const limited = this.healthItems.filter((item) => item.status === 'limited').length;
-    const cooldown = this.healthItems.filter((item) => item.status === 'cooldown').length;
-    const abnormal = this.healthItems.filter((item) =>
-      ['exhausted', 'disabled', 'expired', 'invalid', 'unknown'].includes(item.status),
-    ).length;
-    return [
-      {
-        name: '主密钥状态',
-        flow: '检查主密钥文件、路径和加载结果',
-        status: this.masterKey?.loaded ? '正常' : '待处理',
-        tone: this.masterKey?.loaded ? 'success' : 'warning',
-      },
-      {
-        name: '失败请求',
-        flow: '查看请求日志中的错误类型与切换原因',
-        status: `${this.stats.failures || 0} 条`,
-        tone: this.stats.failures > 0 ? 'warning' : 'success',
-      },
-      {
-        name: '账号池波动',
-        flow: '关注限流、冷却和异常账号',
-        status: `${limited + cooldown + abnormal} 个异常`,
-        tone: limited + cooldown + abnormal > 0 ? 'warning' : 'idle',
-      },
-      {
-        name: '模型目录',
-        flow: '从官方账号同步模型并确认账号可用性',
-        status: `${this.metrics.enabledModels || 0} 个启用`,
-        tone: (this.metrics.enabledModels || 0) > 0 ? 'success' : 'warning',
-      },
-    ];
-  }
-
-  protected get trendBars(): Array<{
-    time: string;
-    value: number;
-    active?: boolean;
-    raw?: number;
-  }> {
-    const bucketCount = this.selectedTrendRange.buckets;
-    const windowMs = this.selectedTrendRange.ms;
-    const now = Date.now();
-    const start = now - windowMs;
-    const bucketSize = windowMs / bucketCount;
-    const counts = Array.from({ length: bucketCount }, () => 0);
-
-    for (const log of this.logs) {
-      const createdAt = this.logTime(log);
-      if (createdAt < start || createdAt > now) continue;
-      const index = Math.min(
-        bucketCount - 1,
-        Math.max(0, Math.floor((createdAt - start) / bucketSize)),
-      );
-      counts[index] += 1;
-    }
-
-    const max = Math.max(...counts, 1);
-    return counts.map((count, index) => {
-      const slotStart = new Date(start + bucketSize * index);
-      return {
-        time: this.formatTrendTime(slotStart),
-        raw: count,
-        value: count === 0 ? 12 : Math.max(16, Math.round((count / max) * 100)),
-        active: count === max && max > 0,
-      };
-    });
-  }
-
-  protected get trendBadge(): string {
-    return `${this.selectedTrendRange.label} · ${this.recentRequestCount} 次请求`;
+  protected get recentLogs(): RequestLog[] {
+    return this.sortedLogs.slice(0, 6);
   }
 
   protected onTrendRangeChange(value: string): void {
@@ -372,9 +352,19 @@ export class DashboardComponent implements OnInit {
     });
   }
 
-  protected formatMs(value?: number): string {
-    if (value === undefined || value === null || Number.isNaN(Number(value))) return '-';
-    return `${Number(value).toFixed(0)} ms`;
+  protected formatDuration(value?: number): string {
+    const milliseconds = Number(value || 0);
+    if (milliseconds <= 0) return '-';
+    if (milliseconds < 1000) return `${Math.round(milliseconds)} ms`;
+    return `${(milliseconds / 1000).toFixed(milliseconds >= 10_000 ? 0 : 1)} s`;
+  }
+
+  protected formatCompact(value?: number): string {
+    const count = Number(value || 0);
+    if (Math.abs(count) >= 1_000_000_000) return `${(count / 1_000_000_000).toFixed(1)}B`;
+    if (Math.abs(count) >= 1_000_000) return `${(count / 1_000_000).toFixed(1)}M`;
+    if (Math.abs(count) >= 1_000) return `${(count / 1_000).toFixed(1)}K`;
+    return Math.round(count).toLocaleString('zh-CN');
   }
 
   protected shortText(value?: string, fallback = '-'): string {
@@ -383,13 +373,7 @@ export class DashboardComponent implements OnInit {
     return text.length > 18 ? `${text.slice(0, 14)}...` : text;
   }
 
-  private get selectedTrendRange(): {
-    label: string;
-    value: TrendRangeValue;
-    ms: number;
-    buckets: number;
-    limit: number;
-  } {
+  private get selectedTrendRange(): TrendRangeOption {
     return (
       this.trendRangeOptions.find((item) => item.value === this.trendRange) ||
       this.trendRangeOptions[0]
@@ -397,11 +381,18 @@ export class DashboardComponent implements OnInit {
   }
 
   private get trendStartAt(): number {
-    return Date.now() - this.selectedTrendRange.ms;
+    return this.trendUntil - this.selectedTrendRange.ms;
+  }
+
+  private get windowLogs(): RequestLog[] {
+    return this.logs.filter((log) => {
+      const time = this.logTime(log);
+      return time >= this.trendStartAt && time <= this.trendUntil;
+    });
   }
 
   private get sortedLogs(): RequestLog[] {
-    return [...this.logs].sort((a, b) => this.logTime(b) - this.logTime(a));
+    return [...this.windowLogs].sort((a, b) => this.logTime(b) - this.logTime(a));
   }
 
   private formatTrendTime(date: Date): string {
@@ -412,7 +403,7 @@ export class DashboardComponent implements OnInit {
         minute: '2-digit',
       });
     }
-    if (this.trendRange === '1d') {
+    if (this.trendRange === '1d' || this.trendRange === '2d' || this.trendRange === '3d') {
       return date.toLocaleString('zh-CN', {
         hour12: false,
         month: '2-digit',
@@ -420,9 +411,6 @@ export class DashboardComponent implements OnInit {
         hour: '2-digit',
       });
     }
-    return date.toLocaleDateString('zh-CN', {
-      month: '2-digit',
-      day: '2-digit',
-    });
+    return date.toLocaleDateString('zh-CN', { month: '2-digit', day: '2-digit' });
   }
 }

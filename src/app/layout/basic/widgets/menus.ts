@@ -231,6 +231,12 @@ export function resolveNavigationKey(url: string): NavigationKey {
       }
 
       :host ::ng-deep {
+        .menu-list.ant-menu,
+        .menu-list.ant-menu-dark,
+        .menu-list.ant-menu-light {
+          background: transparent !important;
+        }
+
         .menu-list .anticon {
           display: inline-flex;
           align-items: center;

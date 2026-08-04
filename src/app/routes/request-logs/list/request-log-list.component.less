@@ -213,9 +213,102 @@
   color: var(--nm-warning);
 }
 
-.latency-text {
-  color: var(--nm-success);
+.latency-summary {
+  display: grid;
+  width: fit-content;
+  min-width: 150px;
+  gap: 6px;
+  border-radius: 8px;
+  outline: none;
+  cursor: help;
+}
+
+.latency-summary:focus-visible {
+  box-shadow: 0 0 0 2px rgb(var(--nm-primary-rgb) / 26%);
+}
+
+.latency-chip-row {
+  display: flex;
+  gap: 7px;
+  align-items: center;
+}
+
+.latency-chip {
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+  min-height: 26px;
+  padding: 2px 10px;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  font-size: 13px;
   font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  line-height: 20px;
+  white-space: nowrap;
+}
+
+.latency-chip-total {
+  border-color: var(--nm-success-border);
+  color: var(--nm-success);
+  background: var(--nm-success-bg);
+}
+
+.latency-chip-total i {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: currentcolor;
+}
+
+.latency-chip-first {
+  border-color: var(--nm-warning-border);
+  color: var(--nm-warning);
+  background: var(--nm-warning-bg);
+}
+
+.latency-chip-first b {
+  font-weight: 850;
+}
+
+.latency-chip-danger {
+  border-color: var(--nm-danger-border);
+  color: var(--nm-danger);
+  background: var(--nm-danger-bg);
+}
+
+.latency-rate {
+  color: var(--nm-text-secondary);
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+.latency-popover-content {
+  width: min(320px, calc(100vw - 64px));
+  padding: 2px 0;
+}
+
+.latency-detail-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px 24px;
+  align-items: baseline;
+}
+
+.latency-detail-grid span {
+  color: var(--nm-text-secondary);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.latency-detail-grid strong {
+  color: var(--nm-text);
+  font-size: 13px;
+  font-weight: 780;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  white-space: nowrap;
 }
 
 .copy-text:hover {

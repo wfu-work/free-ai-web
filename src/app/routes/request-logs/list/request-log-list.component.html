@@ -134,9 +134,75 @@
       </ng-template>
 
       <ng-template st-row="latencyRender" let-item>
-        <div class="latency-text">
-          {{ formatSeconds(item.latencyMs) }}/{{ formatSeconds(item.firstTokenMs) }}
+        <div
+          class="latency-summary"
+          role="button"
+          tabindex="0"
+          aria-label="查看耗时明细"
+          nz-popover
+          nzPopoverTitle="耗时明细"
+          nzPopoverTrigger="hover"
+          nzPopoverPlacement="right"
+          [nzPopoverMouseEnterDelay]="0.12"
+          [nzPopoverContent]="latencyDetail"
+        >
+          <div class="latency-chip-row">
+            <span
+              class="latency-chip latency-chip-total"
+              [class.latency-chip-danger]="isFailure(item)"
+            >
+              <i></i>
+              {{ formatLatencyChip(item.latencyMs) }}
+            </span>
+            <span class="latency-chip latency-chip-first">
+              <b>首</b>
+              {{ formatLatencyChip(firstResponseMs(item)) }}
+            </span>
+          </div>
+          <span class="latency-rate">{{ latencyRateLabel(item) }}</span>
         </div>
+
+        <ng-template #latencyDetail>
+          <div class="latency-popover-content">
+            <div class="latency-detail-grid">
+              <span>总耗时</span>
+              <strong>{{ formatLatencyDetail(item.latencyMs) }}</strong>
+
+              <span>最终上游请求</span>
+              <strong>{{ formatLatencyDetail(upstreamDurationMs(item)) }}</strong>
+
+              <span>请求准备</span>
+              <strong>{{ formatLatencyDetail(item.preparationMs) }}</strong>
+
+              <span>上游响应头</span>
+              <strong>{{ formatLatencyDetail(item.upstreamHeaderMs) }}</strong>
+
+              <span>首个 SSE 事件</span>
+              <strong>{{ formatLatencyDetail(item.firstEventMs) }}</strong>
+
+              <span>首个正文 Token</span>
+              <strong>{{ formatLatencyDetail(item.firstTokenMs) }}</strong>
+
+              <span>首 Token 后生成</span>
+              <strong>{{ formatLatencyDetail(postTokenDurationMs(item)) }}</strong>
+
+              <span>连接方式</span>
+              <strong>{{ connectionLabel(item) }}</strong>
+
+              <span>DNS 查询</span>
+              <strong>{{ networkStageLabel(item.dnsMs, item) }}</strong>
+
+              <span>TCP 连接</span>
+              <strong>{{ networkStageLabel(item.connectMs, item) }}</strong>
+
+              <span>TLS 握手</span>
+              <strong>{{ networkStageLabel(item.tlsHandshakeMs, item) }}</strong>
+
+              <span>转发尝试</span>
+              <strong>{{ forwardingAttempts(item) }} 次</strong>
+            </div>
+          </div>
+        </ng-template>
       </ng-template>
 
       <ng-template st-row="tokenRender" let-item>

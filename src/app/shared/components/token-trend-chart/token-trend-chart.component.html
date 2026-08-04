@@ -1,0 +1,58 @@
+<section
+  class="token-trend"
+  [class.token-trend-compact]="variant === 'compact'"
+  [attr.aria-label]="title"
+>
+  <header class="token-trend-header">
+    <div>
+      <h2>{{ title }}</h2>
+      <p>{{ subtitle }}</p>
+    </div>
+    @if (periodLabel) {
+      <span class="period-label">{{ periodLabel }}</span>
+    }
+  </header>
+
+  <div class="token-summary">
+    <div class="token-total">
+      <span>窗口总量</span>
+      <strong>{{ formatCompact(totalTokens) }}</strong>
+    </div>
+    <div class="token-legend" aria-label="Token 图例">
+      <div>
+        <i [style.background]="palette[0]"></i>
+        <span>输入</span>
+        <strong>{{ formatCompact(totalInputTokens) }}</strong>
+      </div>
+      <div>
+        <i [style.background]="palette[1]"></i>
+        <span>输出</span>
+        <strong>{{ formatCompact(totalOutputTokens) }}</strong>
+      </div>
+      <div>
+        <i [style.background]="palette[2]"></i>
+        <span>缓存</span>
+        <strong>{{ formatCompact(totalCachedTokens) }}</strong>
+      </div>
+    </div>
+  </div>
+
+  <app-line-chart
+    [height]="height"
+    [loading]="loading"
+    [emptyText]="emptyText"
+    [xAxisData]="xAxisData"
+    [series]="series"
+    [colors]="palette"
+    [legend]="false"
+    [showArea]="false"
+    [gridLeft]="4"
+    [gridRight]="20"
+    [gridBottom]="8"
+    [yAxisLabelFormatter]="formatAxisTokens"
+    [tooltipFormatter]="formatTooltip"
+    [extraOptions]="chartOptions"
+  />
+
+  <footer>窗口总量为输入与输出之和；缓存命中已包含在输入 Token 中。</footer>
+</section>

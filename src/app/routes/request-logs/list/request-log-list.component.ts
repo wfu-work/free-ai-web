@@ -59,7 +59,7 @@ export class RequestLogListComponent implements OnInit {
     { title: '账号 / 密钥', index: 'accountName', render: 'identityRender', width: 250 },
     { title: '模型 / 推理 / 等级', index: 'model', render: 'modelRender', width: 230 },
     { title: '状态', index: 'statusCode', type: 'tag', tag: this.statusTag, width: 95 },
-    { title: '用时 / 首响', index: 'latencyMs', render: 'latencyRender', width: 150 },
+    { title: '耗时', index: 'latencyMs', render: 'latencyRender', width: 190 },
     { title: 'Token / 成本', index: 'inputTokens', render: 'tokenRender', width: 180 },
     { title: '错误', index: 'errorType', render: 'errorRender', width: 170 },
     {
@@ -165,11 +165,56 @@ export class RequestLogListComponent implements OnInit {
     return `${Number(value).toFixed(0)} ms`;
   }
 
-  protected formatSeconds(value?: number): string {
-    if (value === undefined || value === null || Number.isNaN(Number(value))) return '-';
-    if (Number(value) <= 0) return '-';
-    const seconds = Number(value) / 1000;
-    return seconds >= 10 ? `${seconds.toFixed(0)}s` : `${seconds.toFixed(1)}s`;
+  protected formatLatencyChip(value?: number): string {
+    const milliseconds = Number(value || 0);
+    if (milliseconds <= 0) return '-';
+    if (milliseconds < 1000) return `${Math.max(1, Math.round(milliseconds))}ms`;
+    return `${(milliseconds / 1000).toFixed(1)}s`;
+  }
+
+  protected formatLatencyDetail(value?: number): string {
+    const milliseconds = Number(value || 0);
+    if (milliseconds <= 0) return '-';
+    if (milliseconds < 1000) return `${Math.max(1, Math.round(milliseconds))} ms`;
+    return `${(milliseconds / 1000).toFixed(1)} s`;
+  }
+
+  protected firstResponseMs(item: RequestLog): number {
+    return Number(item.firstTokenMs || item.firstEventMs || 0);
+  }
+
+  protected upstreamDurationMs(item: RequestLog): number {
+    return Math.max(Number(item.latencyMs || 0) - Number(item.preparationMs || 0), 0);
+  }
+
+  protected postTokenDurationMs(item: RequestLog): number {
+    const firstTokenMs = Number(item.firstTokenMs || 0);
+    if (!firstTokenMs) return 0;
+    return Math.max(Number(item.latencyMs || 0) - firstTokenMs, 0);
+  }
+
+  protected latencyRateLabel(item: RequestLog): string {
+    const durationMs = this.postTokenDurationMs(item);
+    const outputTokens = Number(item.outputTokens || 0);
+    if (durationMs <= 0 || outputTokens <= 0) return '流式响应';
+    const rate = outputTokens / (durationMs / 1000);
+    return `流 · ${Math.max(1, Math.round(rate))} t/s`;
+  }
+
+  protected connectionLabel(item: RequestLog): string {
+    if (!item.connectionTraced) return '-';
+    return item.connectionReused ? '已复用连接' : '新建连接';
+  }
+
+  protected networkStageLabel(value: number | undefined, item: RequestLog): string {
+    if (Number(value || 0) > 0) return this.formatLatencyDetail(value);
+    if (item.connectionTraced && item.connectionReused) return '复用连接';
+    return '未发生或 < 1 ms';
+  }
+
+  protected forwardingAttempts(item: RequestLog): number {
+    if (!item.accountGuid) return 0;
+    return Math.max(Number(item.switchCount || 0) + 1, 1);
   }
 
   protected tokenTotal(item: RequestLog): number {

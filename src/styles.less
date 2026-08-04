@@ -40,6 +40,13 @@
   --nm-surface-muted: #0f161f;
   --nm-surface-glass: rgb(18 25 35 / 90%);
   --nm-border: rgb(255 255 255 / 10%);
+  --nm-table-surface: oklch(19% 0.018 250deg);
+  --nm-table-surface-alt: oklch(20.5% 0.019 250deg);
+  --nm-table-header: oklch(24% 0.023 250deg);
+  --nm-table-hover: oklch(27% 0.027 250deg);
+  --nm-table-selected: oklch(28% 0.04 255deg);
+  --nm-table-selected-hover: oklch(31% 0.045 255deg);
+  --nm-table-border: oklch(31% 0.022 250deg);
   --nm-text: rgb(255 255 255 / 88%);
   --nm-text-secondary: rgb(255 255 255 / 58%);
   --nm-control-shadow: 0 5px 16px rgb(0 0 0 / 28%);
@@ -72,6 +79,61 @@
     color: var(--nm-primary);
     background: var(--nm-surface-raised);
     box-shadow: var(--nm-control-shadow);
+  }
+
+  .st {
+    .ant-table,
+    .ant-table-container,
+    .ant-table-content,
+    .ant-table-body {
+      background: var(--nm-table-surface);
+    }
+
+    .ant-table {
+      color: var(--nm-text);
+    }
+
+    .ant-table-container,
+    .ant-table-thead > tr > th,
+    .ant-table-tbody > tr > td,
+    .ant-table-summary > tr > td {
+      border-color: var(--nm-table-border);
+    }
+
+    .ant-table-thead > tr > th {
+      color: var(--nm-text);
+      background: var(--nm-table-header);
+    }
+
+    .ant-table-thead > tr > th::before {
+      background-color: var(--nm-table-border);
+    }
+
+    .ant-table-tbody > tr > td {
+      background: var(--nm-table-surface);
+    }
+
+    .ant-table-tbody > tr:nth-child(even) > td {
+      background: var(--nm-table-surface-alt);
+    }
+
+    .ant-table-tbody > tr.ant-table-row:hover > td,
+    .ant-table-tbody > tr > td.ant-table-cell-row-hover {
+      background: var(--nm-table-hover);
+    }
+
+    .ant-table-tbody > tr.ant-table-row-selected > td {
+      background: var(--nm-table-selected);
+    }
+
+    .ant-table-tbody > tr.ant-table-row-selected:hover > td {
+      background: var(--nm-table-selected-hover);
+    }
+
+    .ant-table-tbody > tr.ant-table-placeholder > td,
+    .ant-table-summary > tr > td {
+      background: var(--nm-table-surface);
+    }
   }
 }
 
