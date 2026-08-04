@@ -40,8 +40,11 @@
                     客户端通过 OpenAI-compatible API 请求时使用的 model。
                   </div>
                 </se>
-                <se label="请求超时">
-                  <nz-input-number formControlName="timeoutSec" [nzMin]="1" [nzStep]="1" />
+                <se label="模型超时（秒）">
+                  <nz-input-number formControlName="timeoutSec" [nzMin]="0" [nzStep]="1" />
+                  <div class="field-extra">
+                    网关为 0 时全局关闭；否则 0 继承网关，正数覆盖网关时长。
+                  </div>
                 </se>
                 <se class="span-2" label="兼容别名">
                   <textarea

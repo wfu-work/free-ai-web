@@ -43,7 +43,7 @@ export class ModelEditComponent implements OnInit {
     publicModel: ['', [Validators.required]],
     aliases: [''],
     accountGroup: [''],
-    timeoutSec: [120, [Validators.min(1)]],
+    timeoutSec: [0, [Validators.min(0)]],
     enabled: [true],
     visible: [true],
   });
@@ -71,7 +71,7 @@ export class ModelEditComponent implements OnInit {
       publicModel: value.publicModel.trim(),
       aliases: value.aliases.trim(),
       accountGroup: value.accountGroup || '',
-      timeoutSec: Math.max(Number(value.timeoutSec || 0), 1),
+      timeoutSec: Math.max(Number(value.timeoutSec ?? 0), 0),
       enabled: value.enabled,
       visible: value.visible,
     };
@@ -147,7 +147,7 @@ export class ModelEditComponent implements OnInit {
           publicModel: model.publicModel || model.remoteModelId,
           aliases: model.aliases || '',
           accountGroup: model.accountGroup || '',
-          timeoutSec: model.timeoutSec || 120,
+          timeoutSec: model.timeoutSec ?? 0,
           enabled: model.enabled,
           visible: model.visible,
         });
