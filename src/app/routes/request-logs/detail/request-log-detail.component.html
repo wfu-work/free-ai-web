@@ -158,6 +158,28 @@
               <p>{{ record.errorSummary || '该历史记录没有保存原始错误摘要。' }}</p>
             </div>
           }
+          @if (record.diagnosticType) {
+            <div class="error-diagnostic completion-diagnostic">
+              <div class="error-diagnostic-head">
+                <div>
+                  <span>非失败诊断</span>
+                  <strong>{{ diagnosticLabel(record.diagnosticType) }}</strong>
+                </div>
+                @if (record.diagnosticSummary) {
+                  <button
+                    type="button"
+                    nz-button
+                    nzSize="small"
+                    (click)="copy(record.diagnosticSummary, '诊断摘要')"
+                  >
+                    复制摘要
+                  </button>
+                }
+              </div>
+              <small>{{ record.diagnosticType }}</small>
+              <p>{{ record.diagnosticSummary || '请求已经完成，仅最终结束标记未能送达。' }}</p>
+            </div>
+          }
         </nz-card>
 
         <nz-card class="detail-card performance-card" [nzBordered]="false">

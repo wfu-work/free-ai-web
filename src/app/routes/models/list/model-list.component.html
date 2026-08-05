@@ -18,12 +18,12 @@
   <nz-alert
     nzType="info"
     nzShowIcon
-    nzMessage="模型只从官方账号发现；同一厂商、产品和远端模型 ID 会直接更新，不会重复创建。"
+    nzMessage="模型只从官方账号凭据发现；同一厂商、产品和远端模型 ID 会直接更新，不会重复创建。"
   />
   <nz-alert
     nzType="warning"
     nzShowIcon
-    nzMessage="价格是 OpenAI Platform API 公开参考价，仅用于成本估算，不代表 Codex 订阅账号的实际扣费或剩余额度。"
+    nzMessage="文本价格是 OpenAI Platform API 公开参考价，仅用于成本估算；图片生成成本请以对应 Platform 项目账单为准。"
   />
 
   <div class="catalog-summary">
@@ -33,7 +33,7 @@
     <article>
       <span>当前页面可路由</span><strong>{{ routablePageCount }}</strong>
     </article>
-    <article><span>官方产品</span><strong>OpenAI · Codex</strong></article>
+    <article><span>官方产品</span><strong>Codex · Images API</strong></article>
   </div>
 
   <nz-card class="model-card" [nzBordered]="false">
@@ -54,6 +54,7 @@
       >
         <nz-option nzValue="" nzLabel="全部产品" />
         <nz-option nzValue="codex" nzLabel="Codex" />
+        <nz-option nzValue="openai_images" nzLabel="Images API" />
         <nz-option nzValue="claude_code" nzLabel="Claude Code（预留）" />
       </nz-select>
       <nz-select

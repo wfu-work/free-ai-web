@@ -433,6 +433,44 @@
   color: var(--nm-text-secondary);
 }
 
+.api-billing-note {
+  display: flex;
+  gap: 11px;
+  align-items: flex-start;
+  margin-top: 8px;
+  padding: 12px;
+  border: 1px solid rgb(var(--nm-primary-rgb) / 14%);
+  border-radius: 8px;
+  color: var(--nm-primary);
+  background: rgb(var(--nm-primary-rgb) / 5%);
+}
+
+.api-billing-note i {
+  margin-top: 2px;
+  font-size: 16px;
+}
+
+.api-billing-note div {
+  min-width: 0;
+}
+
+.api-billing-note strong,
+.api-billing-note span {
+  display: block;
+}
+
+.api-billing-note strong {
+  font-size: 12px;
+  color: var(--nm-text);
+}
+
+.api-billing-note span {
+  margin-top: 3px;
+  font-size: 11px;
+  line-height: 1.55;
+  color: var(--nm-text-secondary);
+}
+
 .activity-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));

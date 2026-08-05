@@ -2,7 +2,7 @@
   <div class="header-row">
     <title-label
       title="官方账号"
-      description="维护 ChatGPT/Codex OAuth 账号池、额度窗口、订阅状态和调度权重。"
+      description="统一维护 Codex OAuth 账号池与独立 OpenAI 图片 API 账号池。"
     />
     <div class="header-actions">
       <button nz-button (click)="q.page = 1; getData()">
@@ -19,7 +19,7 @@
   <nz-alert
     nzType="info"
     nzShowIcon
-    nzMessage="账号池支持官方授权、手动 OAuth 凭据和账号 JSON 导入；所有令牌均由后端加密保存。"
+    nzMessage="Codex OAuth 与图片 API Key 使用独立凭据和上游端点；所有敏感凭据均由后端加密保存。"
   />
 
   <div class="account-list-shell">
@@ -102,7 +102,7 @@
                   <div class="account-name" [title]="item.name || '-'">
                     {{ item.name || '-' }}
                   </div>
-                  <span class="vendor-badge">{{ vendorLabel(item.vendorCode) }}</span>
+                  <span class="vendor-badge">{{ accountTypeLabel(item) }}</span>
                 </div>
                 <div class="account-email" [title]="item.email || item.credentialHint || '-'">
                   {{ item.email || item.credentialHint || '-' }}
@@ -139,11 +139,15 @@
                 <strong>优先级 {{ item.priority || 0 }} · 权重 {{ item.weight || 1 }}</strong>
               </div>
               <div class="info-item">
-                <span>订阅套餐</span>
-                <strong>{{ item.planType || item.subscriptionPlan || '未知套餐' }}</strong>
+                <span>{{ isImageAPIAccount(item) ? '计费方式' : '订阅套餐' }}</span>
+                <strong>{{
+                  isImageAPIAccount(item)
+                    ? 'API 按量计费'
+                    : item.planType || item.subscriptionPlan || '未知套餐'
+                }}</strong>
               </div>
               <div class="info-item">
-                <span>访问令牌状态</span>
+                <span>{{ isImageAPIAccount(item) ? 'API Key 状态' : '访问令牌状态' }}</span>
                 <strong>{{ tokenStatusText(item.tokenStatus) }}</strong>
               </div>
               <div class="info-item">
@@ -159,30 +163,46 @@
             </div>
 
             <div class="card-section quota-section">
-              <div class="section-title">
-                <span>7 天官方额度</span>
-                <button nz-button nzType="link" nzSize="small" (click)="refresh(item)">
-                  同步额度
-                </button>
-              </div>
-              <div class="quota-list">
-                @if (officialSevenDayQuota(item.quotas); as quota) {
-                  <div class="quota-item" [class]="quotaTone(quota)">
-                    <nz-progress
-                      nzSize="small"
-                      [nzPercent]="quotaRemainingPercent(quota)"
-                      [nzStrokeColor]="quotaProgressColor(quota)"
-                      [nzFormat]="quotaProgressFormat"
-                    />
-                    <div class="quota-meta">
-                      <span>已使用 {{ quotaUsedPercent(quota) }}%</span>
-                      <span>重置时间 {{ formatTime(quota.resetAt) }}</span>
-                    </div>
+              @if (isImageAPIAccount(item)) {
+                <div class="section-title">
+                  <span>OpenAI Platform</span>
+                  <button nz-button nzType="link" nzSize="small" (click)="refresh(item)">
+                    验证并同步
+                  </button>
+                </div>
+                <div class="api-billing-note">
+                  <i nz-icon nzType="picture"></i>
+                  <div>
+                    <strong>独立图片 API 账号</strong>
+                    <span>按 Platform 项目用量计费，不使用 ChatGPT Pro 订阅额度。</span>
                   </div>
-                } @else {
-                  <span class="empty-value">暂无 7 天官方额度</span>
-                }
-              </div>
+                </div>
+              } @else {
+                <div class="section-title">
+                  <span>7 天官方额度</span>
+                  <button nz-button nzType="link" nzSize="small" (click)="refresh(item)">
+                    同步额度
+                  </button>
+                </div>
+                <div class="quota-list">
+                  @if (officialSevenDayQuota(item.quotas); as quota) {
+                    <div class="quota-item" [class]="quotaTone(quota)">
+                      <nz-progress
+                        nzSize="small"
+                        [nzPercent]="quotaRemainingPercent(quota)"
+                        [nzStrokeColor]="quotaProgressColor(quota)"
+                        [nzFormat]="quotaProgressFormat"
+                      />
+                      <div class="quota-meta">
+                        <span>已使用 {{ quotaUsedPercent(quota) }}%</span>
+                        <span>重置时间 {{ formatTime(quota.resetAt) }}</span>
+                      </div>
+                    </div>
+                  } @else {
+                    <span class="empty-value">暂无 7 天官方额度</span>
+                  }
+                </div>
+              }
             </div>
 
             <div class="activity-grid">
@@ -195,8 +215,12 @@
                 <strong>{{ formatTime(item.lastRefreshedAt) }}</strong>
               </div>
               <div>
-                <span>订阅到期</span>
-                <strong>{{ formatTime(item.subscriptionExpiredAt) }}</strong>
+                <span>{{ isImageAPIAccount(item) ? '凭据标识' : '订阅到期' }}</span>
+                <strong>{{
+                  isImageAPIAccount(item)
+                    ? item.credentialHint || '-'
+                    : formatTime(item.subscriptionExpiredAt)
+                }}</strong>
               </div>
             </div>
 
@@ -209,11 +233,13 @@
             <div class="card-actions">
               <button nz-button nzType="text" nzSize="small" (click)="edit(item)">编辑</button>
               <button nz-button nzType="text" nzSize="small" (click)="openTest(item)">
-                主动探测
+                {{ isImageAPIAccount(item) ? '验证密钥' : '主动探测' }}
               </button>
-              <button nz-button nzType="text" nzSize="small" (click)="exportAccount(item)">
-                导出
-              </button>
+              @if (!isImageAPIAccount(item)) {
+                <button nz-button nzType="text" nzSize="small" (click)="exportAccount(item)">
+                  导出
+                </button>
+              }
               @if (item.enabled) {
                 <button nz-button nzType="text" nzSize="small" (click)="setEnabled(item, false)">
                   停用
@@ -258,10 +284,14 @@
 </section>
 
 <nz-modal
-  [nzTitle]="testTarget ? '测试账号：' + testTarget.name : '测试账号'"
+  [nzTitle]="
+    testTarget
+      ? (isImageAPIAccount(testTarget) ? '验证图片 API：' : '测试账号：') + testTarget.name
+      : '测试账号'
+  "
   [nzVisible]="testVisible"
   [nzOkLoading]="testing"
-  nzOkText="开始测试"
+  [nzOkText]="isImageAPIAccount(testTarget) ? '验证密钥' : '开始测试'"
   nzCancelText="关闭"
   (nzOnOk)="runTest()"
   (nzOnCancel)="closeTest()"
@@ -287,14 +317,16 @@
           </nz-select>
         </nz-form-control>
       </nz-form-item>
-      <nz-form-item>
-        <nz-form-label nzFor="testPrompt" nzLabelAlign="right" [nzSm]="4" [nzXs]="24"
-          >Prompt</nz-form-label
-        >
-        <nz-form-control [nzSm]="20" [nzXs]="24">
-          <input id="testPrompt" nz-input formControlName="prompt" placeholder="ping" />
-        </nz-form-control>
-      </nz-form-item>
+      @if (!isImageAPIAccount(testTarget)) {
+        <nz-form-item>
+          <nz-form-label nzFor="testPrompt" nzLabelAlign="right" [nzSm]="4" [nzXs]="24"
+            >Prompt</nz-form-label
+          >
+          <nz-form-control [nzSm]="20" [nzXs]="24">
+            <input id="testPrompt" nz-input formControlName="prompt" placeholder="ping" />
+          </nz-form-control>
+        </nz-form-item>
+      }
     </form>
 
     @if (testResult) {

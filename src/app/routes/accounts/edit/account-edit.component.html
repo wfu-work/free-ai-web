@@ -2,7 +2,7 @@
   <div class="header-row">
     <title-label [title]="pageTitle" [description]="pageDescription" [showBack]="true" />
     <div class="header-actions">
-      @if (formMode === 'edit') {
+      @if (formMode === 'edit' && account && !isImageAPIAccount) {
         <button nz-button nzDanger (click)="exportAccount()">
           <i nz-icon nzType="export"></i>导出账号
         </button>
@@ -25,14 +25,22 @@
           <span>账号状态</span><strong>{{ statusText(account.status) }}</strong>
         </article>
         <article class="metric-card">
-          <span>套餐</span
-          ><strong>{{ account.planType || account.subscriptionPlan || '-' }}</strong>
+          <span>{{ isImageAPIAccount ? '计费方式' : '套餐' }}</span
+          ><strong>{{
+            isImageAPIAccount ? 'API 按量计费' : account.planType || account.subscriptionPlan || '-'
+          }}</strong>
         </article>
         <article class="metric-card">
-          <span>访问令牌状态</span><strong>{{ tokenStatusText(account.tokenStatus) }}</strong>
+          <span>{{ isImageAPIAccount ? 'API Key 状态' : '访问令牌状态' }}</span
+          ><strong>{{ tokenStatusText(account.tokenStatus) }}</strong>
         </article>
         <article class="metric-card">
-          <span>订阅到期</span><strong>{{ formatTime(account.subscriptionExpiredAt) }}</strong>
+          <span>{{ isImageAPIAccount ? '凭据标识' : '订阅到期' }}</span
+          ><strong>{{
+            isImageAPIAccount
+              ? account.credentialHint || '-'
+              : formatTime(account.subscriptionExpiredAt)
+          }}</strong>
         </article>
       </div>
     }
@@ -183,6 +191,35 @@
                 />
               }
             </section>
+          } @else if (createMode === 'api-key') {
+            <section class="form-section" [formGroup]="apiKeyForm">
+              <div class="section-heading">
+                <div>
+                  <div class="section-title">OpenAI Platform API Key</div>
+                  <p>用于独立图片生成账号池，不使用 ChatGPT Pro OAuth 或订阅额度。</p>
+                </div>
+              </div>
+              <se-container col="1" nzLayout="vertical">
+                <se label="API Key" required>
+                  <input
+                    nz-input
+                    type="password"
+                    formControlName="apiKey"
+                    autocomplete="new-password"
+                    placeholder="sk-..."
+                  />
+                  <div class="field-extra">
+                    保存时会先验证项目权限并拉取图片模型；密钥由后端加密保存，之后不再显示明文。
+                  </div>
+                </se>
+              </se-container>
+              <nz-alert
+                nzType="info"
+                nzShowIcon
+                nzMessage="ChatGPT Pro 与 OpenAI API 分开计费"
+                nzDescription="请确认该 API Key 所属 Platform 项目已启用计费、配置消费上限并具备图片模型权限。验证过程只拉取模型列表，不会生成图片。"
+              />
+            </section>
           } @else if (createMode === 'manual') {
             <section class="form-section" [formGroup]="manualForm">
               <div class="section-title">OAuth 凭据</div>
@@ -270,7 +307,7 @@
               <se label="显示名称">
                 <input nz-input formControlName="name" placeholder="留空时从官方身份推导" />
                 <div class="field-extra">
-                  仅作为管理台中的账号名称；留空时从官方身份或邮箱生成，不影响上游账号。
+                  仅作为管理台中的账号名称；留空时从官方身份或凭据标识生成，不影响上游账号。
                 </div>
               </se>
               <se label="官方类型">
@@ -392,22 +429,32 @@
         } @else if (account) {
           <div class="section-title">账号身份</div>
           <div class="detail-grid">
-            <div>
-              <span>邮箱</span><strong>{{ account.email || '-' }}</strong>
-            </div>
-            <div>
-              <span>账号 ID</span><strong>{{ account.chatgptAccountId || '-' }}</strong>
-            </div>
-            <div>
-              <span>工作区 ID</span><strong>{{ account.workspaceId || '-' }}</strong>
-            </div>
-            <div>
-              <span>访问令牌到期</span
-              ><strong>{{ formatTime(account.accessTokenExpiresAt) }}</strong>
-            </div>
-            <div>
-              <span>订阅到期</span><strong>{{ formatTime(account.subscriptionExpiredAt) }}</strong>
-            </div>
+            @if (isImageAPIAccount) {
+              <div><span>账号类型</span><strong>OpenAI 图片 API</strong></div>
+              <div><span>凭据类型</span><strong>API Key</strong></div>
+              <div>
+                <span>凭据标识</span><strong>{{ account.credentialHint || '-' }}</strong>
+              </div>
+              <div><span>计费方式</span><strong>OpenAI Platform 按量计费</strong></div>
+            } @else {
+              <div>
+                <span>邮箱</span><strong>{{ account.email || '-' }}</strong>
+              </div>
+              <div>
+                <span>账号 ID</span><strong>{{ account.chatgptAccountId || '-' }}</strong>
+              </div>
+              <div>
+                <span>工作区 ID</span><strong>{{ account.workspaceId || '-' }}</strong>
+              </div>
+              <div>
+                <span>访问令牌到期</span
+                ><strong>{{ formatTime(account.accessTokenExpiresAt) }}</strong>
+              </div>
+              <div>
+                <span>订阅到期</span
+                ><strong>{{ formatTime(account.subscriptionExpiredAt) }}</strong>
+              </div>
+            }
             <div>
               <span>最近同步</span><strong>{{ formatTime(account.lastRefreshedAt) }}</strong>
             </div>
@@ -415,12 +462,14 @@
           <div class="section-title section-title-spaced">账号操作</div>
           <div class="account-operation-actions">
             <button nz-button [nzLoading]="fetchingModels" (click)="fetchModels()">
-              同步官方模型
+              {{ isImageAPIAccount ? '同步图片模型' : '同步官方模型' }}
             </button>
             <button nz-button [nzLoading]="refreshingUsage" (click)="refreshUsage()">
-              同步额度与订阅
+              {{ isImageAPIAccount ? '验证密钥并同步模型' : '同步额度与订阅' }}
             </button>
-            <button nz-button [nzLoading]="probing" (click)="probe()">主动额度探测</button>
+            <button nz-button [nzLoading]="probing" (click)="probe()">
+              {{ isImageAPIAccount ? '安全验证' : '主动额度探测' }}
+            </button>
           </div>
           @if (account.lastError) {
             <nz-alert

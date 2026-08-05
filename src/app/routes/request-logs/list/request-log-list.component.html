@@ -154,6 +154,29 @@
               <p>{{ item.errorSummary || '该历史记录没有保存原始错误摘要。' }}</p>
             </div>
           </ng-template>
+        } @else if (item.diagnosticType) {
+          <div
+            class="diagnostic-summary-trigger"
+            nz-popover
+            nzPopoverTitle="完成诊断"
+            nzPopoverTrigger="hover"
+            nzPopoverPlacement="left"
+            [nzPopoverMouseEnterDelay]="0.12"
+            [nzPopoverContent]="diagnosticDetail"
+          >
+            <strong>{{ diagnosticLabel(item.diagnosticType) }}</strong>
+            <span>{{ item.diagnosticType }}</span>
+          </div>
+
+          <ng-template #diagnosticDetail>
+            <div class="error-popover-content diagnostic-popover-content">
+              <div>
+                <span>诊断类型</span>
+                <strong>{{ item.diagnosticType }}</strong>
+              </div>
+              <p>{{ item.diagnosticSummary || '请求已经完成，仅最终结束标记未能送达。' }}</p>
+            </div>
+          </ng-template>
         } @else {
           <span>-</span>
         }

@@ -123,6 +123,10 @@ export interface AccountManualPayload extends AccountPoolPayload {
   accountId?: string;
 }
 
+export interface AccountAPIKeyPayload extends AccountPoolPayload {
+  apiKey: string;
+}
+
 export type AccountOAuthMode = 'browser' | 'device';
 
 export interface AccountOAuthStartPayload extends AccountPoolPayload {

@@ -21,8 +21,18 @@ const ERROR_TYPE_LABELS: Record<string, string> = {
   invalid_request_error: '请求格式错误',
 };
 
+const DIAGNOSTIC_TYPE_LABELS: Record<string, string> = {
+  client_closed_after_completion: '完成后客户端关闭',
+};
+
 export function requestLogErrorLabel(errorType?: string): string {
   const value = (errorType || '').trim();
   if (!value) return '无错误';
   return ERROR_TYPE_LABELS[value] || value;
+}
+
+export function requestLogDiagnosticLabel(diagnosticType?: string): string {
+  const value = (diagnosticType || '').trim();
+  if (!value) return '无诊断';
+  return DIAGNOSTIC_TYPE_LABELS[value] || value;
 }

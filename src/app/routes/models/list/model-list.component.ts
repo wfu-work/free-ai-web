@@ -283,7 +283,11 @@ export class ModelListComponent implements OnInit {
 
   protected sourceLabel(model: ModelCatalogItem): string {
     const vendor = model.vendorCode === 'openai' ? 'OpenAI' : model.vendorCode;
-    const product = model.productCode === 'codex' ? 'Codex' : model.productCode;
+    const productLabels: Record<string, string> = {
+      codex: 'Codex',
+      openai_images: 'Images API',
+    };
+    const product = productLabels[model.productCode] || model.productCode;
     return `${vendor} · ${product}`;
   }
 

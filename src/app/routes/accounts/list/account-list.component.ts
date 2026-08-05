@@ -145,7 +145,9 @@ export class AccountListComponent implements OnInit {
 
   protected refresh(item: Account): void {
     this.accountsService.refreshUsage(item.guid).subscribe(() => {
-      this.message.success('账号状态已刷新');
+      this.message.success(
+        this.isImageAPIAccount(item) ? 'API Key 验证通过，图片模型已同步' : '账号状态已刷新',
+      );
       this.getData();
     });
   }
@@ -153,7 +155,7 @@ export class AccountListComponent implements OnInit {
   protected delete(item: Account): void {
     this.modal.confirm({
       nzTitle: '确定删除该账号？',
-      nzContent: '删除后加密 OAuth 账号文件和额度快照将不可恢复，请先确认已安全备份。',
+      nzContent: '删除后加密凭据、模型可用关系和额度快照将不可恢复，请确认不再使用该账号。',
       nzOkDanger: true,
       nzOnOk: () =>
         new Promise<void>((resolve, reject) => {
@@ -174,7 +176,7 @@ export class AccountListComponent implements OnInit {
     this.testResult = null;
     this.testModelOptions = [];
     this.testModelSource = 'empty';
-    this.testForm.reset({ model: '', prompt: 'ping' });
+    this.testForm.reset({ model: '', prompt: this.isImageAPIAccount(item) ? '' : 'ping' });
     this.testVisible = true;
     this.testModelsLoading = true;
     this.accountsService
@@ -260,6 +262,14 @@ export class AccountListComponent implements OnInit {
     return this.officialVendorOptions.find((item) => item.value === value)?.label || 'OpenAI';
   }
 
+  protected accountTypeLabel(item: Account): string {
+    return this.isImageAPIAccount(item) ? '图片 API' : this.vendorLabel(item.vendorCode);
+  }
+
+  protected isImageAPIAccount(item?: Account | null): boolean {
+    return item?.productCode === 'openai_images';
+  }
+
   protected vendorMark(vendorCode?: string): string {
     switch (normalizeOfficialVendorCode(vendorCode)) {
       case 'openai':
@@ -282,6 +292,11 @@ export class AccountListComponent implements OnInit {
   }
 
   protected get testModelExtra(): string {
+    if (this.isImageAPIAccount(this.testTarget)) {
+      return this.testModelSource === 'account'
+        ? '验证只检查 API Key 与图片模型访问权限，不会实际生成图片或产生生成费用。'
+        : '该 API Key 未返回可用图片模型，请检查 Platform 项目权限和计费状态。';
+    }
     switch (this.testModelSource) {
       case 'account':
         return '模型来自该账号刚刚同步的官方模型目录。';
@@ -369,6 +384,7 @@ export class AccountListComponent implements OnInit {
   }
 
   protected exportAccount(item: Account): void {
+    if (this.isImageAPIAccount(item)) return;
     this.modal.confirm({
       nzTitle: '导出敏感 OAuth 账号文件？',
       nzContent: '文件包含 access_token 和 refresh_token，只能保存到可信位置。',

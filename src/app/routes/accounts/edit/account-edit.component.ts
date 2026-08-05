@@ -23,6 +23,7 @@ import {
 } from '../account-options';
 import {
   Account,
+  AccountAPIKeyPayload,
   AccountImportPayload,
   AccountManualPayload,
   AccountOAuthMode,
@@ -33,7 +34,7 @@ import {
 import { AccountsService } from '../accounts.service';
 
 type AccountFormMode = 'create' | 'edit';
-type AccountCreateMode = 'oauth' | 'manual' | 'file';
+type AccountCreateMode = 'oauth' | 'api-key' | 'manual' | 'file';
 
 interface AccountCreateGuideOption {
   title: string;
@@ -88,6 +89,7 @@ export class AccountEditComponent implements OnInit, OnDestroy {
   protected readonly officialVendorOptions = OFFICIAL_VENDOR_OPTIONS;
   protected readonly createModeOptions: Array<{ label: string; value: AccountCreateMode }> = [
     { label: '官方授权', value: 'oauth' },
+    { label: '图片 API', value: 'api-key' },
     { label: '手动凭据', value: 'manual' },
     { label: '导入文件', value: 'file' },
   ];
@@ -123,6 +125,39 @@ export class AccountEditComponent implements OnInit, OnDestroy {
         '账号入池后自动同步 7 天额度、订阅到期时间和官方模型目录。',
       ],
       notice: '通常优先选择浏览器授权；只有回调端口不可用时，再改用设备码。',
+    },
+    'api-key': {
+      eyebrow: '独立图片能力',
+      title: 'OpenAI 图片 API',
+      description:
+        '使用 OpenAI Platform API Key 建立独立图片模型账号池，支持 Images API，与 ChatGPT/Codex OAuth 账号完全隔离。',
+      optionTitle: '接入边界',
+      optionDescription: '图片 API 使用 OpenAI Platform 的项目权限和按量计费。',
+      options: [
+        {
+          title: '独立 API Key',
+          badge: '必需',
+          description: '仅接受 OpenAI Platform API Key，不读取或转换 ChatGPT OAuth 凭据。',
+        },
+        {
+          title: '图片模型目录',
+          badge: '自动同步',
+          description: '保存前验证密钥，并同步该项目实际可见的图片生成模型。',
+        },
+        {
+          title: 'Images API',
+          badge: '专用端点',
+          description: '账号只参与 /v1/images/generations 路由，不会用于文本模型请求。',
+        },
+      ],
+      steps: [
+        '调用 OpenAI 官方模型接口验证 API Key，不发起图片生成，因此不会产生生成费用。',
+        '筛选项目可见的图片模型，并建立独立模型目录与账号可用关系。',
+        '使用后端主密钥加密 API Key，仅保留脱敏提示用于管理识别。',
+        '图片请求按账号组、优先级和权重进入独立账号池调度。',
+      ],
+      notice:
+        'ChatGPT Pro 订阅不包含 OpenAI Platform API 额度；图片调用按项目单独计费，请在 Platform 中配置预算和消费上限。',
     },
     manual: {
       eyebrow: '适合已有凭据',
@@ -207,6 +242,10 @@ export class AccountEditComponent implements OnInit, OnDestroy {
     accountId: [''],
   });
 
+  protected readonly apiKeyForm = this.fb.nonNullable.group({
+    apiKey: ['', [Validators.required, Validators.minLength(20)]],
+  });
+
   ngOnInit(): void {
     this.loadGroups();
     const guid = this.route.snapshot.paramMap.get('guid');
@@ -228,6 +267,9 @@ export class AccountEditComponent implements OnInit, OnDestroy {
     const nextMode = String(value) as AccountCreateMode;
     if (nextMode === this.createMode) return;
     const activeSession = this.oauthSession;
+    if (this.createMode === 'api-key') {
+      this.apiKeyForm.reset();
+    }
     this.createMode = nextMode;
     this.stopOAuthPolling();
     this.oauthSession = null;
@@ -293,6 +335,15 @@ export class AccountEditComponent implements OnInit, OnDestroy {
         return;
       }
     }
+    if (this.formMode === 'create' && this.createMode === 'api-key') {
+      const control = this.apiKeyForm.controls.apiKey;
+      control.markAsDirty();
+      control.updateValueAndValidity();
+      if (control.invalid) {
+        this.message.warning('请输入有效的 OpenAI Platform API Key');
+        return;
+      }
+    }
     const value = this.form.getRawValue();
     this.saving = true;
     const pool = this.poolPayload();
@@ -302,19 +353,24 @@ export class AccountEditComponent implements OnInit, OnDestroy {
             accountFile: this.accountFile!,
             ...pool,
           } satisfies AccountImportPayload)
-        : this.formMode === 'create'
-          ? this.accountsService.addManual({
+        : this.formMode === 'create' && this.createMode === 'api-key'
+          ? this.accountsService.addAPIKey({
               ...pool,
-              ...this.manualForm.getRawValue(),
-            } satisfies AccountManualPayload)
-          : this.accountsService.update(this.accountGuid, {
-              name: value.name.trim(),
-              vendorCode: value.vendorCode,
-              accountGroup: value.accountGroup,
-              priority: Number(value.priority || 0),
-              weight: Math.max(Number(value.weight || 1), 1),
-              remark: value.remark,
-            } satisfies AccountPayload);
+              apiKey: this.apiKeyForm.controls.apiKey.value.trim(),
+            } satisfies AccountAPIKeyPayload)
+          : this.formMode === 'create'
+            ? this.accountsService.addManual({
+                ...pool,
+                ...this.manualForm.getRawValue(),
+              } satisfies AccountManualPayload)
+            : this.accountsService.update(this.accountGuid, {
+                name: value.name.trim(),
+                vendorCode: value.vendorCode,
+                accountGroup: value.accountGroup,
+                priority: Number(value.priority || 0),
+                weight: Math.max(Number(value.weight || 1), 1),
+                remark: value.remark,
+              } satisfies AccountPayload);
 
     request
       .pipe(
@@ -329,7 +385,9 @@ export class AccountEditComponent implements OnInit, OnDestroy {
             ? '账号调度配置已更新'
             : this.createMode === 'file'
               ? 'OAuth 账号已导入'
-              : 'OAuth 凭据已保存';
+              : this.createMode === 'api-key'
+                ? '图片 API 账号已添加'
+                : 'OAuth 凭据已保存';
         this.message.success(message);
         void this.router.navigateByUrl('/accounts/list');
       });
@@ -404,7 +462,9 @@ export class AccountEditComponent implements OnInit, OnDestroy {
   }
 
   protected get createActionText(): string {
-    return this.createMode === 'file' ? '导入账号' : '保存凭据';
+    if (this.createMode === 'file') return '导入账号';
+    if (this.createMode === 'api-key') return '验证并添加';
+    return '保存凭据';
   }
 
   protected get activeCreateGuide(): AccountCreateGuide {
@@ -413,12 +473,21 @@ export class AccountEditComponent implements OnInit, OnDestroy {
 
   protected get securityAlertMessage(): string {
     if (this.formMode === 'edit') {
-      return 'OAuth 令牌由后端主密钥加密保存，账号操作不会在前端展示明文凭据。';
+      return this.isImageAPIAccount
+        ? 'OpenAI API Key 由后端主密钥加密保存，管理端不会返回或再次展示明文。'
+        : 'OAuth 令牌由后端主密钥加密保存，账号操作不会在前端展示明文凭据。';
     }
     if (this.createMode === 'oauth') {
       return '授权回调只在本机完成，系统不会保存 OpenAI 密码；获取的 OAuth 令牌由后端加密存储。';
     }
+    if (this.createMode === 'api-key') {
+      return 'API Key 仅用于 OpenAI 官方图片接口，提交后加密保存；ChatGPT 订阅与 API 计费相互独立。';
+    }
     return 'OAuth 凭据属于敏感信息，提交后由后端主密钥加密存储，请勿通过日志或聊天发送。';
+  }
+
+  protected get isImageAPIAccount(): boolean {
+    return this.account?.productCode === 'openai_images';
   }
 
   protected fetchModels(): void {
@@ -449,7 +518,11 @@ export class AccountEditComponent implements OnInit, OnDestroy {
         }),
       )
       .subscribe((result) => {
-        this.message.success(`已同步 ${result.quotas?.length || 0} 个额度窗口`);
+        this.message.success(
+          this.isImageAPIAccount
+            ? 'API Key 验证通过，图片模型已同步'
+            : `已同步 ${result.quotas?.length || 0} 个额度窗口`,
+        );
         this.reloadAccount();
       });
   }
@@ -467,7 +540,11 @@ export class AccountEditComponent implements OnInit, OnDestroy {
       )
       .subscribe((result) => {
         if (result.ok) {
-          this.message.success('主动探测成功，已采样额度响应头');
+          this.message.success(
+            this.isImageAPIAccount
+              ? 'API Key 验证通过，未发起图片生成'
+              : '主动探测成功，已采样额度响应头',
+          );
         } else {
           this.message.warning('主动探测返回异常');
         }
@@ -476,7 +553,7 @@ export class AccountEditComponent implements OnInit, OnDestroy {
   }
 
   protected exportAccount(): void {
-    if (!this.accountGuid) return;
+    if (!this.accountGuid || this.isImageAPIAccount) return;
     this.modal.confirm({
       nzTitle: '导出 OAuth 账号文件？',
       nzContent:
@@ -512,8 +589,10 @@ export class AccountEditComponent implements OnInit, OnDestroy {
 
   protected get pageDescription(): string {
     return this.formMode === 'create'
-      ? '通过官方授权、手动 OAuth 凭据或账号文件加入 Codex 账号池。'
-      : '查看账号身份与订阅状态，调整账号池调度参数并同步官方模型。';
+      ? '添加 Codex OAuth 账号，或使用独立 OpenAI Platform API Key 接入图片模型。'
+      : this.isImageAPIAccount
+        ? '查看图片 API 账号状态，调整账号池调度参数并同步可用模型。'
+        : '查看账号身份与订阅状态，调整账号池调度参数并同步官方模型。';
   }
 
   protected formatTime(value?: number): string {

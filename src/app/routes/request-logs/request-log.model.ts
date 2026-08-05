@@ -15,6 +15,8 @@ export interface RequestLog {
   statusCode: number;
   errorType: string;
   errorSummary: string;
+  diagnosticType: string;
+  diagnosticSummary: string;
   switched: boolean;
   switchCount: number;
   switchReason: string;

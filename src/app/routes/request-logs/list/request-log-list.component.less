@@ -329,7 +329,8 @@
   font-weight: 700;
 }
 
-.error-summary-trigger {
+.error-summary-trigger,
+.diagnostic-summary-trigger {
   cursor: help;
   display: flex;
   min-width: 0;
@@ -337,7 +338,8 @@
   gap: 2px;
 }
 
-.error-summary-trigger strong {
+.error-summary-trigger strong,
+.diagnostic-summary-trigger strong {
   overflow: hidden;
   color: inherit;
   font-size: 13px;
@@ -347,7 +349,8 @@
   white-space: nowrap;
 }
 
-.error-summary-trigger span {
+.error-summary-trigger span,
+.diagnostic-summary-trigger span {
   overflow: hidden;
   color: var(--nm-text-secondary);
   font-size: 11px;
@@ -355,6 +358,10 @@
   line-height: 1.35;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.diagnostic-summary-trigger {
+  color: var(--nm-primary);
 }
 
 .error-popover-content {
@@ -382,6 +389,10 @@
   font-weight: 780;
   text-align: right;
   word-break: break-word;
+}
+
+.diagnostic-popover-content strong {
+  color: var(--nm-primary);
 }
 
 .error-popover-content p {

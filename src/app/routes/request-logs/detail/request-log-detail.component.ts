@@ -11,7 +11,7 @@ import { NzMessageService } from 'ng-zorro-antd/message';
 import { finalize } from 'rxjs';
 
 import { RequestLog } from '../request-log.model';
-import { requestLogErrorLabel } from '../request-log-error';
+import { requestLogDiagnosticLabel, requestLogErrorLabel } from '../request-log-error';
 import { RequestLogsService } from '../request-logs.service';
 
 @Component({
@@ -69,6 +69,10 @@ export class RequestLogDetailComponent implements OnInit {
 
   protected errorLabel(errorType?: string): string {
     return requestLogErrorLabel(errorType);
+  }
+
+  protected diagnosticLabel(diagnosticType?: string): string {
+    return requestLogDiagnosticLabel(diagnosticType);
   }
 
   protected logTime(item: RequestLog): number | undefined {

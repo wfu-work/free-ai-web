@@ -5,6 +5,7 @@ import { Observable } from 'rxjs';
 
 import {
   Account,
+  AccountAPIKeyPayload,
   AccountGroup,
   AccountGroupPayload,
   AccountHealthItem,
@@ -48,6 +49,10 @@ export class AccountsService {
 
   addManual(payload: AccountManualPayload): Observable<Account> {
     return this.http.post<Account>('/accounts', payload);
+  }
+
+  addAPIKey(payload: AccountAPIKeyPayload): Observable<Account> {
+    return this.http.post<Account>('/accounts/api-key', payload);
   }
 
   startOAuth(payload: AccountOAuthStartPayload): Observable<AccountOAuthSession> {

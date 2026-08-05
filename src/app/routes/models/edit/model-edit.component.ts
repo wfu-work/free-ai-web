@@ -98,7 +98,11 @@ export class ModelEditComponent implements OnInit {
   protected get sourceLabel(): string {
     if (!this.model) return '-';
     const vendor = this.model.vendorCode === 'openai' ? 'OpenAI' : this.model.vendorCode;
-    const product = this.model.productCode === 'codex' ? 'Codex' : this.model.productCode;
+    const productLabels: Record<string, string> = {
+      codex: 'Codex',
+      openai_images: 'Images API',
+    };
+    const product = productLabels[this.model.productCode] || this.model.productCode;
     return `${vendor} · ${product}`;
   }
 
