@@ -121,7 +121,10 @@
             </div>
             <div>
               <span>错误类型</span>
-              <strong [class.danger-text]="record.errorType">{{ record.errorType || '无' }}</strong>
+              <strong [class.danger-text]="record.errorType">{{
+                errorLabel(record.errorType)
+              }}</strong>
+              <small>{{ record.errorType || '-' }}</small>
             </div>
             <div>
               <span>API 密钥 GUID</span>
@@ -134,6 +137,27 @@
               </button>
             </div>
           </div>
+          @if (record.errorType || record.errorSummary) {
+            <div class="error-diagnostic">
+              <div class="error-diagnostic-head">
+                <div>
+                  <span>原始错误摘要</span>
+                  <strong>{{ errorLabel(record.errorType) }}</strong>
+                </div>
+                @if (record.errorSummary) {
+                  <button
+                    type="button"
+                    nz-button
+                    nzSize="small"
+                    (click)="copy(record.errorSummary, '错误摘要')"
+                  >
+                    复制摘要
+                  </button>
+                }
+              </div>
+              <p>{{ record.errorSummary || '该历史记录没有保存原始错误摘要。' }}</p>
+            </div>
+          }
         </nz-card>
 
         <nz-card class="detail-card performance-card" [nzBordered]="false">

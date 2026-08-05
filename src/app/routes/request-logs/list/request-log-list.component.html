@@ -130,7 +130,33 @@
       </ng-template>
 
       <ng-template st-row="errorRender" let-item>
-        <span [class.error-text]="isFailure(item)">{{ item.errorType || '-' }}</span>
+        @if (item.errorType || item.errorSummary) {
+          <div
+            class="error-summary-trigger"
+            [class.error-text]="isFailure(item)"
+            nz-popover
+            nzPopoverTitle="错误诊断"
+            nzPopoverTrigger="hover"
+            nzPopoverPlacement="left"
+            [nzPopoverMouseEnterDelay]="0.12"
+            [nzPopoverContent]="errorDetail"
+          >
+            <strong>{{ errorLabel(item.errorType) }}</strong>
+            <span>{{ item.errorType || '未分类' }}</span>
+          </div>
+
+          <ng-template #errorDetail>
+            <div class="error-popover-content">
+              <div>
+                <span>错误类型</span>
+                <strong>{{ item.errorType || '未分类' }}</strong>
+              </div>
+              <p>{{ item.errorSummary || '该历史记录没有保存原始错误摘要。' }}</p>
+            </div>
+          </ng-template>
+        } @else {
+          <span>-</span>
+        }
       </ng-template>
 
       <ng-template st-row="latencyRender" let-item>

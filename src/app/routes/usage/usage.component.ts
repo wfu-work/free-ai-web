@@ -45,7 +45,7 @@ export class UsageComponent implements OnInit {
     { key: 'accounts', label: '按账号' },
     { key: 'platformKeys', label: '按 API 密钥' },
   ];
-  protected days = 30;
+  protected days = 1;
   protected dimension: UsageDimensionKey = 'models';
   protected loading = false;
   protected summary: UsageSummary = this.emptySummary();

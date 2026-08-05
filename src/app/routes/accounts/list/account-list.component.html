@@ -319,6 +319,12 @@
           <span>错误类型</span>
           <strong>{{ errorText(testResult.errorType) }}</strong>
         </div>
+        @if (testResult.errorSummary) {
+          <div>
+            <span>错误摘要</span>
+            <strong>{{ testResult.errorSummary }}</strong>
+          </div>
+        }
       </div>
     }
   </ng-container>

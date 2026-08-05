@@ -180,6 +180,7 @@ export interface AccountTestResult {
   status?: string;
   statusCode?: number;
   errorType?: string;
+  errorSummary?: string;
   model?: string;
   latencyMs?: number;
   quotas?: AccountQuota[];

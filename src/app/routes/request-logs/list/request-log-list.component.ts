@@ -13,6 +13,7 @@ import { NzModalService } from 'ng-zorro-antd/modal';
 import { forkJoin, finalize } from 'rxjs';
 
 import { OpsStats, RequestLog } from '../request-log.model';
+import { requestLogErrorLabel } from '../request-log-error';
 import { RequestLogsService } from '../request-logs.service';
 
 @Component({
@@ -61,7 +62,7 @@ export class RequestLogListComponent implements OnInit {
     { title: '状态', index: 'statusCode', type: 'tag', tag: this.statusTag, width: 95 },
     { title: '耗时', index: 'latencyMs', render: 'latencyRender', width: 190 },
     { title: 'Token / 成本', index: 'inputTokens', render: 'tokenRender', width: 180 },
-    { title: '错误', index: 'errorType', render: 'errorRender', width: 170 },
+    { title: '错误', index: 'errorType', render: 'errorRender', width: 220 },
     {
       title: '操作',
       width: 100,
@@ -143,6 +144,10 @@ export class RequestLogListComponent implements OnInit {
 
   protected isFailure(item: RequestLog): boolean {
     return item.statusCode >= 400 || Boolean(item.errorType);
+  }
+
+  protected errorLabel(errorType?: string): string {
+    return requestLogErrorLabel(errorType);
   }
 
   protected formatTime(value?: number): string {

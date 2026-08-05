@@ -14,6 +14,7 @@ export interface RequestLog {
   serviceTier: string;
   statusCode: number;
   errorType: string;
+  errorSummary: string;
   switched: boolean;
   switchCount: number;
   switchReason: string;
