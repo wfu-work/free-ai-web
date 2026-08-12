@@ -148,8 +148,12 @@
             <strong>{{ stats.success || 0 }}</strong>
           </div>
           <div>
-            <span>失败请求</span>
+            <span>服务端失败</span>
             <strong class="danger-text">{{ stats.failures || 0 }}</strong>
+          </div>
+          <div>
+            <span>客户端断开</span>
+            <strong>{{ stats.clientDisconnected || 0 }}</strong>
           </div>
         </div>
         <ul class="note-list">

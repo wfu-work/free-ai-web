@@ -53,7 +53,17 @@
           <div>
             <dt>窗口请求</dt>
             <dd>{{ formatCompact(recentRequestCount) }}</dd>
-            <small>{{ recentFailureCount }} 次失败</small>
+            <small>{{ recentServiceRequestCount }} 次纳入服务质量</small>
+          </div>
+          <div>
+            <dt>服务端失败</dt>
+            <dd>{{ formatCompact(recentFailureCount) }}</dd>
+            <small>不含客户端主动断开</small>
+          </div>
+          <div>
+            <dt>客户端断开</dt>
+            <dd>{{ formatCompact(recentClientDisconnectedCount) }}</dd>
+            <small>单独观察，不计服务失败</small>
           </div>
           <div>
             <dt>Token 流量</dt>
@@ -61,9 +71,9 @@
             <small>输入与输出合计</small>
           </div>
           <div>
-            <dt>成功率</dt>
+            <dt>服务成功率</dt>
             <dd>{{ recentSuccessRate }}</dd>
-            <small>{{ trendPeriodLabel }}</small>
+            <small>基于服务质量请求</small>
           </div>
           <div>
             <dt>平均耗时</dt>
@@ -172,7 +182,11 @@
                   <strong>{{ formatDuration(item.latencyMs) }}</strong>
                 </div>
                 <div class="request-status">
-                  <b [class.request-error]="isFailureLog(item)">{{ item.statusCode || '-' }}</b>
+                  <b
+                    [class.request-error]="isServiceFailureLog(item)"
+                    [class.request-disconnected]="isClientDisconnectedLog(item)"
+                    >{{ requestStatusLabel(item) }}</b
+                  >
                   <span>{{ formatTime(logTime(item)) }}</span>
                 </div>
               </a>
@@ -232,7 +246,7 @@
               }
             </div>
           } @else {
-            <div class="empty-state">当前观察窗口内没有失败请求。</div>
+            <div class="empty-state">当前观察窗口内没有服务端失败。</div>
           }
         </section>
       </div>

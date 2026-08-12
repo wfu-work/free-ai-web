@@ -428,6 +428,12 @@
   background: var(--nm-danger-bg);
 }
 
+.request-status b.request-disconnected {
+  border-color: var(--nm-border);
+  color: var(--nm-text-secondary);
+  background: var(--nm-surface-muted);
+}
+
 .request-status span {
   margin: 4px 0 0;
 }
@@ -518,7 +524,12 @@
   }
 
   .window-metrics {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .window-metrics div:nth-child(4) {
+    padding-left: 0;
+    border-left: 0;
   }
 
   .window-metrics div + div {
@@ -549,6 +560,15 @@
   .health-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 18px;
+  }
+
+  .window-metrics {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+  }
+
+  .window-metrics div:nth-child(4) {
+    padding-left: 16px;
+    border-left: 1px solid var(--nm-border);
   }
 }
 

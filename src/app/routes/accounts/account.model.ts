@@ -39,6 +39,39 @@ export interface Account {
   cooldownUntil: number;
   remark: string;
   quotas?: AccountQuota[];
+  resetCredits?: AccountResetCreditSummary;
+}
+
+export interface AccountResetCreditSummary {
+  availableCount: number;
+  applicableAvailableCount?: number | null;
+}
+
+export interface AccountResetCredit {
+  id: string;
+  resetType: string;
+  status: string;
+  grantedAt?: number;
+  expiresAt?: number;
+  title?: string;
+  description?: string;
+}
+
+export interface AccountResetCreditsResult extends AccountResetCreditSummary {
+  accountGuid: string;
+  credits: AccountResetCredit[];
+  detailsAvailable: boolean;
+  syncedAt: number;
+}
+
+export interface ConsumeAccountResetCreditResult {
+  accountGuid: string;
+  outcome: 'reset' | 'alreadyRedeemed' | 'nothingToReset' | 'noCredit' | string;
+  creditId?: string;
+  idempotencyKey: string;
+  resetCredits: AccountResetCreditsResult;
+  usage?: AccountUsageRefreshResult;
+  refreshWarning?: string;
 }
 
 export interface AccountQuota {
@@ -204,4 +237,5 @@ export interface AccountUsageRefreshResult {
   planType: string;
   quotas: AccountQuota[];
   raw?: Record<string, unknown>;
+  resetCredits?: AccountResetCreditSummary;
 }

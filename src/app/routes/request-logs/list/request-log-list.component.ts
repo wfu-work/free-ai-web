@@ -12,8 +12,8 @@ import { NzMessageService } from 'ng-zorro-antd/message';
 import { NzModalService } from 'ng-zorro-antd/modal';
 import { forkJoin, finalize } from 'rxjs';
 
-import { OpsStats, RequestLog } from '../request-log.model';
 import { requestLogDiagnosticLabel, requestLogErrorLabel } from '../request-log-error';
+import { OpsStats, RequestLog } from '../request-log.model';
 import { RequestLogsService } from '../request-logs.service';
 
 @Component({
@@ -38,7 +38,13 @@ export class RequestLogListComponent implements OnInit {
   };
 
   protected data: RequestLog[] = [];
-  protected stats: OpsStats = { total: 0, success: 0, failures: 0, avgLatencyMs: 0 };
+  protected stats: OpsStats = {
+    total: 0,
+    success: 0,
+    failures: 0,
+    clientDisconnected: 0,
+    avgLatencyMs: 0,
+  };
   protected loading = false;
   totalCount = 0;
 
@@ -95,7 +101,13 @@ export class RequestLogListComponent implements OnInit {
       .subscribe(({ items, stats }) => {
         this.data = items.data ?? [];
         this.totalCount = items.total ?? 0;
-        this.stats = stats ?? { total: 0, success: 0, failures: 0, avgLatencyMs: 0 };
+        this.stats = stats ?? {
+          total: 0,
+          success: 0,
+          failures: 0,
+          clientDisconnected: 0,
+          avgLatencyMs: 0,
+        };
       });
   }
 
@@ -130,8 +142,9 @@ export class RequestLogListComponent implements OnInit {
   }
 
   protected get successRate(): string {
-    if (!this.stats.total) return '--';
-    return `${((this.stats.success / this.stats.total) * 100).toFixed(1)}%`;
+    const serviceRequests = Math.max(this.stats.total - this.stats.clientDisconnected, 0);
+    if (!serviceRequests) return '--';
+    return `${((this.stats.success / serviceRequests) * 100).toFixed(1)}%`;
   }
 
   protected get modelOptions(): string[] {

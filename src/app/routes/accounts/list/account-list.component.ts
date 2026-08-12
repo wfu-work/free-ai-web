@@ -16,7 +16,13 @@ import { NzPaginationModule } from 'ng-zorro-antd/pagination';
 import { finalize } from 'rxjs';
 
 import { OFFICIAL_VENDOR_OPTIONS, normalizeOfficialVendorCode } from '../account-options';
-import { Account, AccountQuota, AccountTestResult } from '../account.model';
+import {
+  Account,
+  AccountQuota,
+  AccountResetCredit,
+  AccountResetCreditsResult,
+  AccountTestResult,
+} from '../account.model';
 import { AccountsService } from '../accounts.service';
 
 @Component({
@@ -52,6 +58,7 @@ export class AccountListComponent implements OnInit {
   protected testResult: AccountTestResult | null = null;
   protected testModelOptions: string[] = [];
   protected testModelSource: 'account' | 'empty' = 'empty';
+  protected resetCreditLoadingGuid = '';
   protected readonly officialVendorOptions = OFFICIAL_VENDOR_OPTIONS;
 
   protected readonly testForm = this.fb.nonNullable.group({
@@ -150,6 +157,130 @@ export class AccountListComponent implements OnInit {
       );
       this.getData();
     });
+  }
+
+  protected inspectResetCredits(item: Account): void {
+    if (this.resetCreditLoadingGuid) return;
+    this.resetCreditLoadingGuid = item.guid;
+    this.accountsService
+      .resetCredits(item.guid)
+      .pipe(
+        finalize(() => {
+          this.resetCreditLoadingGuid = '';
+          this.cdr.markForCheck();
+        }),
+      )
+      .subscribe((result) => this.confirmResetCredit(item, result));
+  }
+
+  protected resetCreditActionText(item: Account): string {
+    const summary = item.resetCredits;
+    if (!summary) return '查询重置券';
+    if (summary.availableCount <= 0) return '暂无重置券';
+    if (summary.applicableAvailableCount === 0) return '当前无需重置';
+    return '使用重置券';
+  }
+
+  protected resetCreditHint(item: Account): string {
+    const summary = item.resetCredits;
+    if (!summary) return '同步额度后可查询官方重置券';
+    if (summary.availableCount <= 0) return '账号当前没有可用额度重置券';
+    if (summary.applicableAvailableCount === 0) {
+      return `持有 ${summary.availableCount} 张，当前没有符合条件的限额窗口`;
+    }
+    if (summary.applicableAvailableCount != null) {
+      return `持有 ${summary.availableCount} 张，可用于当前限额 ${summary.applicableAvailableCount} 张`;
+    }
+    return `持有 ${summary.availableCount} 张，点击查询可用状态`;
+  }
+
+  protected canInspectResetCredits(item: Account): boolean {
+    const summary = item.resetCredits;
+    return !summary || (summary.availableCount > 0 && summary.applicableAvailableCount !== 0);
+  }
+
+  private confirmResetCredit(item: Account, result: AccountResetCreditsResult): void {
+    if (result.availableCount <= 0) {
+      this.message.info('该账号当前没有可用额度重置券');
+      return;
+    }
+    if (result.applicableAvailableCount === 0) {
+      this.message.info('账号持有重置券，但当前没有符合条件的限额窗口');
+      this.updateResetCreditSummary(item, result);
+      return;
+    }
+    const credit = this.preferredResetCredit(result.credits);
+    const expiry = credit?.expiresAt ? `，有效期至 ${this.formatTime(credit.expiresAt)}` : '';
+    const detail = result.detailsAvailable
+      ? `将消耗 1 张${credit?.title ? `“${credit.title}”` : '额度重置券'}${expiry}。`
+      : '官方仅返回可用数量，将由官方自动选择一张额度重置券。';
+    this.modal.confirm({
+      nzTitle: `使用 ${item.name || item.email} 的额度重置券？`,
+      nzContent: `${detail} 操作成功后系统会立即同步额度；重置券一经使用不可撤销。`,
+      nzOkText: '确认使用',
+      nzOkType: 'primary',
+      nzOnOk: () => this.consumeResetCredit(item, credit),
+    });
+  }
+
+  private consumeResetCredit(item: Account, credit?: AccountResetCredit): Promise<void> {
+    const idempotencyKey = crypto.randomUUID();
+    this.resetCreditLoadingGuid = item.guid;
+    this.cdr.markForCheck();
+    return new Promise<void>((resolve, reject) => {
+      this.accountsService
+        .consumeResetCredit(item.guid, { idempotencyKey, creditId: credit?.id })
+        .pipe(
+          finalize(() => {
+            this.resetCreditLoadingGuid = '';
+            this.cdr.markForCheck();
+          }),
+        )
+        .subscribe({
+          next: (result) => {
+            switch (result.outcome) {
+              case 'reset':
+                this.message.success('额度重置成功，账号状态已重新同步');
+                break;
+              case 'alreadyRedeemed':
+                this.message.success('该操作此前已完成，账号状态已重新同步');
+                break;
+              case 'nothingToReset':
+                this.message.info('当前没有符合条件的额度窗口，无需消耗重置券');
+                break;
+              case 'noCredit':
+                this.message.warning('该账号没有可用额度重置券');
+                break;
+              default:
+                this.message.warning(`官方返回了未识别结果：${result.outcome}`);
+            }
+            if (result.refreshWarning) {
+              this.message.warning(`额度已处理，但同步状态失败：${result.refreshWarning}`);
+            }
+            this.getData();
+            resolve();
+          },
+          error: reject,
+        });
+    });
+  }
+
+  private preferredResetCredit(credits: AccountResetCredit[]): AccountResetCredit | undefined {
+    return [...(credits || [])]
+      .filter((credit) => !credit.status || credit.status === 'available')
+      .sort((left, right) => {
+        if (!left.expiresAt) return 1;
+        if (!right.expiresAt) return -1;
+        return left.expiresAt - right.expiresAt;
+      })[0];
+  }
+
+  private updateResetCreditSummary(item: Account, result: AccountResetCreditsResult): void {
+    item.resetCredits = {
+      availableCount: result.availableCount,
+      applicableAvailableCount: result.applicableAvailableCount,
+    };
+    this.cdr.markForCheck();
   }
 
   protected delete(item: Account): void {

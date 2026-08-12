@@ -100,7 +100,7 @@
                 }
               </nz-select>
               <div class="field-extra">
-                顺序优先按账号优先级选择；均衡轮询按权重分配当前模型的可用账号。
+                顺序优先按账号优先级选择；自适应均衡以权重为基础，并结合近期首响、过载率和当前并发动态分流。
               </div>
             </se>
 
@@ -216,6 +216,47 @@
           </se-container>
         </nz-card>
 
+        <nz-card class="config-section-card context-card" [nzBordered]="false">
+          <div class="section-head">
+            <span class="section-icon">
+              <i nz-icon nzType="compress"></i>
+            </span>
+            <div class="section-copy">
+              <h3>上下文压缩</h3>
+              <p>长对话达到阈值后，使用 Responses API 原生 compaction 保留关键状态并缩短上下文。</p>
+            </div>
+            <span
+              class="section-status"
+              [class.section-status-active]="form.controls.contextCompactionEnabled.value"
+            >
+              {{ contextCompactionLabel }}
+            </span>
+          </div>
+
+          <se-container col="2" nzLayout="vertical">
+            <se label="自动上下文压缩">
+              <label nz-checkbox formControlName="contextCompactionEnabled">达到阈值后自动压缩</label>
+              <div class="field-extra">仅作用于 /v1/responses；关闭后网关不再自动注入压缩策略。</div>
+            </se>
+
+            <se label="压缩阈值（Token）" required error="请输入 80000 至 120000">
+              <nz-input-number
+                formControlName="contextCompactionThresholdTokens"
+                [nzMin]="80000"
+                [nzMax]="120000"
+                [nzStep]="10000"
+                [nzDisabled]="!form.controls.contextCompactionEnabled.value"
+              />
+              <div class="field-extra">建议 100000；越低越早压缩，越高则保留更多原始对话。</div>
+            </se>
+          </se-container>
+
+          <div class="config-note context-note">
+            <i nz-icon nzType="info-circle"></i>
+            <span>压缩项由上游加密生成并随 Responses 输出返回，客户端需按原顺序带入下一轮请求。</span>
+          </div>
+        </nz-card>
+
         <nz-card class="config-section-card connection-card" [nzBordered]="false">
           <div class="section-head">
             <span class="section-icon">
@@ -223,7 +264,7 @@
             </span>
             <div class="section-copy">
               <h3>连接稳定性</h3>
-              <p>控制长连接保活、请求总时限以及流式响应空闲时限，单位均为毫秒。</p>
+              <p>控制长连接保活、首响应时限以及流式响应空闲时限，单位均为毫秒。</p>
             </div>
             <span class="section-status">SSE / Timeout</span>
           </div>
@@ -234,9 +275,9 @@
               <div class="field-extra">空闲期间发送保活信号，建议保持默认 15000 ms。</div>
             </se>
 
-            <se label="上游请求总超时">
+            <se label="上游首响应超时">
               <nz-input-number formControlName="upstreamTimeoutMs" [nzMin]="0" [nzStep]="1000" />
-              <div class="field-extra">限制单次上游请求总时长，填写 0 表示关闭。</div>
+              <div class="field-extra">流式请求限制首个 SSE 的等待时间；非流式请求仍限制总时长。填写 0 表示关闭。</div>
             </se>
 
             <se label="流式空闲超时">

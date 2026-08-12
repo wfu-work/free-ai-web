@@ -14,12 +14,14 @@ import {
   AccountModelFetchPayload,
   AccountModelFetchResult,
   AccountPayload,
+  AccountResetCreditsResult,
   AccountOAuthCompletePayload,
   AccountOAuthSession,
   AccountOAuthStartPayload,
   AccountTestInput,
   AccountTestResult,
   AccountUsageRefreshResult,
+  ConsumeAccountResetCreditResult,
   ReorderAccountItem,
 } from './account.model';
 
@@ -89,6 +91,20 @@ export class AccountsService {
 
   refreshUsage(guid: string): Observable<AccountUsageRefreshResult> {
     return this.http.post<AccountUsageRefreshResult>(`/accounts/${guid}/refresh-usage`, {});
+  }
+
+  resetCredits(guid: string): Observable<AccountResetCreditsResult> {
+    return this.http.get<AccountResetCreditsResult>(`/accounts/${guid}/reset-credits`);
+  }
+
+  consumeResetCredit(
+    guid: string,
+    payload: { idempotencyKey: string; creditId?: string },
+  ): Observable<ConsumeAccountResetCreditResult> {
+    return this.http.post<ConsumeAccountResetCreditResult>(
+      `/accounts/${guid}/reset-credits/consume`,
+      payload,
+    );
   }
 
   probe(guid: string, payload: AccountTestInput = {}): Observable<AccountTestResult> {

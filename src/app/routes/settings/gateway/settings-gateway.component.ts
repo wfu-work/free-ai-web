@@ -25,6 +25,8 @@ interface GatewayConfig {
   maxRequestBodyMiB: number;
   maxRetries: number;
   overloadQueueTimeoutMs: number;
+  contextCompactionEnabled: boolean;
+  contextCompactionThresholdTokens: number;
 }
 
 const STORAGE_KEY = 'freeai.gateway.config';
@@ -43,6 +45,8 @@ const DEFAULT_GATEWAY_CONFIG: GatewayConfig = {
   maxRequestBodyMiB: 8,
   maxRetries: 1,
   overloadQueueTimeoutMs: 0,
+  contextCompactionEnabled: true,
+  contextCompactionThresholdTokens: 100000,
 };
 
 @Component({
@@ -68,7 +72,7 @@ export class SettingsGatewayComponent implements OnInit {
 
   protected readonly strategyOptions = [
     { label: '顺序优先 (Ordered)', value: 'ordered' },
-    { label: '均衡轮询 (Round Robin)', value: 'round_robin' },
+    { label: '自适应均衡 (Adaptive)', value: 'round_robin' },
   ];
 
   protected readonly residencyOptions = [
@@ -101,6 +105,11 @@ export class SettingsGatewayComponent implements OnInit {
     overloadQueueTimeoutMs: [
       DEFAULT_GATEWAY_CONFIG.overloadQueueTimeoutMs,
       [Validators.required, Validators.min(0), Validators.max(60000)],
+    ],
+    contextCompactionEnabled: [DEFAULT_GATEWAY_CONFIG.contextCompactionEnabled],
+    contextCompactionThresholdTokens: [
+      DEFAULT_GATEWAY_CONFIG.contextCompactionThresholdTokens,
+      [Validators.required, Validators.min(80000), Validators.max(120000)],
     ],
   });
 
@@ -180,6 +189,11 @@ export class SettingsGatewayComponent implements OnInit {
     return `${this.form.controls.maxConcurrentRequests.value} 并发 · ${this.form.controls.maxRequestBodyMiB.value} MiB`;
   }
 
+  protected get contextCompactionLabel(): string {
+    if (!this.form.controls.contextCompactionEnabled.value) return '已关闭';
+    return `${this.form.controls.contextCompactionThresholdTokens.value.toLocaleString()} Token`;
+  }
+
   private loadLocalConfig(): void {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return;
@@ -235,6 +249,11 @@ export class SettingsGatewayComponent implements OnInit {
       maxRetries: Number(value.maxRetries ?? DEFAULT_GATEWAY_CONFIG.maxRetries),
       overloadQueueTimeoutMs: Number(
         value.overloadQueueTimeoutMs ?? DEFAULT_GATEWAY_CONFIG.overloadQueueTimeoutMs,
+      ),
+      contextCompactionEnabled: Boolean(value.contextCompactionEnabled),
+      contextCompactionThresholdTokens: Number(
+        value.contextCompactionThresholdTokens ??
+          DEFAULT_GATEWAY_CONFIG.contextCompactionThresholdTokens,
       ),
     };
   }

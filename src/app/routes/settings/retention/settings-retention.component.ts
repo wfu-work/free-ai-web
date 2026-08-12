@@ -39,7 +39,13 @@ export class SettingsRetentionComponent implements OnInit {
 
   protected loading = false;
   protected backupLoading = false;
-  protected stats: OpsStats = { total: 0, success: 0, failures: 0, avgLatencyMs: 0 };
+  protected stats: OpsStats = {
+    total: 0,
+    success: 0,
+    failures: 0,
+    clientDisconnected: 0,
+    avgLatencyMs: 0,
+  };
   protected logs: RequestLog[] = [];
   protected lastAction = '未执行';
 

@@ -23,6 +23,7 @@ const ERROR_TYPE_LABELS: Record<string, string> = {
 
 const DIAGNOSTIC_TYPE_LABELS: Record<string, string> = {
   client_closed_after_completion: '完成后客户端关闭',
+  context_compacted: '上下文已压缩',
 };
 
 export function requestLogErrorLabel(errorType?: string): string {

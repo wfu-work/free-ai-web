@@ -201,6 +201,28 @@
                   } @else {
                     <span class="empty-value">暂无 7 天官方额度</span>
                   }
+                  <div
+                    class="reset-credit-row"
+                    [class.reset-credit-ready]="canInspectResetCredits(item)"
+                  >
+                    <div class="reset-credit-copy">
+                      <span class="reset-credit-label">
+                        <i nz-icon nzType="thunderbolt"></i>
+                        额度重置券
+                      </span>
+                      <small>{{ resetCreditHint(item) }}</small>
+                    </div>
+                    <button
+                      nz-button
+                      nzSize="small"
+                      nzType="default"
+                      [disabled]="!canInspectResetCredits(item)"
+                      [nzLoading]="resetCreditLoadingGuid === item.guid"
+                      (click)="inspectResetCredits(item)"
+                    >
+                      {{ resetCreditActionText(item) }}
+                    </button>
+                  </div>
                 </div>
               }
             </div>

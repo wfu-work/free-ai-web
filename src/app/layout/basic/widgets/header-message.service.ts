@@ -202,7 +202,7 @@ export class HeaderMessageService {
     const recentLogs = [...source.logs].sort((a, b) => this.logTime(b) - this.logTime(a));
 
     recentLogs
-      .filter((log) => this.isFailureLog(log))
+      .filter((log) => this.isServiceFailureLog(log))
       .slice(0, 5)
       .forEach((log) => {
         messages.push(
@@ -218,7 +218,10 @@ export class HeaderMessageService {
       });
 
     recentLogs
-      .filter((log) => !this.isFailureLog(log) && log.switched)
+      .filter(
+        (log) =>
+          !this.isServiceFailureLog(log) && !this.isClientDisconnectedLog(log) && log.switched,
+      )
       .slice(0, 2)
       .forEach((log) => {
         messages.push(
@@ -234,13 +237,17 @@ export class HeaderMessageService {
       });
 
     if (source.stats && source.stats.total > 0) {
-      const failureRate = source.stats.failures / source.stats.total;
+      const serviceRequests = Math.max(
+        source.stats.total - Number(source.stats.clientDisconnected || 0),
+        0,
+      );
+      const failureRate = serviceRequests ? source.stats.failures / serviceRequests : 0;
       if (failureRate >= 0.2) {
         messages.push(
           this.createMessage(
             `ops:failure-rate:${Math.round(failureRate * 100)}`,
             '请求失败率偏高',
-            `累计 ${source.stats.total} 次请求中失败 ${source.stats.failures} 次，失败率 ${Math.round(failureRate * 100)}%。`,
+            `累计 ${serviceRequests} 次服务质量请求中失败 ${source.stats.failures} 次，失败率 ${Math.round(failureRate * 100)}%；客户端断开 ${source.stats.clientDisconnected || 0} 次未计入。`,
             now,
             failureRate >= 0.5 ? 'error' : 'warning',
             '/usage',
@@ -360,8 +367,15 @@ export class HeaderMessageService {
     return `${new Date(quota.resetAt).toLocaleString('zh-CN', { hour12: false })} 重置`;
   }
 
-  private isFailureLog(log: RequestLog): boolean {
-    return Number(log.statusCode || 0) >= 400 || Boolean(log.errorType);
+  private isServiceFailureLog(log: RequestLog): boolean {
+    return (
+      !this.isClientDisconnectedLog(log) &&
+      (Number(log.statusCode || 0) >= 400 || Boolean(log.errorType))
+    );
+  }
+
+  private isClientDisconnectedLog(log: RequestLog): boolean {
+    return log.errorType === 'client_disconnected';
   }
 
   private logTime(log: RequestLog): number {

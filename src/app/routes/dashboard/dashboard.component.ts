@@ -63,7 +63,13 @@ export class DashboardComponent implements OnInit {
     enabledModels: 0,
     enabledKeys: 0,
   };
-  protected stats: OpsStats = { total: 0, success: 0, failures: 0, avgLatencyMs: 0 };
+  protected stats: OpsStats = {
+    total: 0,
+    success: 0,
+    failures: 0,
+    clientDisconnected: 0,
+    avgLatencyMs: 0,
+  };
   protected masterKey: MasterKeyStatus | null = null;
   protected healthItems: AccountHealthItem[] = [];
   protected logs: RequestLog[] = [];
@@ -148,12 +154,20 @@ export class DashboardComponent implements OnInit {
   }
 
   protected get recentFailureCount(): number {
-    return this.windowLogs.filter((log) => this.isFailureLog(log)).length;
+    return this.windowLogs.filter((log) => this.isServiceFailureLog(log)).length;
+  }
+
+  protected get recentClientDisconnectedCount(): number {
+    return this.windowLogs.filter((log) => this.isClientDisconnectedLog(log)).length;
+  }
+
+  protected get recentServiceRequestCount(): number {
+    return Math.max(this.recentRequestCount - this.recentClientDisconnectedCount, 0);
   }
 
   protected get recentSuccessRate(): string {
-    if (!this.recentRequestCount) return '--';
-    return `${(((this.recentRequestCount - this.recentFailureCount) / this.recentRequestCount) * 100).toFixed(1)}%`;
+    if (!this.recentServiceRequestCount) return '--';
+    return `${(((this.recentServiceRequestCount - this.recentFailureCount) / this.recentServiceRequestCount) * 100).toFixed(1)}%`;
   }
 
   protected get recentAverageLatencyLabel(): string {
@@ -261,8 +275,8 @@ export class DashboardComponent implements OnInit {
       },
       {
         name: '窗口请求',
-        description: `${this.selectedTrendRange.label}请求质量`,
-        status: this.recentFailureCount ? `${this.recentFailureCount} 次失败` : '无失败',
+        description: `${this.selectedTrendRange.label} · 客户端断开 ${this.recentClientDisconnectedCount} 次`,
+        status: this.recentFailureCount ? `${this.recentFailureCount} 次服务失败` : '服务正常',
         tone: this.recentFailureCount ? 'warning' : 'success',
       },
       {
@@ -303,7 +317,7 @@ export class DashboardComponent implements OnInit {
   protected get errorRows(): Array<{ label: string; count: number; percent: number }> {
     const map = new Map<string, number>();
     for (const log of this.windowLogs) {
-      if (!this.isFailureLog(log)) continue;
+      if (!this.isServiceFailureLog(log)) continue;
       const label = log.errorType || String(log.statusCode || 'unknown');
       map.set(label, (map.get(label) || 0) + 1);
     }
@@ -335,8 +349,20 @@ export class DashboardComponent implements OnInit {
     return Number(log.createdAtUnix || log.createTime || 0);
   }
 
-  protected isFailureLog(log: RequestLog): boolean {
-    return Number(log.statusCode || 0) >= 400 || Boolean(log.errorType);
+  protected isServiceFailureLog(log: RequestLog): boolean {
+    return (
+      !this.isClientDisconnectedLog(log) &&
+      (Number(log.statusCode || 0) >= 400 || Boolean(log.errorType))
+    );
+  }
+
+  protected isClientDisconnectedLog(log: RequestLog): boolean {
+    return log.errorType === 'client_disconnected';
+  }
+
+  protected requestStatusLabel(log: RequestLog): string {
+    if (this.isClientDisconnectedLog(log)) return '已断开';
+    return String(log.statusCode || '-');
   }
 
   protected formatTime(value?: number): string {

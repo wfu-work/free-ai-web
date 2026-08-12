@@ -26,11 +26,15 @@
       <strong>{{ stats.success || 0 }}</strong>
     </article>
     <article class="metric-card metric-danger">
-      <span>失败请求</span>
+      <span>服务端失败</span>
       <strong>{{ stats.failures || 0 }}</strong>
     </article>
     <article class="metric-card">
-      <span>成功率 / 平均延迟</span>
+      <span>客户端断开</span>
+      <strong>{{ stats.clientDisconnected || 0 }}</strong>
+    </article>
+    <article class="metric-card">
+      <span>服务成功率 / 平均延迟</span>
       <strong>{{ successRate }} · {{ formatMs(stats.avgLatencyMs) }}</strong>
     </article>
   </div>

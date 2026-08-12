@@ -45,5 +45,6 @@ export interface OpsStats {
   total: number;
   success: number;
   failures: number;
+  clientDisconnected: number;
   avgLatencyMs: number;
 }
