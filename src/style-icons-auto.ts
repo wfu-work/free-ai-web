@@ -62,10 +62,16 @@ import {
   UploadOutline,
   UserOutline,
   CloudOutline,
+  ControlOutline,
+  LineChartOutline,
+  CompressOutline,
 } from '@ant-design/icons-angular/icons';
 
 export const ICONS_AUTO = [
   ApiOutline,
+  ControlOutline,
+  CompressOutline,
+  LineChartOutline,
   ArrowDownOutline,
   ArrowLeftOutline,
   ArrowRightOutline,

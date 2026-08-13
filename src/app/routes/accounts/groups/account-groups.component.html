@@ -17,22 +17,25 @@
   </div>
 
   <div class="metric-grid">
-    <article class="metric-card">
-      <span>分组总数</span>
-      <strong>{{ totalGroups }}</strong>
-    </article>
-    <article class="metric-card metric-success">
-      <span>启用分组</span>
-      <strong>{{ activeGroups }}</strong>
-    </article>
-    <article class="metric-card metric-warning">
-      <span>停用分组</span>
-      <strong>{{ disabledGroups }}</strong>
-    </article>
-    <article class="metric-card">
-      <span>当前页分组</span>
-      <strong>{{ data.length }}</strong>
-    </article>
+    <app-metric-card label="分组总数" [value]="totalGroups" description="全部已创建分组" />
+    <app-metric-card
+      label="启用分组"
+      [value]="activeGroups"
+      description="当前页可参与路由"
+      tone="success"
+    />
+    <app-metric-card
+      label="停用分组"
+      [value]="disabledGroups"
+      description="当前页已暂停使用"
+      tone="warning"
+    />
+    <app-metric-card
+      label="当前页分组"
+      [value]="data.length"
+      description="本页加载数量"
+      tone="info"
+    />
   </div>
 
   <nz-alert

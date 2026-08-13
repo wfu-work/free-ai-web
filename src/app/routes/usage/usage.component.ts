@@ -8,6 +8,7 @@ import {
 import {
   ModelCallTrendChartComponent,
   ModelCallTrendSeries,
+  MetricCardComponent,
   SHARED_IMPORTS,
   TitleLabelComponent,
   TokenTrendChartComponent,
@@ -30,6 +31,7 @@ type AnalysisTone = 'good' | 'warn' | 'bad' | 'neutral';
   imports: [
     SHARED_IMPORTS,
     TitleLabelComponent,
+    MetricCardComponent,
     TokenTrendChartComponent,
     ModelCallTrendChartComponent,
   ],

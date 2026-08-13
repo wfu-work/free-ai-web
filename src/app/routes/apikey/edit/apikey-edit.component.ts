@@ -7,7 +7,7 @@ import {
 } from '@angular/core';
 import { FormBuilder, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
-import { SHARED_IMPORTS, TitleLabelComponent } from '@shared';
+import { MetricCardComponent, SHARED_IMPORTS, TitleLabelComponent } from '@shared';
 import { NzMessageService } from 'ng-zorro-antd/message';
 import { catchError, finalize, forkJoin, Observable, of } from 'rxjs';
 
@@ -23,7 +23,7 @@ type PlatformKeyFormMode = 'create' | 'edit';
   templateUrl: './apikey-edit.component.html',
   styleUrls: ['./apikey-edit.component.less'],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [SHARED_IMPORTS, TitleLabelComponent],
+  imports: [SHARED_IMPORTS, TitleLabelComponent, MetricCardComponent],
 })
 export class PlatformKeyEditComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);

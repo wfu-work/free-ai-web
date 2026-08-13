@@ -7,7 +7,7 @@ import {
 } from '@angular/core';
 import { FormBuilder, Validators } from '@angular/forms';
 import { STChange, STColumn, STColumnTag } from '@delon/abc/st';
-import { SHARED_IMPORTS, TitleLabelComponent } from '@shared';
+import { MetricCardComponent, SHARED_IMPORTS, TitleLabelComponent } from '@shared';
 import { NzMessageService } from 'ng-zorro-antd/message';
 import { NzModalService } from 'ng-zorro-antd/modal';
 import { finalize } from 'rxjs/operators';
@@ -20,7 +20,7 @@ import { AccountsService } from '../accounts.service';
   templateUrl: './account-groups.component.html',
   styleUrls: ['./account-groups.component.less'],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [SHARED_IMPORTS, TitleLabelComponent],
+  imports: [SHARED_IMPORTS, TitleLabelComponent, MetricCardComponent],
 })
 export class AccountGroupsComponent implements OnInit {
   private readonly accountsService = inject(AccountsService);

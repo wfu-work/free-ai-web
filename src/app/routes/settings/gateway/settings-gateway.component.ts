@@ -7,7 +7,7 @@ import {
   inject,
 } from '@angular/core';
 import { FormBuilder, Validators } from '@angular/forms';
-import { SHARED_IMPORTS, TitleLabelComponent } from '@shared';
+import { MetricCardComponent, SHARED_IMPORTS, TitleLabelComponent } from '@shared';
 import { NzMessageService } from 'ng-zorro-antd/message';
 import { finalize } from 'rxjs';
 
@@ -54,7 +54,7 @@ const DEFAULT_GATEWAY_CONFIG: GatewayConfig = {
   templateUrl: './settings-gateway.component.html',
   styleUrls: ['./settings-gateway.component.less'],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [SHARED_IMPORTS, TitleLabelComponent],
+  imports: [SHARED_IMPORTS, TitleLabelComponent, MetricCardComponent],
 })
 export class SettingsGatewayComponent implements OnInit {
   private readonly fb = inject(FormBuilder);

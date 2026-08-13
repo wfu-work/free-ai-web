@@ -11,22 +11,25 @@
   </div>
 
   <div class="summary-grid">
-    <article class="summary-card">
-      <span>服务监听</span>
-      <strong>{{ listenModeLabel }}</strong>
-    </article>
-    <article class="summary-card">
-      <span>账号选择</span>
-      <strong>{{ strategyLabel }}</strong>
-    </article>
-    <article class="summary-card">
-      <span>上游连接</span>
-      <strong>{{ upstreamModeLabel }}</strong>
-    </article>
-    <article class="summary-card">
-      <span>区域驻留</span>
-      <strong>{{ residencyLabel }}</strong>
-    </article>
+    <app-metric-card
+      label="服务监听"
+      [value]="listenModeLabel"
+      description="网关访问范围"
+      tone="success"
+    />
+    <app-metric-card label="账号选择" [value]="strategyLabel" description="账号池调度策略" />
+    <app-metric-card
+      label="上游连接"
+      [value]="upstreamModeLabel"
+      description="官方服务连接方式"
+      tone="warning"
+    />
+    <app-metric-card
+      label="区域驻留"
+      [value]="residencyLabel"
+      description="上游区域限制"
+      tone="info"
+    />
   </div>
 
   <nz-spin [nzSpinning]="loading">
@@ -235,8 +238,12 @@
 
           <se-container class="context-fields" col="2" nzLayout="vertical">
             <se label="自动上下文压缩">
-              <label nz-checkbox formControlName="contextCompactionEnabled">达到阈值后自动压缩</label>
-              <div class="field-extra">仅作用于 /v1/responses；关闭后网关不再自动注入压缩策略。</div>
+              <label nz-checkbox formControlName="contextCompactionEnabled"
+                >达到阈值后自动压缩</label
+              >
+              <div class="field-extra">
+                仅作用于 /v1/responses；关闭后网关不再自动注入压缩策略。
+              </div>
             </se>
 
             <se label="压缩阈值（Token）" required error="请输入 80000 至 120000">
@@ -253,7 +260,9 @@
 
           <div class="config-note context-note">
             <i nz-icon nzType="info-circle"></i>
-            <span>压缩项由上游加密生成并随 Responses 输出返回，客户端需按原顺序带入下一轮请求。</span>
+            <span
+              >压缩项由上游加密生成并随 Responses 输出返回，客户端需按原顺序带入下一轮请求。</span
+            >
           </div>
         </nz-card>
 
@@ -277,7 +286,9 @@
 
             <se label="上游首响应超时">
               <nz-input-number formControlName="upstreamTimeoutMs" [nzMin]="0" [nzStep]="1000" />
-              <div class="field-extra">流式请求限制首个 SSE 的等待时间；非流式请求仍限制总时长。填写 0 表示关闭。</div>
+              <div class="field-extra">
+                流式请求限制首个 SSE 的等待时间；非流式请求仍限制总时长。填写 0 表示关闭。
+              </div>
             </se>
 
             <se label="流式空闲超时">

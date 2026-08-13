@@ -51,23 +51,15 @@
   align-items: start;
 }
 
-.metric-card,
 .panel-card {
+  overflow: hidden;
   min-width: 0;
   border: 1px solid rgb(var(--nm-primary-rgb) / 10%);
   border-radius: 8px;
   background: var(--nm-surface-glass);
+  box-shadow: 0 18px 40px rgb(var(--nm-primary-rgb) / 6%);
 }
 
-.metric-card {
-  position: relative;
-  min-height: 112px;
-  padding: 22px 24px;
-  overflow: hidden;
-  box-shadow: 0 12px 30px rgb(var(--nm-primary-rgb) / 5%);
-}
-
-.metric-card span,
 .detail-grid span {
   display: block;
   color: var(--nm-text-secondary);
@@ -75,34 +67,20 @@
   font-weight: 700;
 }
 
-.metric-card strong,
 .detail-grid strong {
   display: block;
-  margin-top: 10px;
+  margin-top: 6px;
   overflow: hidden;
   color: var(--nm-text);
-  font-size: 24px;
+  font-size: 15px;
   font-weight: 850;
   line-height: 1.2;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.metric-success strong {
-  color: var(--nm-success);
-}
-
-.metric-warning strong {
-  color: var(--nm-warning);
-}
-
 .danger-text {
   color: var(--nm-danger) !important;
-}
-
-.panel-card {
-  overflow: hidden;
-  box-shadow: 0 18px 40px rgb(var(--nm-primary-rgb) / 6%);
 }
 
 .panel-card ::ng-deep .ant-card-body {
@@ -284,11 +262,6 @@
     linear-gradient(180deg, rgb(var(--nm-primary-rgb) / 5%), transparent), var(--nm-surface-muted);
 }
 
-.detail-grid strong {
-  margin-top: 6px;
-  font-size: 15px;
-}
-
 .note-list {
   display: grid;
   gap: 12px;
@@ -343,11 +316,6 @@
 
   .panel-card ::ng-deep .ant-card-body {
     padding: 20px;
-  }
-
-  .metric-card {
-    min-height: auto;
-    padding: 18px 20px;
   }
 
   .cleanup-section {

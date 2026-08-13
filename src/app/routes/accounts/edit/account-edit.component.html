@@ -21,27 +21,35 @@
   <nz-spin [nzSpinning]="loading">
     @if (formMode === 'edit' && account) {
       <div class="metric-grid mt-lg">
-        <article class="metric-card">
-          <span>账号状态</span><strong>{{ statusText(account.status) }}</strong>
-        </article>
-        <article class="metric-card">
-          <span>{{ isImageAPIAccount ? '计费方式' : '套餐' }}</span
-          ><strong>{{
+        <app-metric-card
+          label="账号状态"
+          [value]="statusText(account.status)"
+          description="当前运行状态"
+          tone="success"
+        />
+        <app-metric-card
+          [label]="isImageAPIAccount ? '计费方式' : '套餐'"
+          [value]="
             isImageAPIAccount ? 'API 按量计费' : account.planType || account.subscriptionPlan || '-'
-          }}</strong>
-        </article>
-        <article class="metric-card">
-          <span>{{ isImageAPIAccount ? 'API Key 状态' : '访问令牌状态' }}</span
-          ><strong>{{ tokenStatusText(account.tokenStatus) }}</strong>
-        </article>
-        <article class="metric-card">
-          <span>{{ isImageAPIAccount ? '凭据标识' : '订阅到期' }}</span
-          ><strong>{{
+          "
+          description="账号订阅类型"
+          tone="info"
+        />
+        <app-metric-card
+          [label]="isImageAPIAccount ? 'API Key 状态' : '访问令牌状态'"
+          [value]="tokenStatusText(account.tokenStatus)"
+          description="凭据当前状态"
+        />
+        <app-metric-card
+          [label]="isImageAPIAccount ? '凭据标识' : '订阅到期'"
+          [value]="
             isImageAPIAccount
               ? account.credentialHint || '-'
               : formatTime(account.subscriptionExpiredAt)
-          }}</strong>
-        </article>
+          "
+          description="账号凭据或订阅信息"
+          tone="warning"
+        />
       </div>
     }
 

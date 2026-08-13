@@ -72,7 +72,6 @@
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
-.metric-card,
 .form-card,
 .side-card {
   min-width: 0;
@@ -81,11 +80,6 @@
   background: var(--nm-surface-glass);
 }
 
-.metric-card {
-  padding: 18px 20px;
-}
-
-.metric-card span,
 .detail-grid span {
   display: block;
   color: var(--nm-text-secondary);
@@ -93,15 +87,14 @@
   font-weight: 700;
 }
 
-.metric-card strong,
 .detail-grid strong {
   display: block;
-  margin-top: 8px;
+  margin-top: 6px;
   overflow: hidden;
   color: var(--nm-text);
-  font-size: 22px;
+  font-size: 14px;
   font-weight: 850;
-  line-height: 1.2;
+  line-height: 1.4;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -201,12 +194,6 @@
   border: 1px solid rgb(var(--nm-primary-rgb) / 10%);
   border-radius: 8px;
   background: var(--nm-surface-muted);
-}
-
-.detail-grid strong {
-  margin-top: 6px;
-  font-size: 14px;
-  line-height: 1.4;
 }
 
 .note-list {

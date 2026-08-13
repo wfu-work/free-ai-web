@@ -103,6 +103,9 @@
                     {{ item.name || '-' }}
                   </div>
                   <span class="vendor-badge">{{ accountTypeLabel(item) }}</span>
+                  <nz-tag class="plan-badge" [nzColor]="accountPlanColor(item)">
+                    {{ accountPlanLabel(item) }}
+                  </nz-tag>
                 </div>
                 <div class="account-email" [title]="item.email || item.credentialHint || '-'">
                   {{ item.email || item.credentialHint || '-' }}
@@ -111,9 +114,6 @@
               <div class="account-statuses">
                 <span class="status-pill" [class]="statusTone(item.status)">
                   {{ statusText(item.status) }}
-                </span>
-                <span class="enabled-pill" [class.enabled-pill-off]="!item.enabled">
-                  {{ item.enabled ? '已启用' : '已停用' }}
                 </span>
               </div>
             </div>
@@ -129,6 +129,28 @@
               {{ item.guid }}
             </button>
 
+            <div class="gateway-usage">
+              <div class="gateway-usage-title">近 30 天网关用量</div>
+              <div class="gateway-usage-grid">
+                <div class="gateway-usage-item">
+                  <strong>{{ formatCompactUsage(item.gatewayUsage?.requests) }}</strong>
+                  <span>次请求</span>
+                </div>
+                <div class="gateway-usage-item">
+                  <strong>{{ formatCompactUsage(item.gatewayUsage?.totalTokens) }}</strong>
+                  <span>Token</span>
+                </div>
+                <div
+                  class="gateway-usage-item"
+                  nz-tooltip
+                  [nzTooltipTitle]="gatewayCostTooltip(item)"
+                >
+                  <strong>{{ formatGatewayCost(item) }}</strong>
+                  <span>参考成本</span>
+                </div>
+              </div>
+            </div>
+
             <div class="account-info-grid">
               <div class="info-item">
                 <span>账号组</span>
@@ -137,14 +159,6 @@
               <div class="info-item">
                 <span>调度参数</span>
                 <strong>优先级 {{ item.priority || 0 }} · 权重 {{ item.weight || 1 }}</strong>
-              </div>
-              <div class="info-item">
-                <span>{{ isImageAPIAccount(item) ? '计费方式' : '订阅套餐' }}</span>
-                <strong>{{
-                  isImageAPIAccount(item)
-                    ? 'API 按量计费'
-                    : item.planType || item.subscriptionPlan || '未知套餐'
-                }}</strong>
               </div>
               <div class="info-item">
                 <span>{{ isImageAPIAccount(item) ? 'API Key 状态' : '访问令牌状态' }}</span>
@@ -159,6 +173,10 @@
                 <strong [class.text-danger]="item.failureCount > 0">{{
                   item.failureCount || 0
                 }}</strong>
+              </div>
+              <div class="info-item">
+                <span>账号类型</span>
+                <strong>{{ accountKindLabel(item) }}</strong>
               </div>
             </div>
 

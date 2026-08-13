@@ -21,10 +21,14 @@ export interface RequestLog {
   switchCount: number;
   switchReason: string;
   latencyMs: number;
+  gatewayQueueMs: number;
   preparationMs: number;
   dnsMs: number;
   connectMs: number;
   tlsHandshakeMs: number;
+  wroteRequestMs: number;
+  requestUploadMs: number;
+  upstreamWaitMs: number;
   upstreamHeaderMs: number;
   firstEventMs: number;
   firstTokenMs: number;

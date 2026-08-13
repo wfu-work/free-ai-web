@@ -8,7 +8,7 @@ import {
   inject,
 } from '@angular/core';
 import { FormBuilder, Validators } from '@angular/forms';
-import { SHARED_IMPORTS, TitleLabelComponent } from '@shared';
+import { MetricCardComponent, SHARED_IMPORTS, TitleLabelComponent } from '@shared';
 import { NzMessageService } from 'ng-zorro-antd/message';
 import { NzModalService } from 'ng-zorro-antd/modal';
 import { finalize, forkJoin } from 'rxjs';
@@ -25,7 +25,7 @@ const DEFAULT_RETENTION_DAYS = 30;
   templateUrl: './settings-retention.component.html',
   styleUrls: ['./settings-retention.component.less'],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [SHARED_IMPORTS, TitleLabelComponent],
+  imports: [SHARED_IMPORTS, TitleLabelComponent, MetricCardComponent],
 })
 export class SettingsRetentionComponent implements OnInit {
   private readonly requestLogsService = inject(RequestLogsService);

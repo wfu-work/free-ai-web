@@ -14,22 +14,25 @@
 
   <nz-spin [nzSpinning]="loading">
     <div class="metric-grid">
-      <article class="metric-card metric-success">
-        <span>默认保留</span>
-        <strong>{{ defaultRetentionLabel }}</strong>
-      </article>
-      <article class="metric-card">
-        <span>日志总数</span>
-        <strong>{{ stats.total || 0 }}</strong>
-      </article>
-      <article class="metric-card metric-warning">
-        <span>最近样本</span>
-        <strong>{{ sampleSize }}</strong>
-      </article>
-      <article class="metric-card">
-        <span>最近一次操作</span>
-        <strong>{{ lastAction }}</strong>
-      </article>
+      <app-metric-card
+        label="默认保留"
+        [value]="defaultRetentionLabel"
+        description="当前日志保留策略"
+        tone="success"
+      />
+      <app-metric-card label="日志总数" [value]="stats.total || 0" description="已记录网关请求" />
+      <app-metric-card
+        label="最近样本"
+        [value]="sampleSize"
+        description="本次分析样本数"
+        tone="warning"
+      />
+      <app-metric-card
+        label="最近一次操作"
+        [value]="lastAction"
+        description="数据管理执行记录"
+        tone="info"
+      />
     </div>
 
     <nz-card class="panel-card backup-card mt-lg" [nzBordered]="false">
@@ -38,8 +41,8 @@
           <div>
             <div class="panel-title">核心数据备份</div>
             <p>
-              导出账号、账号分组、模型目录、账号模型可用性、对外策略、API 密钥、账号额度和网关配置；导入时按
-              guid 恢复并覆盖同一份核心数据。
+              导出账号、账号分组、模型目录、账号模型可用性、对外策略、API
+              密钥、账号额度和网关配置；导入时按 guid 恢复并覆盖同一份核心数据。
             </p>
           </div>
         </div>

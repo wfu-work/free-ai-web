@@ -6,12 +6,12 @@ import {
   inject,
 } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
-import { SHARED_IMPORTS, TitleLabelComponent } from '@shared';
+import { MetricCardComponent, SHARED_IMPORTS, TitleLabelComponent } from '@shared';
 import { NzMessageService } from 'ng-zorro-antd/message';
 import { finalize } from 'rxjs';
 
-import { RequestLog } from '../request-log.model';
 import { requestLogDiagnosticLabel, requestLogErrorLabel } from '../request-log-error';
+import { RequestLog } from '../request-log.model';
 import { RequestLogsService } from '../request-logs.service';
 
 @Component({
@@ -19,7 +19,7 @@ import { RequestLogsService } from '../request-logs.service';
   templateUrl: './request-log-detail.component.html',
   styleUrls: ['./request-log-detail.component.less'],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [SHARED_IMPORTS, TitleLabelComponent],
+  imports: [SHARED_IMPORTS, TitleLabelComponent, MetricCardComponent],
 })
 export class RequestLogDetailComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);

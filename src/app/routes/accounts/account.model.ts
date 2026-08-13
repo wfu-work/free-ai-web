@@ -40,6 +40,18 @@ export interface Account {
   remark: string;
   quotas?: AccountQuota[];
   resetCredits?: AccountResetCreditSummary;
+  gatewayUsage?: AccountGatewayUsage;
+}
+
+export interface AccountGatewayUsage {
+  since: number;
+  until: number;
+  requests: number;
+  totalTokens: number;
+  costMicrousd: number;
+  costAmount: number;
+  pricedRequests: number;
+  costAvailable: boolean;
 }
 
 export interface AccountResetCreditSummary {

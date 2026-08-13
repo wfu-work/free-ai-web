@@ -13,6 +13,7 @@ import { NzListModule } from 'ng-zorro-antd/list';
 import { NzMessageService } from 'ng-zorro-antd/message';
 import { NzModalService } from 'ng-zorro-antd/modal';
 import { NzPaginationModule } from 'ng-zorro-antd/pagination';
+import { NzTagModule } from 'ng-zorro-antd/tag';
 import { finalize } from 'rxjs';
 
 import { OFFICIAL_VENDOR_OPTIONS, normalizeOfficialVendorCode } from '../account-options';
@@ -30,7 +31,14 @@ import { AccountsService } from '../accounts.service';
   templateUrl: './account-list.component.html',
   styleUrls: ['./account-list.component.less'],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [SHARED_IMPORTS, TitleLabelComponent, NgClass, NzListModule, NzPaginationModule],
+  imports: [
+    SHARED_IMPORTS,
+    TitleLabelComponent,
+    NgClass,
+    NzListModule,
+    NzPaginationModule,
+    NzTagModule,
+  ],
 })
 export class AccountListComponent implements OnInit {
   private readonly router = inject(Router);
@@ -397,6 +405,49 @@ export class AccountListComponent implements OnInit {
     return this.isImageAPIAccount(item) ? '图片 API' : this.vendorLabel(item.vendorCode);
   }
 
+  protected accountKindLabel(item: Account): string {
+    if (this.isImageAPIAccount(item)) return 'OpenAI 图片 API';
+    if (item.credentialType === 'oauth') return 'Codex OAuth';
+    if (item.credentialType === 'api_key') return 'API Key';
+    return item.credentialType || item.productCode || '未知';
+  }
+
+  protected accountPlanLabel(item: Account): string {
+    if (this.isImageAPIAccount(item)) return 'API 计费';
+    const plan = this.normalizedAccountPlan(item);
+    const labels: Record<string, string> = {
+      free: 'Free',
+      plus: 'Plus',
+      pro: 'Pro',
+      team: 'Team',
+      business: 'Business',
+      enterprise: 'Enterprise',
+      edu: 'Edu',
+    };
+    return labels[plan] || plan || '未知套餐';
+  }
+
+  protected accountPlanColor(item: Account): string {
+    if (this.isImageAPIAccount(item)) return 'blue';
+    const plan = this.normalizedAccountPlan(item);
+    const colors: Record<string, string> = {
+      plus: 'gold',
+      pro: 'volcano',
+      team: 'purple',
+      business: 'geekblue',
+      enterprise: 'magenta',
+      edu: 'cyan',
+    };
+    return colors[plan] || 'default';
+  }
+
+  private normalizedAccountPlan(item: Account): string {
+    return (item.planType || item.subscriptionPlan || '')
+      .trim()
+      .toLowerCase()
+      .replace(/^chatgpt[\s_-]*/, '');
+  }
+
   protected isImageAPIAccount(item?: Account | null): boolean {
     return item?.productCode === 'openai_images';
   }
@@ -522,6 +573,31 @@ export class AccountListComponent implements OnInit {
 
   protected modelCount(value?: number): string {
     return `${Number(value || 0)} 个模型`;
+  }
+
+  protected formatCompactUsage(value?: number): string {
+    const amount = Math.max(0, Number(value || 0));
+    if (amount >= 1_000_000_000) return `${this.trimMetricZeros(amount / 1_000_000_000)}B`;
+    if (amount >= 1_000_000) return `${this.trimMetricZeros(amount / 1_000_000)}M`;
+    if (amount >= 1_000) return `${this.trimMetricZeros(amount / 1_000)}K`;
+    return Math.round(amount).toLocaleString('zh-CN');
+  }
+
+  protected formatGatewayCost(item: Account): string {
+    if (this.isImageAPIAccount(item) || item.gatewayUsage?.costAvailable !== true) return '--';
+    return `$${Number(item.gatewayUsage.costAmount || 0).toFixed(2)}`;
+  }
+
+  protected gatewayCostTooltip(item: Account): string {
+    if (this.isImageAPIAccount(item)) return '图片生成请求暂未纳入 Token 参考成本估算';
+    if (item.gatewayUsage?.costAvailable !== true) {
+      return '窗口内存在未匹配官方定价的请求，暂不展示不完整成本';
+    }
+    return '根据近 30 天网关 Token 用量与官方 API 参考价估算，不代表上游实际账单';
+  }
+
+  private trimMetricZeros(value: number): string {
+    return value.toFixed(1).replace(/\.0$/, '');
   }
 
   protected async copy(value: string, label: string): Promise<void> {

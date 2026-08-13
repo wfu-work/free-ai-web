@@ -30,45 +30,54 @@
     </div>
 
     <div class="metric-grid">
-      <article class="metric-card">
-        <span>请求总量</span>
-        <strong>{{ formatNumber(summary.totalRequests) }}</strong>
-        <small
-          >成功 {{ formatNumber(summary.successRequests) }} · 失败
-          {{ formatNumber(summary.failedRequests) }}</small
-        >
-      </article>
-      <article
-        class="metric-card"
-        [class.metric-success]="summary.totalRequests > 0 && successPercent >= 95"
-        [class.metric-warning]="
-          summary.totalRequests > 0 && successPercent < 95 && successPercent >= 85
+      <app-metric-card
+        label="请求总量"
+        [value]="formatNumber(summary.totalRequests)"
+        [description]="
+          '成功 ' +
+          formatNumber(summary.successRequests) +
+          ' · 失败 ' +
+          formatNumber(summary.failedRequests)
         "
-        [class.metric-danger]="summary.totalRequests > 0 && successPercent < 85"
-      >
-        <span>成功率</span>
-        <strong>{{ successRate }}</strong>
-        <small>{{ reliabilityLabel }}</small>
-      </article>
-      <article
-        class="metric-card"
-        [class.metric-warning]="summary.avgLatencyMs > 5000 && summary.avgLatencyMs <= 12000"
-        [class.metric-danger]="summary.avgLatencyMs > 12000"
-      >
-        <span>平均延迟</span>
-        <strong>{{ formatMs(summary.avgLatencyMs) }}</strong>
-        <small>{{ latencyLabel }}</small>
-      </article>
-      <article class="metric-card">
-        <span>Token 总量</span>
-        <strong>{{ formatNumber(totalTokens) }}</strong>
-        <small>输入 {{ formatNumber(summary.inputTokens) }}</small>
-      </article>
-      <article class="metric-card metric-cost">
-        <span>估算成本</span>
-        <strong>{{ formatCost(summary.costAmount) }}</strong>
-        <small>基于已匹配的官方定价</small>
-      </article>
+      />
+      <app-metric-card
+        label="成功率"
+        [value]="successRate"
+        [description]="reliabilityLabel"
+        [tone]="
+          summary.totalRequests <= 0
+            ? 'neutral'
+            : successPercent >= 95
+              ? 'success'
+              : successPercent >= 85
+                ? 'warning'
+                : 'danger'
+        "
+      />
+      <app-metric-card
+        label="平均延迟"
+        [value]="formatMs(summary.avgLatencyMs)"
+        [description]="latencyLabel"
+        [tone]="
+          summary.avgLatencyMs > 12000
+            ? 'danger'
+            : summary.avgLatencyMs > 5000
+              ? 'warning'
+              : 'neutral'
+        "
+      />
+      <app-metric-card
+        label="Token 总量"
+        [value]="formatNumber(totalTokens)"
+        [description]="'输入 ' + formatNumber(summary.inputTokens)"
+        tone="info"
+      />
+      <app-metric-card
+        label="估算成本"
+        [value]="formatCost(summary.costAmount)"
+        description="基于已匹配的官方定价"
+        tone="warning"
+      />
     </div>
 
     <app-token-trend-chart

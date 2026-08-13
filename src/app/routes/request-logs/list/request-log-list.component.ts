@@ -7,7 +7,7 @@ import {
 } from '@angular/core';
 import { Router } from '@angular/router';
 import { STChange, STColumn, STColumnTag } from '@delon/abc/st';
-import { SHARED_IMPORTS, TitleLabelComponent } from '@shared';
+import { MetricCardComponent, SHARED_IMPORTS, TitleLabelComponent } from '@shared';
 import { NzMessageService } from 'ng-zorro-antd/message';
 import { NzModalService } from 'ng-zorro-antd/modal';
 import { forkJoin, finalize } from 'rxjs';
@@ -21,7 +21,7 @@ import { RequestLogsService } from '../request-logs.service';
   templateUrl: './request-log-list.component.html',
   styleUrls: ['./request-log-list.component.less'],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [SHARED_IMPORTS, TitleLabelComponent],
+  imports: [SHARED_IMPORTS, TitleLabelComponent, MetricCardComponent],
 })
 export class RequestLogListComponent implements OnInit {
   private readonly requestLogsService = inject(RequestLogsService);

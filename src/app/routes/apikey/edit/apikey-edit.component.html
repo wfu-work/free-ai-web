@@ -31,18 +31,23 @@
 
   <nz-spin [nzSpinning]="loading">
     <div class="metric-grid metric-grid-compact">
-      <article class="metric-card">
-        <span>账号组筛选</span>
-        <strong>{{ accountGroupLabel }}</strong>
-      </article>
-      <article class="metric-card">
-        <span>绑定模型</span>
-        <strong>{{ form.controls.boundModel.value || '跟随请求' }}</strong>
-      </article>
-      <article class="metric-card">
-        <span>总额度限制</span>
-        <strong>{{ tokenLimitLabel }}</strong>
-      </article>
+      <app-metric-card
+        label="账号组筛选"
+        [value]="accountGroupLabel"
+        description="允许使用的账号范围"
+      />
+      <app-metric-card
+        label="绑定模型"
+        [value]="form.controls.boundModel.value || '跟随请求'"
+        description="密钥模型策略"
+        tone="success"
+      />
+      <app-metric-card
+        label="总额度限制"
+        [value]="tokenLimitLabel"
+        description="累计 Token 上限"
+        tone="warning"
+      />
     </div>
 
     <div class="content-grid mt-lg">

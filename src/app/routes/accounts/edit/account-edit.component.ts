@@ -8,7 +8,7 @@ import {
 } from '@angular/core';
 import { FormBuilder, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
-import { SHARED_IMPORTS, TitleLabelComponent } from '@shared';
+import { MetricCardComponent, SHARED_IMPORTS, TitleLabelComponent } from '@shared';
 import { NzMessageService } from 'ng-zorro-antd/message';
 import { NzModalService } from 'ng-zorro-antd/modal';
 import { NzSegmentedModule } from 'ng-zorro-antd/segmented';
@@ -58,7 +58,7 @@ interface AccountCreateGuide {
   templateUrl: './account-edit.component.html',
   styleUrls: ['./account-edit.component.less'],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [SHARED_IMPORTS, TitleLabelComponent, NzSegmentedModule],
+  imports: [SHARED_IMPORTS, TitleLabelComponent, MetricCardComponent, NzSegmentedModule],
 })
 export class AccountEditComponent implements OnInit, OnDestroy {
   private readonly route = inject(ActivatedRoute);

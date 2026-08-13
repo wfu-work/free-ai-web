@@ -13,24 +13,29 @@
   <nz-spin [nzSpinning]="loading">
     @if (record) {
       <div class="metric-grid">
-        <article class="metric-card">
-          <span>状态</span>
-          <strong [class.danger-text]="record.statusCode >= 400">{{
-            record.statusCode || '-'
-          }}</strong>
-        </article>
-        <article class="metric-card">
-          <span>请求耗时</span>
-          <strong>{{ formatMs(record.latencyMs) }}</strong>
-        </article>
-        <article class="metric-card">
-          <span>首个正文 Token</span>
-          <strong>{{ formatStageMs(record.firstTokenMs) }}</strong>
-        </article>
-        <article class="metric-card">
-          <span>Token 总量</span>
-          <strong>{{ formatNumber(tokenTotal(record)) }}</strong>
-        </article>
+        <app-metric-card
+          label="状态"
+          [value]="record.statusCode || '-'"
+          description="HTTP 响应状态"
+          [tone]="record.statusCode >= 400 ? 'danger' : 'success'"
+        />
+        <app-metric-card
+          label="请求耗时"
+          [value]="formatMs(record.latencyMs)"
+          description="请求完整处理时间"
+        />
+        <app-metric-card
+          label="首个正文 Token"
+          [value]="formatStageMs(record.firstTokenMs)"
+          description="流式首正文延迟"
+          tone="warning"
+        />
+        <app-metric-card
+          label="Token 总量"
+          [value]="formatNumber(tokenTotal(record))"
+          description="输入与输出合计"
+          tone="info"
+        />
       </div>
 
       <div class="content-grid">
@@ -185,9 +190,13 @@
         <nz-card class="detail-card performance-card" [nzBordered]="false">
           <div class="section-title">性能分段</div>
           <p class="performance-note">
-            响应头耗时从发起上游请求开始计算；首个 SSE 与首个正文 Token 从本次代理请求开始累计。
+            网关排队单独记录；上游请求写完从发起上游请求开始计算；上游请求上传从取得连接到写完请求计算；纯上游等待从写完请求到收到首字节计算。
           </p>
           <div class="detail-grid performance-grid">
+            <div>
+              <span>网关排队</span>
+              <strong>{{ formatStageMs(record.gatewayQueueMs) }}</strong>
+            </div>
             <div>
               <span>请求准备</span>
               <strong>{{ formatStageMs(record.preparationMs) }}</strong>
@@ -203,6 +212,18 @@
             <div>
               <span>TLS 握手</span>
               <strong>{{ formatStageMs(record.tlsHandshakeMs) }}</strong>
+            </div>
+            <div>
+              <span>上游请求写完</span>
+              <strong>{{ formatStageMs(record.wroteRequestMs) }}</strong>
+            </div>
+            <div>
+              <span>上游请求上传</span>
+              <strong>{{ formatStageMs(record.requestUploadMs) }}</strong>
+            </div>
+            <div>
+              <span>纯上游等待</span>
+              <strong>{{ formatStageMs(record.upstreamWaitMs) }}</strong>
             </div>
             <div>
               <span>上游响应头</span>

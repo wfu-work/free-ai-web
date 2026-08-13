@@ -14,18 +14,25 @@
   <nz-spin [nzSpinning]="loading">
     @if (model) {
       <div class="metric-grid">
-        <article class="metric-card">
-          <span>官方来源</span><strong>{{ sourceLabel }}</strong>
-        </article>
-        <article class="metric-card">
-          <span>远端模型</span><strong>{{ model.remoteModelId }}</strong>
-        </article>
-        <article class="metric-card">
-          <span>账号可用性</span><strong>{{ routeStateLabel }}</strong>
-        </article>
-        <article class="metric-card">
-          <span>最近同步</span><strong>{{ formatTime(model.lastSeenAt) }}</strong>
-        </article>
+        <app-metric-card label="官方来源" [value]="sourceLabel" description="模型目录提供方" />
+        <app-metric-card
+          label="远端模型"
+          [value]="model.remoteModelId"
+          description="上游模型标识"
+          tone="info"
+        />
+        <app-metric-card
+          label="账号可用性"
+          [value]="routeStateLabel"
+          description="当前账号池路由状态"
+          tone="success"
+        />
+        <app-metric-card
+          label="最近同步"
+          [value]="formatTime(model.lastSeenAt)"
+          description="模型目录更新时间"
+          tone="warning"
+        />
       </div>
 
       <div class="content-grid mt-lg">

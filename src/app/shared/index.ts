@@ -1,6 +1,7 @@
 // Components
 export * from './components/cons-logs/cons-logs.component';
 export * from './components/logo/logo.component';
+export * from './components/metric-card/metric-card.component';
 export * from './components/model-call-trend-chart/model-call-trend-chart.component';
 export * from './components/panel/panel.component';
 export * from './components/password-input/password-input.component';

@@ -17,26 +17,31 @@
   </div>
 
   <div class="metric-grid">
-    <article class="metric-card">
-      <span>请求总数</span>
-      <strong>{{ stats.total || 0 }}</strong>
-    </article>
-    <article class="metric-card metric-success">
-      <span>成功请求</span>
-      <strong>{{ stats.success || 0 }}</strong>
-    </article>
-    <article class="metric-card metric-danger">
-      <span>服务端失败</span>
-      <strong>{{ stats.failures || 0 }}</strong>
-    </article>
-    <article class="metric-card">
-      <span>客户端断开</span>
-      <strong>{{ stats.clientDisconnected || 0 }}</strong>
-    </article>
-    <article class="metric-card">
-      <span>服务成功率 / 平均延迟</span>
-      <strong>{{ successRate }} · {{ formatMs(stats.avgLatencyMs) }}</strong>
-    </article>
+    <app-metric-card label="请求总数" [value]="stats.total || 0" description="全部网关调用" />
+    <app-metric-card
+      label="成功请求"
+      [value]="stats.success || 0"
+      [description]="'成功率 ' + successRate"
+      tone="success"
+    />
+    <app-metric-card
+      label="服务端失败"
+      [value]="stats.failures || 0"
+      description="上游或网关失败"
+      tone="danger"
+    />
+    <app-metric-card
+      label="客户端断开"
+      [value]="stats.clientDisconnected || 0"
+      description="调用方提前取消"
+      tone="warning"
+    />
+    <app-metric-card
+      label="平均延迟"
+      [value]="formatMs(stats.avgLatencyMs)"
+      [description]="'服务成功率 ' + successRate"
+      tone="info"
+    />
   </div>
 
   <nz-card class="log-card" [nzBordered]="false">
@@ -221,11 +226,23 @@
               <span>总耗时</span>
               <strong>{{ formatLatencyDetail(item.latencyMs) }}</strong>
 
+              <span>网关排队</span>
+              <strong>{{ formatLatencyDetail(item.gatewayQueueMs) }}</strong>
+
               <span>最终上游请求</span>
               <strong>{{ formatLatencyDetail(upstreamDurationMs(item)) }}</strong>
 
               <span>请求准备</span>
               <strong>{{ formatLatencyDetail(item.preparationMs) }}</strong>
+
+              <span>上游请求写完</span>
+              <strong>{{ formatLatencyDetail(item.wroteRequestMs) }}</strong>
+
+              <span>上游请求上传</span>
+              <strong>{{ formatLatencyDetail(item.requestUploadMs) }}</strong>
+
+              <span>纯上游等待</span>
+              <strong>{{ formatLatencyDetail(item.upstreamWaitMs) }}</strong>
 
               <span>上游响应头</span>
               <strong>{{ formatLatencyDetail(item.upstreamHeaderMs) }}</strong>
