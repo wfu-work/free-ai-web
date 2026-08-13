@@ -416,6 +416,26 @@ export class AccountListComponent implements OnInit {
     return `vendor-${normalizeOfficialVendorCode(vendorCode)}`;
   }
 
+  protected accountCardClasses(item: Account): string[] {
+    const classes = [this.vendorCardClass(item.vendorCode)];
+    if (!item.enabled) {
+      classes.push('account-card-disabled');
+      return classes;
+    }
+    switch ((item.status || '').trim()) {
+      case 'limited':
+      case 'cooldown':
+        classes.push('account-card-waiting');
+        break;
+      case 'exhausted':
+      case 'expired':
+      case 'invalid':
+        classes.push('account-card-unavailable');
+        break;
+    }
+    return classes;
+  }
+
   protected errorText(errorType?: string): string {
     const value = (errorType || '').trim();
     if (!value) return '-';

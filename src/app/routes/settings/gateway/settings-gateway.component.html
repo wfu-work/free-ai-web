@@ -46,7 +46,7 @@
 
           <div class="listen-layout">
             <div class="listen-settings">
-              <se-container col="1" nzLayout="vertical">
+              <se-container class="field-stack" col="1" nzLayout="vertical">
                 <se label="监听地址">
                   <nz-select formControlName="listenAddress" nzPlaceHolder="请选择监听地址">
                     @for (option of listenAddressOptions; track option.value) {
@@ -89,7 +89,7 @@
             <span class="section-status">{{ strategyLabel }}</span>
           </div>
 
-          <se-container col="1" nzLayout="vertical">
+          <se-container class="field-stack" col="1" nzLayout="vertical">
             <se label="账号选择策略">
               <nz-select
                 formControlName="accountSelectionStrategy"
@@ -139,7 +139,7 @@
             </span>
           </div>
 
-          <se-container col="1" nzLayout="vertical">
+          <se-container class="field-stack" col="1" nzLayout="vertical">
             <se label="代理开关">
               <label nz-checkbox formControlName="upstreamProxyEnabled">开启后端上游代理</label>
               <div class="field-extra">
@@ -233,7 +233,7 @@
             </span>
           </div>
 
-          <se-container col="2" nzLayout="vertical">
+          <se-container class="context-fields" col="2" nzLayout="vertical">
             <se label="自动上下文压缩">
               <label nz-checkbox formControlName="contextCompactionEnabled">达到阈值后自动压缩</label>
               <div class="field-extra">仅作用于 /v1/responses；关闭后网关不再自动注入压缩策略。</div>
@@ -269,7 +269,7 @@
             <span class="section-status">SSE / Timeout</span>
           </div>
 
-          <se-container col="3" nzLayout="vertical">
+          <se-container class="connection-fields" col="3" nzLayout="vertical">
             <se label="SSE 保活间隔">
               <nz-input-number formControlName="sseKeepAliveMs" [nzMin]="1000" [nzStep]="1000" />
               <div class="field-extra">空闲期间发送保活信号，建议保持默认 15000 ms。</div>

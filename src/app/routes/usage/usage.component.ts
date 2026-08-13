@@ -178,6 +178,18 @@ export class UsageComponent implements OnInit {
     return Number(this.summary.inputTokens || 0) + Number(this.summary.outputTokens || 0);
   }
 
+  protected get tokenTrendSubtitle(): string {
+    return this.days === 1
+      ? '按小时聚合输入、输出与缓存命中，帮助识别一天内的用量波动和缓存效率变化。'
+      : '按天聚合输入、输出与缓存命中，帮助识别用量增长和缓存效率变化。';
+  }
+
+  protected get modelTrendSubtitle(): string {
+    return this.days === 1
+      ? '按小时对比不同模型的调用次数，观察一天内的主力模型与流量变化。'
+      : '按天对比不同模型的调用次数，观察主力模型、流量迁移与长尾调用。';
+  }
+
   protected get tokenTrendPoints(): TokenTrendPoint[] {
     return (this.summary.timeline ?? []).map((point) => ({
       label: this.formatTimelineLabel(point.bucketStart),
@@ -262,6 +274,13 @@ export class UsageComponent implements OnInit {
     if (!value) return '-';
     const date = new Date(value);
     if (Number.isNaN(date.getTime())) return '-';
+    if (this.days === 1) {
+      return date.toLocaleTimeString('zh-CN', {
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false,
+      });
+    }
     return date.toLocaleDateString('zh-CN', {
       month: '2-digit',
       day: '2-digit',

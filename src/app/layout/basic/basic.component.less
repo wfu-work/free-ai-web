@@ -1,8 +1,7 @@
 @import '@delon/theme/index';
 
 :host ::ng-deep {
-  --basic-layout-gap: 14px;
-  --basic-header-top: 14px;
+  --basic-header-top: 0px;
   --basic-header-height: 70px;
   --basic-header-offset: calc(var(--basic-header-top) + var(--basic-header-height) + 22px);
   --basic-sider-width: 220px;
@@ -95,8 +94,6 @@
   }
 
   @media (max-width: 767px) {
-    --basic-layout-gap: 12px;
-    --basic-header-top: 12px;
     --basic-header-height: 60px;
     --basic-header-offset: calc(var(--basic-header-top) + var(--basic-header-height) + 18px);
 

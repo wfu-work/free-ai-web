@@ -63,9 +63,9 @@ import { ThemeColorComponent } from './theme-color';
     `
       .header-container {
         position: fixed;
-        top: var(--basic-header-top, 14px);
-        right: var(--basic-layout-gap, 14px);
-        left: calc(var(--basic-sider-width, 220px) + var(--basic-layout-gap, 14px) * 2);
+        top: var(--basic-header-top, 0);
+        right: 0;
+        left: var(--basic-sider-width, 220px);
         z-index: 999;
         display: flex;
         align-items: center;
@@ -73,7 +73,7 @@ import { ThemeColorComponent } from './theme-color';
         min-height: 68px;
         padding: 10px 18px;
         border: 1px solid transparent;
-        border-radius: 8px;
+        border-radius: 0 0 8px 8px;
         background: transparent;
         box-shadow: none;
         backdrop-filter: none;
@@ -96,7 +96,7 @@ import { ThemeColorComponent } from './theme-color';
       }
 
       .header-container-collapsed {
-        left: calc(var(--basic-sider-collapsed-width, 80px) + var(--basic-layout-gap, 14px) * 2);
+        left: var(--basic-sider-collapsed-width, 80px);
       }
 
       .header-left {
@@ -202,12 +202,12 @@ import { ThemeColorComponent } from './theme-color';
       @media (max-width: 767px) {
         .header-container,
         .header-container-collapsed {
-          top: 12px;
-          right: 12px;
-          left: 12px;
+          top: 0;
+          right: 0;
+          left: 0;
           min-height: 60px;
           padding: 8px 12px;
-          border-radius: 18px;
+          border-radius: 0 0 18px 18px;
         }
 
         .trigger {

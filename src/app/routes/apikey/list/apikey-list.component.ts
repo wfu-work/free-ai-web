@@ -2,19 +2,30 @@ import {
   ChangeDetectionStrategy,
   ChangeDetectorRef,
   Component,
+  DestroyRef,
   OnInit,
   inject,
 } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Router } from '@angular/router';
 import { STChange, STColumn, STColumnTag } from '@delon/abc/st';
 import { SHARED_IMPORTS, TitleLabelComponent } from '@shared';
 import { NzMessageService } from 'ng-zorro-antd/message';
 import { NzModalService } from 'ng-zorro-antd/modal';
 import { NzPopoverModule } from 'ng-zorro-antd/popover';
-import { finalize, firstValueFrom, forkJoin } from 'rxjs';
+import {
+  EMPTY,
+  catchError,
+  finalize,
+  firstValueFrom,
+  forkJoin,
+  interval,
+  of,
+  switchMap,
+} from 'rxjs';
 
 import { OpsService } from '../../ops/ops.service';
-import { PlatformKey, PlatformKeyStats } from '../apikey.model';
+import { PlatformKey, PlatformKeyConcurrencyStats, PlatformKeyStats } from '../apikey.model';
 import { PlatformKeysService } from '../apikey.service';
 
 @Component({
@@ -31,6 +42,7 @@ export class PlatformKeyListComponent implements OnInit {
   private readonly message = inject(NzMessageService);
   private readonly modalService = inject(NzModalService);
   private readonly cdr = inject(ChangeDetectorRef);
+  private readonly destroyRef = inject(DestroyRef);
 
   q = {
     page: 1,
@@ -48,6 +60,11 @@ export class PlatformKeyListComponent implements OnInit {
     totalTokens: 0,
     totalAmount: 0,
   };
+  protected concurrency: PlatformKeyConcurrencyStats = {
+    total: 0,
+    maxConcurrentRequests: 0,
+    byKey: {},
+  };
 
   protected readonly enabledTag: STColumnTag = {
     true: { text: '启用', color: 'green' },
@@ -60,6 +77,7 @@ export class PlatformKeyListComponent implements OnInit {
     { title: '账号组', render: 'strategyRender' },
     { title: '绑定模型', render: 'boundModelRender' },
     { title: 'Token / 金额', render: 'usageRender' },
+    { title: '当前并发', render: 'concurrencyRender', width: 110 },
     {
       title: '启用',
       index: 'enabled',
@@ -105,6 +123,7 @@ export class PlatformKeyListComponent implements OnInit {
 
   ngOnInit(): void {
     this.getData();
+    this.startConcurrencyRefresh();
   }
 
   protected getData(): void {
@@ -112,6 +131,9 @@ export class PlatformKeyListComponent implements OnInit {
     forkJoin({
       page: this.platformKeysService.list(this.q),
       stats: this.platformKeysService.stats(),
+      concurrency: this.platformKeysService
+        .concurrency()
+        .pipe(catchError(() => of(this.concurrency))),
       metrics: this.opsService.metrics(),
     })
       .pipe(
@@ -120,12 +142,33 @@ export class PlatformKeyListComponent implements OnInit {
           this.cdr.markForCheck();
         }),
       )
-      .subscribe(({ page, stats, metrics }) => {
-        this.data = page.data ?? [];
+      .subscribe(({ page, stats, concurrency, metrics }) => {
+        this.concurrency = concurrency;
+        this.data = this.withConcurrency(page.data ?? [], concurrency.byKey);
         this.totalCount = page.total ?? 0;
         this.stats = stats ?? { totalTokens: 0, totalAmount: 0 };
         this.proxyPrefix = this.normalizeProxyPrefix(metrics?.proxyPrefix);
       });
+  }
+
+  private startConcurrencyRefresh(): void {
+    interval(5000)
+      .pipe(
+        switchMap(() => this.platformKeysService.concurrency().pipe(catchError(() => EMPTY))),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe((concurrency) => {
+        this.concurrency = concurrency;
+        this.data = this.withConcurrency(this.data, concurrency.byKey);
+        this.cdr.markForCheck();
+      });
+  }
+
+  private withConcurrency(items: PlatformKey[], byKey: Record<string, number>): PlatformKey[] {
+    return items.map((item) => ({
+      ...item,
+      currentConcurrency: Math.max(Number(byKey[item.guid] || 0), 0),
+    }));
   }
 
   protected add(): void {

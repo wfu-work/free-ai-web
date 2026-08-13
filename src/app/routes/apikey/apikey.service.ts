@@ -8,6 +8,7 @@ import {
   CodexConfigPreview,
   CreatePlatformKeyResult,
   PlatformKey,
+  PlatformKeyConcurrencyStats,
   PlatformKeyDebugPayload,
   PlatformKeyDebugResult,
   PlatformKeyPayload,
@@ -29,6 +30,10 @@ export class PlatformKeysService {
 
   stats(): Observable<PlatformKeyStats> {
     return this.http.get<PlatformKeyStats>('/platform-keys/stats');
+  }
+
+  concurrency(): Observable<PlatformKeyConcurrencyStats> {
+    return this.http.get<PlatformKeyConcurrencyStats>('/platform-keys/concurrency');
   }
 
   getSecret(guid: string): Observable<PlatformKeySecretResult> {

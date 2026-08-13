@@ -129,10 +129,49 @@
   border-top: 3px solid #8a96a6;
 }
 
+// 账号状态优先于厂商色：停用保持中性，暂时不可调度使用警告色，明确不可用使用错误色。
+.account-item-card.account-card-disabled {
+  border-color: var(--nm-border);
+  border-top-color: var(--nm-text-secondary);
+  background: color-mix(in srgb, var(--nm-surface-muted) 72%, var(--nm-surface));
+  box-shadow: none;
+}
+
+.account-item-card.account-card-waiting {
+  border-color: var(--nm-warning-border);
+  border-top-color: var(--nm-warning);
+  background: color-mix(in srgb, var(--nm-warning-bg) 42%, var(--nm-surface));
+}
+
+.account-item-card.account-card-unavailable {
+  border-color: var(--nm-danger-border);
+  border-top-color: var(--nm-danger);
+  background: color-mix(in srgb, var(--nm-danger-bg) 44%, var(--nm-surface));
+}
+
 .account-item-card:hover {
   transform: translateY(-2px);
   border-color: rgb(var(--nm-primary-rgb) / 28%);
   box-shadow: 0 10px 28px rgb(25 43 68 / 10%);
+}
+
+.account-item-card.account-card-disabled:hover {
+  transform: none;
+  border-color: var(--nm-border);
+  border-top-color: var(--nm-text-secondary);
+  box-shadow: 0 4px 14px rgb(25 43 68 / 5%);
+}
+
+.account-item-card.account-card-waiting:hover {
+  border-color: var(--nm-warning-border);
+  border-top-color: var(--nm-warning);
+  box-shadow: 0 10px 28px color-mix(in srgb, var(--nm-warning) 12%, transparent);
+}
+
+.account-item-card.account-card-unavailable:hover {
+  border-color: var(--nm-danger-border);
+  border-top-color: var(--nm-danger);
+  box-shadow: 0 10px 28px color-mix(in srgb, var(--nm-danger) 12%, transparent);
 }
 
 .account-item-card ::ng-deep .ant-card-body {
@@ -140,6 +179,15 @@
   flex-direction: column;
   height: 100%;
   padding: 20px;
+}
+
+.account-card-disabled .account-avatar,
+.account-card-disabled .vendor-badge {
+  filter: saturate(15%);
+}
+
+.account-card-disabled .account-avatar {
+  opacity: 0.72;
 }
 
 .account-card-header {
@@ -242,33 +290,49 @@
 .status-pill,
 .enabled-pill {
   display: inline-flex;
+  gap: 6px;
   align-items: center;
   min-height: 24px;
   padding: 2px 8px;
+  border: 1px solid transparent;
   border-radius: 999px;
   font-size: 12px;
   font-weight: 700;
   white-space: nowrap;
 }
 
+.status-pill::before,
+.enabled-pill::before {
+  content: '';
+  flex: 0 0 auto;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentcolor;
+}
+
 .status-success,
 .enabled-pill {
+  border-color: var(--nm-success-border);
   color: var(--nm-success);
   background: var(--nm-success-bg);
 }
 
 .status-warning {
+  border-color: var(--nm-warning-border);
   color: var(--nm-warning);
   background: var(--nm-warning-bg);
 }
 
-.status-danger,
-.enabled-pill-off {
+.status-danger {
+  border-color: var(--nm-danger-border);
   color: var(--nm-danger);
   background: var(--nm-danger-bg);
 }
 
-.status-neutral {
+.status-neutral,
+.enabled-pill-off {
+  border-color: var(--nm-border);
   color: var(--nm-text-secondary);
   background: var(--nm-surface-raised);
 }

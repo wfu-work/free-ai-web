@@ -16,6 +16,7 @@ export interface PlatformKey {
   lastUsedAt: number;
   usedTokens: number;
   usedAmount: number;
+  currentConcurrency?: number;
   remark: string;
 }
 
@@ -40,6 +41,12 @@ export interface CreatePlatformKeyResult {
 export interface PlatformKeyStats {
   totalTokens: number;
   totalAmount: number;
+}
+
+export interface PlatformKeyConcurrencyStats {
+  total: number;
+  maxConcurrentRequests: number;
+  byKey: Record<string, number>;
 }
 
 export interface PlatformKeySecretResult {

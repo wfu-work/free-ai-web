@@ -41,6 +41,7 @@
   padding: 8px 0;
 }
 
+/* stylelint-disable-next-line selector-class-pattern -- Existing BEM template class. */
 .gateway-panel__title {
   padding: 0 8px 6px;
   color: var(--nm-text-secondary);
@@ -102,7 +103,7 @@
 
 .usage-summary-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 18px;
 }
 
@@ -136,6 +137,12 @@
   line-height: 1.1;
 }
 
+.usage-summary-card strong small {
+  color: var(--nm-text-secondary);
+  font-size: 16px;
+  font-weight: 650;
+}
+
 .usage-summary-card p {
   margin: 10px 0 0;
   color: var(--nm-text-secondary);
@@ -152,6 +159,10 @@
   color: #f59e0b;
 }
 
+.usage-summary-card-concurrency i {
+  color: #16a085;
+}
+
 .key-card {
   min-width: 0;
   overflow: hidden;
@@ -166,6 +177,7 @@
   }
 
   .ant-card-body,
+  /* stylelint-disable-next-line selector-type-no-unknown -- Delon table custom element. */
   st,
   .st,
   .ant-table-wrapper,
@@ -245,6 +257,38 @@
   font-size: 12px;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.concurrency-cell {
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+  min-width: 0;
+  color: var(--nm-text-secondary);
+  font-size: 12px;
+}
+
+.concurrency-cell strong {
+  color: var(--nm-text);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 14px;
+  line-height: 1;
+}
+
+.concurrency-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--nm-text-tertiary, #a8b0bd);
+}
+
+.concurrency-cell-active .concurrency-dot {
+  background: #16a085;
+  box-shadow: 0 0 0 3px rgb(22 160 133 / 14%);
+}
+
+.concurrency-cell-active strong {
+  color: #13856f;
 }
 
 .key-secret-cell {
@@ -344,6 +388,7 @@
     grid-template-columns: minmax(0, 1fr);
   }
 
+  /* stylelint-disable-next-line selector-type-no-unknown -- Shared Angular component. */
   .header-row title-label {
     min-width: 0;
   }
@@ -351,6 +396,10 @@
   .header-actions {
     justify-content: flex-start;
     width: 100%;
+  }
+
+  .usage-summary-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 

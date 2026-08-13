@@ -64,6 +64,17 @@
       </div>
       <i nz-icon nzType="dollar"></i>
     </article>
+    <article class="usage-summary-card usage-summary-card-concurrency">
+      <div>
+        <span>当前并发</span>
+        <strong>
+          {{ concurrency.total }}
+          <small>/ {{ concurrency.maxConcurrentRequests || '-' }}</small>
+        </strong>
+        <p>密钥在途请求 · 网关并发上限</p>
+      </div>
+      <i nz-icon nzType="cluster"></i>
+    </article>
   </div>
 
   <nz-alert
@@ -155,6 +166,19 @@
         <div class="usage-main">{{ formatTokens(item.usedTokens) }}</div>
         <div class="usage-sub">
           已花费 {{ formatAmount(item.usedAmount) }} · {{ formatTokenLimitText(item) }}
+        </div>
+      </ng-template>
+
+      <ng-template st-row="concurrencyRender" let-item>
+        <div
+          class="concurrency-cell"
+          [class.concurrency-cell-active]="item.currentConcurrency > 0"
+          nz-tooltip
+          nzTooltipTitle="当前实例正在处理的请求数，每 5 秒自动更新"
+        >
+          <span class="concurrency-dot"></span>
+          <strong>{{ item.currentConcurrency || 0 }}</strong>
+          <span>请求</span>
         </div>
       </ng-template>
 

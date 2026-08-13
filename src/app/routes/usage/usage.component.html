@@ -74,7 +74,7 @@
     <app-token-trend-chart
       class="usage-token-trend"
       title="Token 用量趋势"
-      subtitle="按天聚合输入、输出与缓存命中，帮助识别用量增长和缓存效率变化。"
+      [subtitle]="tokenTrendSubtitle"
       [periodLabel]="days + ' 天'"
       [points]="tokenTrendPoints"
       [loading]="loading"
@@ -84,7 +84,7 @@
     <app-model-call-trend-chart
       class="usage-model-trend"
       title="模型调用趋势"
-      subtitle="按天对比不同模型的调用次数，观察主力模型、流量迁移与长尾调用。"
+      [subtitle]="modelTrendSubtitle"
       [periodLabel]="days + ' 天'"
       [labels]="modelTrendLabels"
       [series]="modelTrendSeries"
