@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, Input, inject } from '@angular/core
 import type { EChartsCoreOption } from 'echarts';
 
 import { ThemeColorService } from '../../services/theme-color.service';
+import { formatCompactMetric } from '../../utils/metric.util';
 import { LineChartComponent, LineChartSeriesItem } from '../line-chart/line-chart.component';
 
 /** Token 趋势图的标准时间点，缓存 Token 是输入 Token 的子集。 */
@@ -102,7 +103,8 @@ export class TokenTrendChartComponent {
     const body = rows
       .map((item: unknown) => {
         const row = item as { marker?: string; seriesName?: string; value?: number };
-        return `<div style="display:flex;align-items:center;justify-content:space-between;gap:24px;margin-top:7px">${row.marker || ''}<span style="flex:1">${this.escapeHtml(row.seriesName || '')}</span><strong>${this.formatNumber(row.value)}</strong></div>`;
+        const exactValue = this.escapeHtml(this.formatNumber(row.value));
+        return `<div style="display:flex;align-items:center;justify-content:space-between;gap:24px;margin-top:7px">${row.marker || ''}<span style="flex:1">${this.escapeHtml(row.seriesName || '')}</span><strong title="${exactValue}">${this.formatCompact(row.value)}</strong></div>`;
       })
       .join('');
     return `<div style="min-width:190px"><strong>${title}</strong>${body}</div>`;
@@ -120,18 +122,14 @@ export class TokenTrendChartComponent {
   }
 
   protected formatCompact(value?: number): string {
-    const count = Number(value || 0);
-    if (Math.abs(count) >= 1_000_000_000) return `${(count / 1_000_000_000).toFixed(1)}B`;
-    if (Math.abs(count) >= 1_000_000) return `${(count / 1_000_000).toFixed(1)}M`;
-    if (Math.abs(count) >= 1_000) return `${(count / 1_000).toFixed(1)}K`;
-    return Math.round(count).toLocaleString('zh-CN');
+    return formatCompactMetric(value);
   }
 
   private sum(key: 'inputTokens' | 'outputTokens' | 'cachedTokens'): number {
     return this.points.reduce((total, point) => total + Number(point[key] || 0), 0);
   }
 
-  private formatNumber(value?: number): string {
+  protected formatNumber(value?: number): string {
     return Math.round(Number(value || 0)).toLocaleString('zh-CN');
   }
 

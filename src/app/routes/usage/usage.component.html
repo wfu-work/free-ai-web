@@ -57,6 +57,7 @@
       <app-metric-card
         label="平均延迟"
         [value]="formatMs(summary.avgLatencyMs)"
+        [valueTitle]="formatNumber(summary.avgLatencyMs) + ' ms'"
         [description]="latencyLabel"
         [tone]="
           summary.avgLatencyMs > 12000
@@ -68,8 +69,9 @@
       />
       <app-metric-card
         label="Token 总量"
-        [value]="formatNumber(totalTokens)"
-        [description]="'输入 ' + formatNumber(summary.inputTokens)"
+        [value]="formatTokens(totalTokens)"
+        [valueTitle]="formatNumber(totalTokens) + ' Token'"
+        [description]="'输入 ' + formatTokens(summary.inputTokens)"
         tone="info"
       />
       <app-metric-card
@@ -178,9 +180,24 @@
                   <td class="name-cell">{{ row.dimension }}</td>
                   <td>{{ formatNumber(row.requests) }}</td>
                   <td [class.danger-text]="row.failures > 0">{{ formatNumber(row.failures) }}</td>
-                  <td>{{ formatNumber(row.inputTokens) }}</td>
-                  <td>{{ formatNumber(row.outputTokens) }}</td>
-                  <td>{{ formatNumber(row.cachedTokens) }}</td>
+                  <td
+                    [attr.title]="formatNumber(row.inputTokens)"
+                    [attr.aria-label]="formatNumber(row.inputTokens) + ' Token'"
+                  >
+                    {{ formatTokens(row.inputTokens) }}
+                  </td>
+                  <td
+                    [attr.title]="formatNumber(row.outputTokens)"
+                    [attr.aria-label]="formatNumber(row.outputTokens) + ' Token'"
+                  >
+                    {{ formatTokens(row.outputTokens) }}
+                  </td>
+                  <td
+                    [attr.title]="formatNumber(row.cachedTokens)"
+                    [attr.aria-label]="formatNumber(row.cachedTokens) + ' Token'"
+                  >
+                    {{ formatTokens(row.cachedTokens) }}
+                  </td>
                   <td>{{ formatCost(row.costAmount) }}</td>
                 </tr>
               } @empty {
@@ -198,18 +215,27 @@
         <div class="token-list">
           <div>
             <span>输入 Token</span>
-            <strong>{{ formatNumber(summary.inputTokens) }}</strong>
+            <strong [attr.title]="formatNumber(summary.inputTokens)">
+              {{ formatTokens(summary.inputTokens) }}
+            </strong>
           </div>
           <div>
             <span>输出 Token</span>
-            <strong>{{ formatNumber(summary.outputTokens) }}</strong>
+            <strong [attr.title]="formatNumber(summary.outputTokens)">
+              {{ formatTokens(summary.outputTokens) }}
+            </strong>
           </div>
           <div>
             <span>缓存 Token</span>
-            <strong>{{ formatNumber(summary.cachedTokens) }}</strong>
+            <strong [attr.title]="formatNumber(summary.cachedTokens)">
+              {{ formatTokens(summary.cachedTokens) }}
+            </strong>
           </div>
         </div>
-        <p class="source-note">缓存 Token 单独统计，不会从输入 Token 中重复扣除。</p>
+        <p class="source-note">
+          数值按 K / M / B 缩写，悬停可查看精确值；缓存 Token 单独统计，不会从输入 Token
+          中重复扣除。
+        </p>
       </nz-card>
 
       <nz-card class="panel-card" [nzBordered]="false">

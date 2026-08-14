@@ -6,7 +6,7 @@ import {
   inject,
 } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
-import { MetricCardComponent, SHARED_IMPORTS, TitleLabelComponent } from '@shared';
+import { SHARED_IMPORTS, TitleLabelComponent } from '@shared';
 import { NzMessageService } from 'ng-zorro-antd/message';
 import { finalize } from 'rxjs';
 
@@ -19,7 +19,7 @@ import { RequestLogsService } from '../request-logs.service';
   templateUrl: './request-log-detail.component.html',
   styleUrls: ['./request-log-detail.component.less'],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [SHARED_IMPORTS, TitleLabelComponent, MetricCardComponent],
+  imports: [SHARED_IMPORTS, TitleLabelComponent],
 })
 export class RequestLogDetailComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);
@@ -67,6 +67,23 @@ export class RequestLogDetailComponent implements OnInit {
     return Number(item.inputTokens || 0) + Number(item.outputTokens || 0);
   }
 
+  protected normalInputTokens(item: RequestLog): number {
+    return Math.max(Number(item.inputTokens || 0) - Number(item.cachedInputTokens || 0), 0);
+  }
+
+  protected hasFailure(item: RequestLog): boolean {
+    return Number(item.statusCode || 0) >= 400 || Boolean(item.errorType);
+  }
+
+  protected statusLabel(item: RequestLog): string {
+    if (item.errorType) return this.errorLabel(item.errorType);
+    const statusCode = Number(item.statusCode || 0);
+    if (statusCode >= 200 && statusCode < 300) return '请求成功';
+    if (statusCode >= 300 && statusCode < 400) return '请求已重定向';
+    if (statusCode >= 400) return '请求失败';
+    return '状态未知';
+  }
+
   protected errorLabel(errorType?: string): string {
     return requestLogErrorLabel(errorType);
   }
@@ -100,7 +117,7 @@ export class RequestLogDetailComponent implements OnInit {
   }
 
   protected formatStageMs(value?: number): string {
-    if (!value || Number.isNaN(Number(value))) return '-';
+    if (value === undefined || value === null || Number.isNaN(Number(value))) return '-';
     return `${Number(value).toFixed(0)} ms`;
   }
 

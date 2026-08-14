@@ -13,6 +13,7 @@ export * from './utils/yuan';
 export * from './utils/byte.util';
 export * from './utils/date.util';
 export * from './utils/degree.util';
+export * from './utils/metric.util';
 export * from './utils/pattern.util';
 
 // Module

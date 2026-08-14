@@ -16,23 +16,29 @@
   <div class="token-summary">
     <div class="token-total">
       <span>窗口总量</span>
-      <strong>{{ formatCompact(totalTokens) }}</strong>
+      <strong [attr.title]="formatNumber(totalTokens)">{{ formatCompact(totalTokens) }}</strong>
     </div>
     <div class="token-legend" aria-label="Token 图例">
       <div>
         <i [style.background]="palette[0]"></i>
         <span>输入</span>
-        <strong>{{ formatCompact(totalInputTokens) }}</strong>
+        <strong [attr.title]="formatNumber(totalInputTokens)">
+          {{ formatCompact(totalInputTokens) }}
+        </strong>
       </div>
       <div>
         <i [style.background]="palette[1]"></i>
         <span>输出</span>
-        <strong>{{ formatCompact(totalOutputTokens) }}</strong>
+        <strong [attr.title]="formatNumber(totalOutputTokens)">
+          {{ formatCompact(totalOutputTokens) }}
+        </strong>
       </div>
       <div>
         <i [style.background]="palette[2]"></i>
         <span>缓存</span>
-        <strong>{{ formatCompact(totalCachedTokens) }}</strong>
+        <strong [attr.title]="formatNumber(totalCachedTokens)">
+          {{ formatCompact(totalCachedTokens) }}
+        </strong>
       </div>
     </div>
   </div>
@@ -54,5 +60,5 @@
     [extraOptions]="chartOptions"
   />
 
-  <footer>窗口总量为输入与输出之和；缓存命中已包含在输入 Token 中。</footer>
+  <footer>数值按 K / M / B 缩写；窗口总量为输入与输出之和，缓存命中已包含在输入 Token 中。</footer>
 </section>

@@ -13,6 +13,8 @@ import {
   TitleLabelComponent,
   TokenTrendChartComponent,
   TokenTrendPoint,
+  formatCompactMetric,
+  formatMetricDuration,
 } from '@shared';
 import { NzMessageService } from 'ng-zorro-antd/message';
 import { finalize } from 'rxjs';
@@ -227,13 +229,16 @@ export class UsageComponent implements OnInit {
     return Number(value || 0).toLocaleString('zh-CN');
   }
 
+  protected formatTokens(value?: number): string {
+    return formatCompactMetric(value);
+  }
+
   protected formatCost(value?: number): string {
     return `$${Number(value || 0).toFixed(4)}`;
   }
 
   protected formatMs(value?: number): string {
-    if (value === undefined || value === null || Number.isNaN(Number(value))) return '-';
-    return `${Number(value).toFixed(1)} ms`;
+    return formatMetricDuration(value);
   }
 
   protected formatDate(value?: number): string {

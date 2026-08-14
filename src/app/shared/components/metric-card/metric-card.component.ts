@@ -20,6 +20,7 @@ export type MetricCardTone = 'neutral' | 'success' | 'warning' | 'danger' | 'inf
 export class MetricCardComponent {
   @Input({ required: true }) label = '';
   @Input({ required: true }) value: string | number | null | undefined = '-';
+  @Input() valueTitle: string | number | null | undefined;
   @Input() description = '';
   @Input() tone: MetricCardTone = 'neutral';
 }

@@ -278,9 +278,10 @@
       <ng-template st-row="tokenRender" let-item>
         <div>总 {{ formatNumber(tokenTotal(item)) }}</div>
         <span class="muted"
-          >输入 {{ formatNumber(item.inputTokens) }} · 缓存
-          {{ formatNumber(item.cachedInputTokens) }}</span
+          >输入 {{ formatNumber(item.inputTokens) }} · 输出
+          {{ formatNumber(item.outputTokens) }}</span
         >
+        <span class="muted">缓存 {{ formatNumber(item.cachedInputTokens) }}</span>
         <span class="muted">{{
           item.pricingMatched ? formatMoney(item.costAmount) : '暂无匹配定价'
         }}</span>

@@ -1,5 +1,5 @@
 <span class="metric-card-label">{{ label }}</span>
-<strong class="metric-card-value" [attr.title]="value">{{ value }}</strong>
+<strong class="metric-card-value" [attr.title]="valueTitle ?? value">{{ value }}</strong>
 @if (description) {
   <small class="metric-card-description">{{ description }}</small>
 }

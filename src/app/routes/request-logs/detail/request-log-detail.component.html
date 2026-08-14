@@ -1,283 +1,381 @@
 <section class="log-detail-page">
-  <div class="d-flex justify-content-between header-row">
+  <div class="header-row">
     <title-label
       title="请求详情"
-      description="查看单次网关请求的路由、密钥、账号、模型等级和耗时用量。"
+      description="一次请求的完整链路、性能分段与用量诊断。"
       [showBack]="true"
     />
-    <div class="header-actions">
-      <button nz-button (click)="goList()">返回列表</button>
-    </div>
+    <button type="button" nz-button class="back-list-button" (click)="goList()">
+      <i nz-icon nzType="arrow-left"></i>
+      返回列表
+    </button>
   </div>
 
   <nz-spin [nzSpinning]="loading">
     @if (record) {
-      <div class="metric-grid">
-        <app-metric-card
-          label="状态"
-          [value]="record.statusCode || '-'"
-          description="HTTP 响应状态"
-          [tone]="record.statusCode >= 400 ? 'danger' : 'success'"
-        />
-        <app-metric-card
-          label="请求耗时"
-          [value]="formatMs(record.latencyMs)"
-          description="请求完整处理时间"
-        />
-        <app-metric-card
-          label="首个正文 Token"
-          [value]="formatStageMs(record.firstTokenMs)"
-          description="流式首正文延迟"
-          tone="warning"
-        />
-        <app-metric-card
-          label="Token 总量"
-          [value]="formatNumber(tokenTotal(record))"
-          description="输入与输出合计"
-          tone="info"
-        />
-      </div>
-
-      <div class="content-grid">
-        <nz-card class="detail-card" [nzBordered]="false">
-          <div class="section-title">请求信息</div>
-          <div class="detail-grid">
-            <div>
-              <span>请求 ID</span>
-              <button type="button" class="copy-text" (click)="copy(record.requestId, '请求 ID')">
-                {{ record.requestId || '-' }}
-              </button>
-            </div>
-            <div>
-              <span>时间</span>
-              <strong>{{ formatTime(logTime(record)) }}</strong>
-            </div>
-            <div>
-              <span>方法</span>
-              <strong>{{ requestMethod(record) }}</strong>
-            </div>
-            <div>
-              <span>路径</span>
-              <button
-                type="button"
-                class="copy-text"
-                (click)="copy(requestPath(record), '请求路径')"
-              >
-                {{ requestPath(record) }}
-              </button>
-            </div>
-          </div>
-        </nz-card>
-
-        <nz-card class="detail-card" [nzBordered]="false">
-          <div class="section-title">路由命中</div>
-          <div class="detail-grid">
-            <div>
-              <span>账号</span>
-              <strong>{{ record.accountName || record.accountGuid || '-' }}</strong>
-            </div>
-            <div>
-              <span>API 密钥</span>
-              <strong>{{ record.platformKey || '-' }}</strong>
-              <small>{{ record.keyPrefix || record.platformKeyId || '-' }}</small>
-            </div>
-            <div>
-              <span>路由切换</span>
-              <strong>{{ record.switched ? '已切换' : '未切换' }}</strong>
-              <small
-                >{{ record.switchCount || 0 }} 次 · {{ record.switchReason || '无原因' }}</small
-              >
-            </div>
-          </div>
-        </nz-card>
-
-        <nz-card class="detail-card" [nzBordered]="false">
-          <div class="section-title">模型与等级</div>
-          <div class="detail-grid">
-            <div>
-              <span>请求模型</span>
-              <strong>{{ record.model || '-' }}</strong>
-            </div>
-            <div>
-              <span>上游模型</span>
-              <strong>{{ record.upstreamModel || '-' }}</strong>
-            </div>
-            <div>
-              <span>推理强度</span>
-              <strong>{{ record.reasoningEffort || 'auto' }}</strong>
-            </div>
-            <div>
-              <span>模型等级</span>
-              <strong>{{ record.serviceTier || 'auto' }}</strong>
-            </div>
-          </div>
-        </nz-card>
-
-        <nz-card class="detail-card" [nzBordered]="false">
-          <div class="section-title">用量与错误</div>
-          <div class="detail-grid">
-            <div>
-              <span>输入 Token</span>
-              <strong>{{ formatNumber(record.inputTokens) }}</strong>
-            </div>
-            <div>
-              <span>输出 Token</span>
-              <strong>{{ formatNumber(record.outputTokens) }}</strong>
-            </div>
-            <div>
-              <span>错误类型</span>
-              <strong [class.danger-text]="record.errorType">{{
-                errorLabel(record.errorType)
-              }}</strong>
-              <small>{{ record.errorType || '-' }}</small>
-            </div>
-            <div>
-              <span>API 密钥 GUID</span>
-              <button
-                type="button"
-                class="copy-text"
-                (click)="copy(record.platformKeyId, 'API 密钥 GUID')"
-              >
-                {{ record.platformKeyId || '-' }}
-              </button>
-            </div>
-          </div>
-          @if (record.errorType || record.errorSummary) {
-            <div class="error-diagnostic">
-              <div class="error-diagnostic-head">
-                <div>
-                  <span>原始错误摘要</span>
-                  <strong>{{ errorLabel(record.errorType) }}</strong>
-                </div>
-                @if (record.errorSummary) {
-                  <button
-                    type="button"
-                    nz-button
-                    nzSize="small"
-                    (click)="copy(record.errorSummary, '错误摘要')"
-                  >
-                    复制摘要
-                  </button>
-                }
-              </div>
-              <p>{{ record.errorSummary || '该历史记录没有保存原始错误摘要。' }}</p>
-            </div>
-          }
-          @if (record.diagnosticType) {
-            <div class="error-diagnostic completion-diagnostic">
-              <div class="error-diagnostic-head">
-                <div>
-                  <span>非失败诊断</span>
-                  <strong>{{ diagnosticLabel(record.diagnosticType) }}</strong>
-                </div>
-                @if (record.diagnosticSummary) {
-                  <button
-                    type="button"
-                    nz-button
-                    nzSize="small"
-                    (click)="copy(record.diagnosticSummary, '诊断摘要')"
-                  >
-                    复制摘要
-                  </button>
-                }
-              </div>
-              <small>{{ record.diagnosticType }}</small>
-              <p>{{ record.diagnosticSummary || '请求已经完成，仅最终结束标记未能送达。' }}</p>
-            </div>
-          }
-        </nz-card>
-
-        <nz-card class="detail-card performance-card" [nzBordered]="false">
-          <div class="section-title">性能分段</div>
-          <p class="performance-note">
-            网关排队单独记录；上游请求写完从发起上游请求开始计算；上游请求上传从取得连接到写完请求计算；纯上游等待从写完请求到收到首字节计算。
-          </p>
-          <div class="detail-grid performance-grid">
-            <div>
-              <span>网关排队</span>
-              <strong>{{ formatStageMs(record.gatewayQueueMs) }}</strong>
-            </div>
-            <div>
-              <span>请求准备</span>
-              <strong>{{ formatStageMs(record.preparationMs) }}</strong>
-            </div>
-            <div>
-              <span>DNS 解析</span>
-              <strong>{{ formatStageMs(record.dnsMs) }}</strong>
-            </div>
-            <div>
-              <span>连接建立</span>
-              <strong>{{ formatStageMs(record.connectMs) }}</strong>
-            </div>
-            <div>
-              <span>TLS 握手</span>
-              <strong>{{ formatStageMs(record.tlsHandshakeMs) }}</strong>
-            </div>
-            <div>
-              <span>上游请求写完</span>
-              <strong>{{ formatStageMs(record.wroteRequestMs) }}</strong>
-            </div>
-            <div>
-              <span>上游请求上传</span>
-              <strong>{{ formatStageMs(record.requestUploadMs) }}</strong>
-            </div>
-            <div>
-              <span>纯上游等待</span>
-              <strong>{{ formatStageMs(record.upstreamWaitMs) }}</strong>
-            </div>
-            <div>
-              <span>上游响应头</span>
-              <strong>{{ formatStageMs(record.upstreamHeaderMs) }}</strong>
-            </div>
-            <div>
-              <span>首个 SSE 事件</span>
-              <strong>{{ formatStageMs(record.firstEventMs) }}</strong>
-            </div>
-            <div>
-              <span>首个正文 Token</span>
-              <strong>{{ formatStageMs(record.firstTokenMs) }}</strong>
-            </div>
-            <div>
-              <span>连接方式</span>
-              <strong>{{ connectionLabel(record) }}</strong>
-            </div>
-          </div>
-        </nz-card>
-
-        <nz-card class="detail-card cost-card" [nzBordered]="false">
-          <div class="cost-title">
-            <div>
-              <span>官方参考成本</span>
-              <em>{{ record.upstreamModel || record.model || '-' }}</em>
-            </div>
-            <strong>{{ record.pricingMatched ? '已匹配' : '暂无定价' }}</strong>
+      <section class="request-hero" [class.request-hero-danger]="hasFailure(record)">
+        <div class="request-summary">
+          <div class="status-line">
+            <span class="status-badge">
+              <i nz-icon [nzType]="hasFailure(record) ? 'close-circle' : 'check-circle'"></i>
+              {{ record.statusCode || '-' }} · {{ statusLabel(record) }}
+            </span>
+            <time>{{ formatTime(logTime(record)) }}</time>
           </div>
 
-          <div class="cost-layout">
-            <div class="cost-summary">
+          <div class="endpoint-line">
+            <span class="method-badge">{{ requestMethod(record) }}</span>
+            <button
+              type="button"
+              class="endpoint-path"
+              title="复制请求路径"
+              (click)="copy(requestPath(record), '请求路径')"
+            >
+              <span>{{ requestPath(record) }}</span>
+              <i nz-icon nzType="copy"></i>
+            </button>
+          </div>
+
+          <div class="request-tags">
+            <span><i nz-icon nzType="thunderbolt"></i>{{ record.model || '-' }}</span>
+            <span>推理 {{ record.reasoningEffort || 'auto' }}</span>
+            <span>等级 {{ record.serviceTier || 'auto' }}</span>
+          </div>
+        </div>
+
+        <dl class="hero-metrics">
+          <div>
+            <dt>总耗时</dt>
+            <dd>{{ formatMs(record.latencyMs) }}</dd>
+            <small>端到端处理</small>
+          </div>
+          <div>
+            <dt>首个正文 Token</dt>
+            <dd>{{ formatStageMs(record.firstTokenMs) }}</dd>
+            <small>流式首字延迟</small>
+          </div>
+          <div>
+            <dt>Token 总量</dt>
+            <dd>{{ formatNumber(tokenTotal(record)) }}</dd>
+            <small>输入与输出</small>
+          </div>
+          <div class="cost-metric">
+            <dt>估算成本</dt>
+            <dd>{{ formatMoney(record.costAmount) }}</dd>
+            <small>{{ record.pricingMatched ? '已匹配官方定价' : '暂无定价' }}</small>
+          </div>
+        </dl>
+      </section>
+
+      @if (record.errorType || record.errorSummary) {
+        <section class="result-notice result-notice-danger">
+          <div class="notice-icon"><i nz-icon nzType="close-circle"></i></div>
+          <div class="notice-content">
+            <div class="notice-heading">
               <div>
-                <span>普通输入 / 缓存输入 / 输出</span>
-                <strong
-                  >{{ formatNumber(record.inputTokens - (record.cachedInputTokens || 0)) }} /
-                  {{ formatNumber(record.cachedInputTokens) }} /
-                  {{ formatNumber(record.outputTokens) }}</strong
-                >
+                <span>请求失败</span>
+                <strong>{{ errorLabel(record.errorType) }}</strong>
               </div>
-              <div class="charged-line">
-                <span>估算成本</span>
-                <strong class="charged">{{ formatMoney(record.costAmount) }}</strong>
-              </div>
-              <small
-                >来源：{{
-                  record.pricingSource || '未匹配官方定价'
-                }}。该金额只用于成本估算，不代表账号订阅额度。</small
-              >
+              @if (record.errorType) {
+                <code>{{ record.errorType }}</code>
+              }
             </div>
+            <p>{{ record.errorSummary || '该历史记录没有保存原始错误摘要。' }}</p>
           </div>
-        </nz-card>
+          @if (record.errorSummary) {
+            <button
+              type="button"
+              nz-button
+              nzSize="small"
+              (click)="copy(record.errorSummary, '错误摘要')"
+            >
+              <i nz-icon nzType="copy"></i>
+              复制摘要
+            </button>
+          }
+        </section>
+      }
+
+      @if (record.diagnosticType) {
+        <section class="result-notice result-notice-info">
+          <div class="notice-icon"><i nz-icon nzType="file-search"></i></div>
+          <div class="notice-content">
+            <div class="notice-heading">
+              <div>
+                <span>非失败诊断</span>
+                <strong>{{ diagnosticLabel(record.diagnosticType) }}</strong>
+              </div>
+              <code>{{ record.diagnosticType }}</code>
+            </div>
+            <p>{{ record.diagnosticSummary || '请求已经完成，仅最终结束标记未能送达。' }}</p>
+          </div>
+          @if (record.diagnosticSummary) {
+            <button
+              type="button"
+              nz-button
+              nzSize="small"
+              (click)="copy(record.diagnosticSummary, '诊断摘要')"
+            >
+              <i nz-icon nzType="copy"></i>
+              复制摘要
+            </button>
+          }
+        </section>
+      }
+
+      <div class="detail-layout">
+        <main class="main-column">
+          <section class="detail-panel route-panel">
+            <div class="section-head">
+              <span class="section-icon"><i nz-icon nzType="api"></i></span>
+              <div>
+                <h2>请求链路</h2>
+                <p>从调用密钥到最终上游模型的实际路由</p>
+              </div>
+              <span class="switch-badge" [class.switch-badge-active]="record.switched">
+                {{ record.switched ? '已切换路由' : '直达上游' }}
+              </span>
+            </div>
+
+            <div class="route-flow">
+              <article class="route-node">
+                <span class="node-index">01</span>
+                <small>API 密钥</small>
+                <strong>{{ record.platformKey || '-' }}</strong>
+                <button
+                  type="button"
+                  class="inline-copy"
+                  title="复制 API 密钥 GUID"
+                  (click)="copy(record.platformKeyId, 'API 密钥 GUID')"
+                >
+                  {{ record.keyPrefix || record.platformKeyId || '-' }}
+                  <i nz-icon nzType="copy"></i>
+                </button>
+              </article>
+
+              <div class="route-connector" aria-hidden="true">
+                <span></span><i nz-icon nzType="arrow-right"></i>
+              </div>
+
+              <article class="route-node">
+                <span class="node-index">02</span>
+                <small>命中账号</small>
+                <strong>{{ record.accountName || record.accountGuid || '-' }}</strong>
+                <span class="node-meta">{{ record.accountGuid || '账号标识未记录' }}</span>
+              </article>
+
+              <div class="route-connector" aria-hidden="true">
+                <span></span><i nz-icon nzType="arrow-right"></i>
+              </div>
+
+              <article class="route-node route-node-primary">
+                <span class="node-index">03</span>
+                <small>上游模型</small>
+                <strong>{{ record.upstreamModel || record.model || '-' }}</strong>
+                <span class="node-meta">请求模型 {{ record.model || '-' }}</span>
+              </article>
+            </div>
+
+            <div class="route-result">
+              <span><i nz-icon nzType="cluster"></i>路由切换 {{ record.switchCount || 0 }} 次</span>
+              <p>{{ record.switchReason || '本次请求未触发账号切换。' }}</p>
+            </div>
+          </section>
+
+          <section class="detail-panel performance-panel">
+            <div class="section-head">
+              <span class="section-icon section-icon-warning">
+                <i nz-icon nzType="thunderbolt"></i>
+              </span>
+              <div>
+                <h2>性能分段</h2>
+                <p>拆解网关、连接、上游与流式输出的耗时</p>
+              </div>
+              <span class="connection-badge">{{ connectionLabel(record) }}</span>
+            </div>
+
+            <div class="timing-groups">
+              <section class="timing-group">
+                <header><span>01</span>网关处理</header>
+                <dl>
+                  <div>
+                    <dt>网关排队</dt>
+                    <dd>{{ formatStageMs(record.gatewayQueueMs) }}</dd>
+                  </div>
+                  <div>
+                    <dt>请求准备</dt>
+                    <dd>{{ formatStageMs(record.preparationMs) }}</dd>
+                  </div>
+                </dl>
+              </section>
+
+              <section class="timing-group">
+                <header><span>02</span>网络连接</header>
+                <dl>
+                  <div>
+                    <dt>DNS 解析</dt>
+                    <dd>{{ formatStageMs(record.dnsMs) }}</dd>
+                  </div>
+                  <div>
+                    <dt>连接建立</dt>
+                    <dd>{{ formatStageMs(record.connectMs) }}</dd>
+                  </div>
+                  <div>
+                    <dt>TLS 握手</dt>
+                    <dd>{{ formatStageMs(record.tlsHandshakeMs) }}</dd>
+                  </div>
+                </dl>
+              </section>
+
+              <section class="timing-group timing-group-focus">
+                <header><span>03</span>上游处理</header>
+                <dl>
+                  <div>
+                    <dt>请求写完</dt>
+                    <dd>{{ formatStageMs(record.wroteRequestMs) }}</dd>
+                  </div>
+                  <div>
+                    <dt>请求上传</dt>
+                    <dd>{{ formatStageMs(record.requestUploadMs) }}</dd>
+                  </div>
+                  <div>
+                    <dt>纯上游等待</dt>
+                    <dd>{{ formatStageMs(record.upstreamWaitMs) }}</dd>
+                  </div>
+                  <div>
+                    <dt>响应头到达</dt>
+                    <dd>{{ formatStageMs(record.upstreamHeaderMs) }}</dd>
+                  </div>
+                </dl>
+              </section>
+
+              <section class="timing-group">
+                <header><span>04</span>流式输出</header>
+                <dl>
+                  <div>
+                    <dt>首个 SSE 事件</dt>
+                    <dd>{{ formatStageMs(record.firstEventMs) }}</dd>
+                  </div>
+                  <div>
+                    <dt>首个正文 Token</dt>
+                    <dd>{{ formatStageMs(record.firstTokenMs) }}</dd>
+                  </div>
+                </dl>
+              </section>
+            </div>
+
+            <p class="performance-note">
+              “纯上游等待”从请求写完到收到首字节；可用于区分请求上传与上游计算耗时。
+            </p>
+          </section>
+        </main>
+
+        <aside class="side-column">
+          <section class="detail-panel identity-panel">
+            <div class="section-head section-head-compact">
+              <span class="section-icon"><i nz-icon nzType="file-search"></i></span>
+              <div>
+                <h2>请求标识</h2>
+                <p>用于检索与排障</p>
+              </div>
+            </div>
+
+            <dl class="info-list">
+              <div>
+                <dt>请求 ID</dt>
+                <dd>
+                  <button
+                    type="button"
+                    class="copy-control"
+                    title="复制请求 ID"
+                    (click)="copy(record.requestId, '请求 ID')"
+                  >
+                    <span>{{ record.requestId || '-' }}</span>
+                    <i nz-icon nzType="copy"></i>
+                  </button>
+                </dd>
+              </div>
+              <div>
+                <dt>请求时间</dt>
+                <dd>{{ formatTime(logTime(record)) }}</dd>
+              </div>
+              <div class="info-row-half info-row-half-start">
+                <dt>请求方法</dt>
+                <dd>{{ requestMethod(record) }}</dd>
+              </div>
+              <div class="info-row-half info-row-half-end">
+                <dt>模型等级</dt>
+                <dd>{{ record.serviceTier || 'auto' }}</dd>
+              </div>
+              <div>
+                <dt>API 密钥 GUID</dt>
+                <dd>
+                  <button
+                    type="button"
+                    class="copy-control"
+                    title="复制 API 密钥 GUID"
+                    (click)="copy(record.platformKeyId, 'API 密钥 GUID')"
+                  >
+                    <span>{{ record.platformKeyId || '-' }}</span>
+                    <i nz-icon nzType="copy"></i>
+                  </button>
+                </dd>
+              </div>
+            </dl>
+          </section>
+
+          <section class="detail-panel usage-panel">
+            <div class="section-head section-head-compact">
+              <span class="section-icon section-icon-violet">
+                <i nz-icon nzType="dollar"></i>
+              </span>
+              <div>
+                <h2>Token 与成本</h2>
+                <p>{{ record.upstreamModel || record.model || '-' }}</p>
+              </div>
+              <span class="pricing-badge" [class.pricing-badge-muted]="!record.pricingMatched">
+                {{ record.pricingMatched ? '已匹配定价' : '暂无定价' }}
+              </span>
+            </div>
+
+            <div class="token-total">
+              <span>Token 总量</span>
+              <strong>{{ formatNumber(tokenTotal(record)) }}</strong>
+            </div>
+
+            <dl class="token-breakdown">
+              <div>
+                <dt>普通输入</dt>
+                <dd>{{ formatNumber(normalInputTokens(record)) }}</dd>
+              </div>
+              <div>
+                <dt>缓存输入</dt>
+                <dd>{{ formatNumber(record.cachedInputTokens) }}</dd>
+              </div>
+              <div>
+                <dt>输出</dt>
+                <dd>{{ formatNumber(record.outputTokens) }}</dd>
+              </div>
+            </dl>
+
+            <div class="cost-highlight">
+              <span>官方参考成本</span>
+              <strong>{{ formatMoney(record.costAmount) }}</strong>
+              <small>
+                来源：{{
+                  record.pricingSource || '未匹配官方定价'
+                }}。仅用于成本估算，不代表账号订阅额度。
+              </small>
+            </div>
+          </section>
+        </aside>
       </div>
     } @else if (!loading) {
-      <div class="empty-state">请求日志不存在或已被清理</div>
+      <div class="empty-state">
+        <i nz-icon nzType="file-search"></i>
+        <strong>没有找到请求日志</strong>
+        <span>这条记录可能已经被清理</span>
+      </div>
     }
   </nz-spin>
 </section>
