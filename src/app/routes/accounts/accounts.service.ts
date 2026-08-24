@@ -10,6 +10,7 @@ import {
   AccountGroupPayload,
   AccountHealthItem,
   AccountImportPayload,
+  AccountImportBatchResult,
   AccountManualPayload,
   AccountModelFetchPayload,
   AccountModelFetchResult,
@@ -47,6 +48,10 @@ export class AccountsService {
 
   importAccount(payload: AccountImportPayload): Observable<Account> {
     return this.http.post<Account>('/accounts/import', payload);
+  }
+
+  importAccountFile(payload: AccountImportPayload): Observable<AccountImportBatchResult> {
+    return this.http.post<AccountImportBatchResult>('/accounts/import-file', payload);
   }
 
   addManual(payload: AccountManualPayload): Observable<Account> {

@@ -36,6 +36,25 @@ export function formatMetricDuration(value?: number | null): string {
   return `${formatSingleDecimal(milliseconds / 3_600_000)} h`;
 }
 
+/** 将金额统一格式化为美元；常规金额保留两位，极小金额自动保留四位。 */
+export function formatMetricCurrency(value?: number | null, precision?: number): string {
+  const amount = Number(value);
+  if (!Number.isFinite(amount)) return '-';
+  const defaultDigits = amount !== 0 && Math.abs(amount) < 0.01 ? 4 : 2;
+  const digits = Math.max(0, Math.min(Math.round(precision ?? defaultDigits), 8));
+  return `$${amount.toLocaleString('en-US', {
+    minimumFractionDigits: digits,
+    maximumFractionDigits: digits,
+  })}`;
+}
+
+/** 精确显示统计值，适合 title、详情和复制前的可读文本。 */
+export function formatMetricNumber(value?: number | null): string {
+  const amount = Number(value ?? 0);
+  if (!Number.isFinite(amount)) return '-';
+  return amount.toLocaleString('zh-CN', { maximumFractionDigits: 3 });
+}
+
 function formatSingleDecimal(value: number): string {
   return value.toFixed(1).replace(/\.0$/, '');
 }

@@ -12,7 +12,7 @@ import { MetricCardComponent, SHARED_IMPORTS, TitleLabelComponent } from '@share
 import { NzMessageService } from 'ng-zorro-antd/message';
 import { NzModalService } from 'ng-zorro-antd/modal';
 import { NzSegmentedModule } from 'ng-zorro-antd/segmented';
-import { Subscription, catchError, finalize, of, switchMap, timer } from 'rxjs';
+import { Observable, Subscription, catchError, finalize, of, switchMap, timer } from 'rxjs';
 
 import {
   DEFAULT_ACCOUNT_GROUP_OPTIONS,
@@ -24,7 +24,7 @@ import {
 import {
   Account,
   AccountAPIKeyPayload,
-  AccountImportPayload,
+  AccountImportBatchResult,
   AccountManualPayload,
   AccountOAuthMode,
   AccountOAuthSession,
@@ -81,6 +81,7 @@ export class AccountEditComponent implements OnInit, OnDestroy {
   protected accountFileName = '';
   protected accountFile: Record<string, unknown> | null = null;
   protected accountFileSummary = '';
+  protected accountFileFormat: 'native' | 'sub2api' = 'native';
   protected createMode: AccountCreateMode = 'oauth';
   protected authorizing = false;
   protected completingCallback = false;
@@ -267,6 +268,12 @@ export class AccountEditComponent implements OnInit, OnDestroy {
     const nextMode = String(value) as AccountCreateMode;
     if (nextMode === this.createMode) return;
     const activeSession = this.oauthSession;
+    if (this.createMode === 'file') {
+      this.accountFile = null;
+      this.accountFileName = '';
+      this.accountFileSummary = '';
+      this.accountFileFormat = 'native';
+    }
     if (this.createMode === 'api-key') {
       this.apiKeyForm.reset();
     }
@@ -288,6 +295,17 @@ export class AccountEditComponent implements OnInit, OnDestroy {
     reader.onload = () => {
       try {
         const parsed = JSON.parse(String(reader.result || '')) as Record<string, unknown>;
+        if (this.isSub2APIFile(parsed)) {
+          this.validateSub2APIFile(parsed);
+          const accounts = parsed['accounts'] as unknown[];
+          this.accountFile = parsed;
+          this.accountFileFormat = 'sub2api';
+          this.accountFileName = file.name;
+          this.accountFileSummary = `sub2api v1 · ${accounts.length} 个账号 · 服务端将逐个校验并加密导入`;
+          this.message.success(`检测到 ${accounts.length} 个 sub2api OAuth 账号`);
+          this.cdr.markForCheck();
+          return;
+        }
         const tokens = parsed['tokens'] as Record<string, unknown> | undefined;
         const meta = parsed['meta'] as Record<string, unknown> | undefined;
         if (!tokens || typeof tokens['access_token'] !== 'string') {
@@ -300,6 +318,7 @@ export class AccountEditComponent implements OnInit, OnDestroy {
           throw new Error('缺少 ChatGPT 账号 ID');
         }
         this.accountFile = parsed;
+        this.accountFileFormat = 'native';
         this.accountFileName = file.name;
         const label = String(meta?.['label'] || '');
         const accountID = String(tokens['account_id'] || meta?.['chatgptAccountId'] || '');
@@ -308,6 +327,7 @@ export class AccountEditComponent implements OnInit, OnDestroy {
         this.message.success('OAuth 账号文件解析成功');
       } catch (error) {
         this.accountFile = null;
+        this.accountFileFormat = 'native';
         this.accountFileName = '';
         this.accountFileSummary = '';
         this.message.error(error instanceof Error ? error.message : '账号文件格式错误');
@@ -347,12 +367,13 @@ export class AccountEditComponent implements OnInit, OnDestroy {
     const value = this.form.getRawValue();
     this.saving = true;
     const pool = this.poolPayload();
-    const request =
+    const fileRequest: Observable<Account | AccountImportBatchResult> =
+      this.accountFileFormat === 'sub2api'
+        ? this.accountsService.importAccountFile({ accountFile: this.accountFile!, ...pool })
+        : this.accountsService.importAccount({ accountFile: this.accountFile!, ...pool });
+    const request: Observable<Account | AccountImportBatchResult> =
       this.formMode === 'create' && this.createMode === 'file'
-        ? this.accountsService.importAccount({
-            accountFile: this.accountFile!,
-            ...pool,
-          } satisfies AccountImportPayload)
+        ? fileRequest
         : this.formMode === 'create' && this.createMode === 'api-key'
           ? this.accountsService.addAPIKey({
               ...pool,
@@ -379,7 +400,27 @@ export class AccountEditComponent implements OnInit, OnDestroy {
           this.cdr.markForCheck();
         }),
       )
-      .subscribe(() => {
+      .subscribe((result) => {
+        if (
+          this.formMode === 'create' &&
+          this.createMode === 'file' &&
+          this.accountFileFormat === 'sub2api'
+        ) {
+          const batch = result as AccountImportBatchResult;
+          if (batch.failed > 0) {
+            const firstError = batch.items.find((item) => item.error)?.error;
+            this.message.warning(
+              `批量导入完成：成功 ${batch.imported} 个，失败 ${batch.failed} 个${
+                firstError ? `；首个错误：${firstError}` : ''
+              }`,
+            );
+            if (batch.imported === 0) return;
+          } else {
+            this.message.success(`批量导入完成：成功导入 ${batch.imported} 个账号`);
+          }
+          void this.router.navigateByUrl('/accounts/list');
+          return;
+        }
         const message =
           this.formMode === 'edit'
             ? '账号调度配置已更新'
@@ -391,6 +432,22 @@ export class AccountEditComponent implements OnInit, OnDestroy {
         this.message.success(message);
         void this.router.navigateByUrl('/accounts/list');
       });
+  }
+
+  private isSub2APIFile(parsed: Record<string, unknown>): boolean {
+    return parsed['type'] === 'sub2api-data';
+  }
+
+  private validateSub2APIFile(parsed: Record<string, unknown>): void {
+    if (parsed['version'] !== 1) throw new Error('仅支持 sub2api v1 账号文件');
+    const accounts = parsed['accounts'];
+    if (!Array.isArray(accounts) || accounts.length === 0) {
+      throw new Error('sub2api 文件不包含账号');
+    }
+    if (accounts.length > 100) throw new Error('单次最多导入 100 个账号');
+    if (accounts.some((entry) => !entry || typeof entry !== 'object' || Array.isArray(entry))) {
+      throw new Error('sub2api accounts 包含无效条目');
+    }
   }
 
   protected startOAuth(mode: AccountOAuthMode): void {

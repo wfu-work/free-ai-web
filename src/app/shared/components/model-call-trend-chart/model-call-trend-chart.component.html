@@ -12,7 +12,9 @@
   <div class="model-summary">
     <div class="summary-total">
       <span>窗口调用</span>
-      <strong>{{ formatCompact(totalRequests) }}</strong>
+      <strong [attr.title]="totalRequests | metric: 'number'">{{
+        formatCompact(totalRequests)
+      }}</strong>
       <small>主力模型 {{ topModelLabel }}</small>
     </div>
 
@@ -24,7 +26,9 @@
             [style.--legend-color]="palette[index]"
           ></i>
           <span [title]="item.model">{{ item.model }}</span>
-          <strong>{{ formatCompact(item.totalRequests) }}</strong>
+          <strong [attr.title]="item.totalRequests | metric: 'number'">{{
+            formatCompact(item.totalRequests)
+          }}</strong>
         </div>
       }
     </div>

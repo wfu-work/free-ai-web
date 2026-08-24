@@ -111,32 +111,9 @@ export class RequestLogDetailComponent implements OnInit {
     });
   }
 
-  protected formatMs(value?: number): string {
-    if (value === undefined || value === null || Number.isNaN(Number(value))) return '-';
-    return `${Number(value).toFixed(0)} ms`;
-  }
-
-  protected formatStageMs(value?: number): string {
-    if (value === undefined || value === null || Number.isNaN(Number(value))) return '-';
-    return `${Number(value).toFixed(0)} ms`;
-  }
-
   protected connectionLabel(item: RequestLog): string {
     if (!item.connectionTraced) return '-';
     return item.connectionReused ? '已复用' : '新建连接';
-  }
-
-  protected formatNumber(value?: number): string {
-    return Number(value || 0).toLocaleString('zh-CN');
-  }
-
-  protected formatMoney(value?: number, minimumFractionDigits = 6): string {
-    const amount = Number(value || 0);
-    if (amount === 0) return '$0';
-    return `$${amount.toLocaleString('en-US', {
-      minimumFractionDigits,
-      maximumFractionDigits: minimumFractionDigits,
-    })}`;
   }
 
   protected async copy(value: string | undefined, label: string): Promise<void> {

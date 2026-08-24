@@ -12,6 +12,8 @@ import {
   TitleLabelComponent,
   TokenTrendChartComponent,
   TokenTrendPoint,
+  formatMetricDuration,
+  formatMetricNumber,
 } from '@shared';
 import { finalize, forkJoin } from 'rxjs';
 
@@ -173,7 +175,7 @@ export class DashboardComponent implements OnInit {
   protected get recentAverageLatencyLabel(): string {
     if (!this.recentRequestCount) return '--';
     const total = this.windowLogs.reduce((sum, log) => sum + Number(log.latencyMs || 0), 0);
-    return this.formatDuration(total / this.recentRequestCount);
+    return formatMetricDuration(total / this.recentRequestCount);
   }
 
   protected get recentTokenCount(): number {
@@ -184,7 +186,7 @@ export class DashboardComponent implements OnInit {
   }
 
   protected get trendPeriodLabel(): string {
-    return `${this.selectedTrendRange.label} · ${this.recentRequestCount} 次请求`;
+    return `${this.selectedTrendRange.label} · ${formatMetricNumber(this.recentRequestCount)} 次请求`;
   }
 
   protected get tokenTrendPoints(): TokenTrendPoint[] {
@@ -269,19 +271,23 @@ export class DashboardComponent implements OnInit {
       },
       {
         name: '账号池',
-        description: `${this.metrics.availableAccounts || 0} / ${this.metrics.accounts || 0} 个账号可用`,
-        status: this.abnormalAccounts ? `${this.abnormalAccounts} 个异常` : '状态正常',
+        description: `${formatMetricNumber(this.metrics.availableAccounts)} / ${formatMetricNumber(this.metrics.accounts)} 个账号可用`,
+        status: this.abnormalAccounts
+          ? `${formatMetricNumber(this.abnormalAccounts)} 个异常`
+          : '状态正常',
         tone: accountTone,
       },
       {
         name: '窗口请求',
-        description: `${this.selectedTrendRange.label} · 客户端断开 ${this.recentClientDisconnectedCount} 次`,
-        status: this.recentFailureCount ? `${this.recentFailureCount} 次服务失败` : '服务正常',
+        description: `${this.selectedTrendRange.label} · 客户端断开 ${formatMetricNumber(this.recentClientDisconnectedCount)} 次`,
+        status: this.recentFailureCount
+          ? `${formatMetricNumber(this.recentFailureCount)} 次服务失败`
+          : '服务正常',
         tone: this.recentFailureCount ? 'warning' : 'success',
       },
       {
         name: '模型与密钥',
-        description: `${this.metrics.enabledModels || 0} 个模型 · ${this.metrics.enabledKeys || 0} 个密钥`,
+        description: `${formatMetricNumber(this.metrics.enabledModels)} 个模型 · ${formatMetricNumber(this.metrics.enabledKeys)} 个密钥`,
         status: this.metrics.enabledModels && this.metrics.enabledKeys ? '可以接入' : '待配置',
         tone: this.metrics.enabledModels && this.metrics.enabledKeys ? 'success' : 'idle',
       },
@@ -376,21 +382,6 @@ export class DashboardComponent implements OnInit {
       hour: '2-digit',
       minute: '2-digit',
     });
-  }
-
-  protected formatDuration(value?: number): string {
-    const milliseconds = Number(value || 0);
-    if (milliseconds <= 0) return '-';
-    if (milliseconds < 1000) return `${Math.round(milliseconds)} ms`;
-    return `${(milliseconds / 1000).toFixed(milliseconds >= 10_000 ? 0 : 1)} s`;
-  }
-
-  protected formatCompact(value?: number): string {
-    const count = Number(value || 0);
-    if (Math.abs(count) >= 1_000_000_000) return `${(count / 1_000_000_000).toFixed(1)}B`;
-    if (Math.abs(count) >= 1_000_000) return `${(count / 1_000_000).toFixed(1)}M`;
-    if (Math.abs(count) >= 1_000) return `${(count / 1_000).toFixed(1)}K`;
-    return Math.round(count).toLocaleString('zh-CN');
   }
 
   protected shortText(value?: string, fallback = '-'): string {

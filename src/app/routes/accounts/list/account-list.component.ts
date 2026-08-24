@@ -8,7 +8,7 @@ import {
 } from '@angular/core';
 import { FormBuilder } from '@angular/forms';
 import { Router } from '@angular/router';
-import { SHARED_IMPORTS, TitleLabelComponent } from '@shared';
+import { SHARED_IMPORTS, TitleLabelComponent, formatMetricCurrency } from '@shared';
 import { NzListModule } from 'ng-zorro-antd/list';
 import { NzMessageService } from 'ng-zorro-antd/message';
 import { NzModalService } from 'ng-zorro-antd/modal';
@@ -575,29 +575,18 @@ export class AccountListComponent implements OnInit {
     return `${Number(value || 0)} 个模型`;
   }
 
-  protected formatCompactUsage(value?: number): string {
-    const amount = Math.max(0, Number(value || 0));
-    if (amount >= 1_000_000_000) return `${this.trimMetricZeros(amount / 1_000_000_000)}B`;
-    if (amount >= 1_000_000) return `${this.trimMetricZeros(amount / 1_000_000)}M`;
-    if (amount >= 1_000) return `${this.trimMetricZeros(amount / 1_000)}K`;
-    return Math.round(amount).toLocaleString('zh-CN');
-  }
-
   protected formatGatewayCost(item: Account): string {
-    if (this.isImageAPIAccount(item) || item.gatewayUsage?.costAvailable !== true) return '--';
-    return `$${Number(item.gatewayUsage.costAmount || 0).toFixed(2)}`;
+    if (this.isImageAPIAccount(item)) return '--';
+    return formatMetricCurrency(item.gatewayUsage?.costAmount);
   }
 
   protected gatewayCostTooltip(item: Account): string {
     if (this.isImageAPIAccount(item)) return '图片生成请求暂未纳入 Token 参考成本估算';
-    if (item.gatewayUsage?.costAvailable !== true) {
-      return '窗口内存在未匹配官方定价的请求，暂不展示不完整成本';
+    const usage = item.gatewayUsage;
+    if (usage && usage.priceableRequests > usage.pricedRequests) {
+      return `已累计 ${usage.pricedRequests}/${usage.priceableRequests} 条匹配官方定价的请求；未配置模型定价的请求已忽略`;
     }
     return '根据近 30 天网关 Token 用量与官方 API 参考价估算，不代表上游实际账单';
-  }
-
-  private trimMetricZeros(value: number): string {
-    return value.toFixed(1).replace(/\.0$/, '');
   }
 
   protected async copy(value: string, label: string): Promise<void> {

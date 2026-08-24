@@ -66,8 +66,7 @@
   min-width: 0;
 }
 
-.status-filter,
-.vendor-filter {
+.status-filter {
   width: 120px;
 }
 
@@ -230,13 +229,21 @@
   min-width: 0;
 }
 
-.account-name {
+.account-name,
+.account-email,
+.info-item strong,
+.activity-grid strong,
+.reset-credit-copy small,
+.account-note {
   overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.account-name {
   font-size: 16px;
   font-weight: 800;
   color: var(--nm-text);
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 .vendor-badge {
@@ -278,12 +285,9 @@
 }
 
 .account-email {
-  overflow: hidden;
   margin-top: 2px;
   font-size: 12px;
   color: var(--nm-text-secondary);
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 .account-statuses {
@@ -315,22 +319,34 @@
   background: currentcolor;
 }
 
-.status-success {
+.status-success,
+.quota-success {
   border-color: var(--nm-success-border);
-  color: var(--nm-success);
   background: var(--nm-success-bg);
 }
 
-.status-warning {
+.status-success {
+  color: var(--nm-success);
+}
+
+.status-warning,
+.quota-warning {
   border-color: var(--nm-warning-border);
-  color: var(--nm-warning);
   background: var(--nm-warning-bg);
 }
 
-.status-danger {
+.status-warning {
+  color: var(--nm-warning);
+}
+
+.status-danger,
+.quota-danger {
   border-color: var(--nm-danger-border);
-  color: var(--nm-danger);
   background: var(--nm-danger-bg);
+}
+
+.status-danger {
+  color: var(--nm-danger);
 }
 
 .status-neutral {
@@ -379,9 +395,13 @@
   color: var(--nm-text-secondary);
 }
 
-.gateway-usage-grid {
+.gateway-usage-grid,
+.activity-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.gateway-usage-grid {
   gap: 8px;
 }
 
@@ -433,14 +453,11 @@
 
 .info-item strong,
 .activity-grid strong {
-  overflow: hidden;
   display: block;
   margin-top: 3px;
   font-size: 13px;
   font-weight: 700;
   color: var(--nm-text);
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 .text-danger {
@@ -487,26 +504,15 @@
   background: var(--nm-surface-muted);
 }
 
-.quota-success {
-  border-color: var(--nm-success-border);
-  background: var(--nm-success-bg);
-}
-
-.quota-warning {
-  border-color: var(--nm-warning-border);
-  background: var(--nm-warning-bg);
-}
-
-.quota-danger {
-  border-color: var(--nm-danger-border);
-  background: var(--nm-danger-bg);
+.quota-meta,
+.reset-credit-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
 }
 
 .quota-meta {
-  display: flex;
   gap: 10px;
-  align-items: center;
-  justify-content: space-between;
   margin-top: 3px;
   font-size: 11px;
   color: var(--nm-text-secondary);
@@ -535,10 +541,7 @@
 }
 
 .reset-credit-row {
-  display: flex;
   gap: 12px;
-  align-items: center;
-  justify-content: space-between;
   min-width: 0;
   padding: 10px 12px;
   border: 1px solid var(--nm-border);
@@ -569,15 +572,12 @@
 }
 
 .reset-credit-copy small {
-  overflow: hidden;
   display: block;
   max-width: 100%;
   margin-top: 3px;
   font-size: 11px;
   line-height: 1.45;
   color: var(--nm-text-secondary);
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 .reset-credit-row button {
@@ -629,8 +629,6 @@
 }
 
 .activity-grid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 10px;
   margin-top: 18px;
   padding-top: 14px;
@@ -643,14 +641,11 @@
 }
 
 .account-note {
-  overflow: hidden;
   margin-top: 14px;
   padding: 8px 10px;
   border-radius: 6px;
   font-size: 12px;
   color: var(--nm-text-secondary);
-  text-overflow: ellipsis;
-  white-space: nowrap;
   background: var(--nm-surface-muted);
 }
 

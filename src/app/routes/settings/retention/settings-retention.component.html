@@ -20,7 +20,12 @@
         description="当前日志保留策略"
         tone="success"
       />
-      <app-metric-card label="日志总数" [value]="stats.total || 0" description="已记录网关请求" />
+      <app-metric-card
+        label="日志总数"
+        [value]="stats.total | metric: 'compact'"
+        [valueTitle]="stats.total | metric: 'number'"
+        description="已记录网关请求"
+      />
       <app-metric-card
         label="最近样本"
         [value]="sampleSize"
@@ -148,15 +153,15 @@
           </div>
           <div>
             <span>成功请求</span>
-            <strong>{{ stats.success || 0 }}</strong>
+            <strong>{{ stats.success | metric: 'number' }}</strong>
           </div>
           <div>
             <span>服务端失败</span>
-            <strong class="danger-text">{{ stats.failures || 0 }}</strong>
+            <strong class="danger-text">{{ stats.failures | metric: 'number' }}</strong>
           </div>
           <div>
             <span>客户端断开</span>
-            <strong>{{ stats.clientDisconnected || 0 }}</strong>
+            <strong>{{ stats.clientDisconnected | metric: 'number' }}</strong>
           </div>
         </div>
         <ul class="note-list">

@@ -7,7 +7,13 @@ import {
 } from '@angular/core';
 import { Router } from '@angular/router';
 import { STChange, STColumn, STColumnTag } from '@delon/abc/st';
-import { MetricCardComponent, SHARED_IMPORTS, TitleLabelComponent } from '@shared';
+import {
+  MetricCardComponent,
+  SHARED_IMPORTS,
+  TitleLabelComponent,
+  formatMetricCurrency,
+  formatMetricDuration,
+} from '@shared';
 import { NzMessageService } from 'ng-zorro-antd/message';
 import { NzModalService } from 'ng-zorro-antd/modal';
 import { forkJoin, finalize } from 'rxjs';
@@ -183,22 +189,15 @@ export class RequestLogListComponent implements OnInit {
   }
 
   protected formatMs(value?: number): string {
-    if (value === undefined || value === null || Number.isNaN(Number(value))) return '-';
-    return `${Number(value).toFixed(0)} ms`;
+    return formatMetricDuration(value);
   }
 
   protected formatLatencyChip(value?: number): string {
-    const milliseconds = Number(value || 0);
-    if (milliseconds <= 0) return '-';
-    if (milliseconds < 1000) return `${Math.max(1, Math.round(milliseconds))}ms`;
-    return `${(milliseconds / 1000).toFixed(1)}s`;
+    return formatMetricDuration(value).replace(' ', '');
   }
 
   protected formatLatencyDetail(value?: number): string {
-    const milliseconds = Number(value || 0);
-    if (milliseconds <= 0) return '-';
-    if (milliseconds < 1000) return `${Math.max(1, Math.round(milliseconds))} ms`;
-    return `${(milliseconds / 1000).toFixed(1)} s`;
+    return formatMetricDuration(value);
   }
 
   protected firstResponseMs(item: RequestLog): number {
@@ -247,12 +246,8 @@ export class RequestLogListComponent implements OnInit {
     return item.createdAtUnix || item.createTime;
   }
 
-  protected formatNumber(value?: number): string {
-    return Number(value || 0).toLocaleString('zh-CN');
-  }
-
   protected formatMoney(value?: number): string {
-    return `$${Number(value || 0).toFixed(6)}`;
+    return formatMetricCurrency(value, 6);
   }
 
   protected shortText(value?: string, fallback = '-'): string {

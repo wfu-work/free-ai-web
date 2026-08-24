@@ -32,12 +32,12 @@
     <div class="metric-grid">
       <app-metric-card
         label="请求总量"
-        [value]="formatNumber(summary.totalRequests)"
+        [value]="summary.totalRequests | metric: 'compact'"
         [description]="
           '成功 ' +
-          formatNumber(summary.successRequests) +
+          (summary.successRequests | metric: 'number') +
           ' · 失败 ' +
-          formatNumber(summary.failedRequests)
+          (summary.failedRequests | metric: 'number')
         "
       />
       <app-metric-card
@@ -56,8 +56,8 @@
       />
       <app-metric-card
         label="平均延迟"
-        [value]="formatMs(summary.avgLatencyMs)"
-        [valueTitle]="formatNumber(summary.avgLatencyMs) + ' ms'"
+        [value]="summary.avgLatencyMs | metric: 'duration'"
+        [valueTitle]="(summary.avgLatencyMs | metric: 'number') + ' ms'"
         [description]="latencyLabel"
         [tone]="
           summary.avgLatencyMs > 12000
@@ -69,14 +69,14 @@
       />
       <app-metric-card
         label="Token 总量"
-        [value]="formatTokens(totalTokens)"
-        [valueTitle]="formatNumber(totalTokens) + ' Token'"
-        [description]="'输入 ' + formatTokens(summary.inputTokens)"
+        [value]="totalTokens | metric: 'compact'"
+        [valueTitle]="(totalTokens | metric: 'number') + ' Token'"
+        [description]="'输入 ' + (summary.inputTokens | metric: 'compact')"
         tone="info"
       />
       <app-metric-card
         label="估算成本"
-        [value]="formatCost(summary.costAmount)"
+        [value]="summary.costAmount | metric: 'currency'"
         description="基于已匹配的官方定价"
         tone="warning"
       />
@@ -178,27 +178,34 @@
               @for (row of rows; track row.dimension) {
                 <tr>
                   <td class="name-cell">{{ row.dimension }}</td>
-                  <td>{{ formatNumber(row.requests) }}</td>
-                  <td [class.danger-text]="row.failures > 0">{{ formatNumber(row.failures) }}</td>
-                  <td
-                    [attr.title]="formatNumber(row.inputTokens)"
-                    [attr.aria-label]="formatNumber(row.inputTokens) + ' Token'"
-                  >
-                    {{ formatTokens(row.inputTokens) }}
+                  <td [attr.title]="row.requests | metric: 'number'">
+                    {{ row.requests | metric: 'compact' }}
                   </td>
                   <td
-                    [attr.title]="formatNumber(row.outputTokens)"
-                    [attr.aria-label]="formatNumber(row.outputTokens) + ' Token'"
+                    [class.danger-text]="row.failures > 0"
+                    [attr.title]="row.failures | metric: 'number'"
                   >
-                    {{ formatTokens(row.outputTokens) }}
+                    {{ row.failures | metric: 'compact' }}
                   </td>
                   <td
-                    [attr.title]="formatNumber(row.cachedTokens)"
-                    [attr.aria-label]="formatNumber(row.cachedTokens) + ' Token'"
+                    [attr.title]="row.inputTokens | metric: 'number'"
+                    [attr.aria-label]="(row.inputTokens | metric: 'number') + ' Token'"
                   >
-                    {{ formatTokens(row.cachedTokens) }}
+                    {{ row.inputTokens | metric: 'compact' }}
                   </td>
-                  <td>{{ formatCost(row.costAmount) }}</td>
+                  <td
+                    [attr.title]="row.outputTokens | metric: 'number'"
+                    [attr.aria-label]="(row.outputTokens | metric: 'number') + ' Token'"
+                  >
+                    {{ row.outputTokens | metric: 'compact' }}
+                  </td>
+                  <td
+                    [attr.title]="row.cachedTokens | metric: 'number'"
+                    [attr.aria-label]="(row.cachedTokens | metric: 'number') + ' Token'"
+                  >
+                    {{ row.cachedTokens | metric: 'compact' }}
+                  </td>
+                  <td>{{ row.costAmount | metric: 'currency' }}</td>
                 </tr>
               } @empty {
                 <tr>
@@ -215,20 +222,20 @@
         <div class="token-list">
           <div>
             <span>输入 Token</span>
-            <strong [attr.title]="formatNumber(summary.inputTokens)">
-              {{ formatTokens(summary.inputTokens) }}
+            <strong [attr.title]="summary.inputTokens | metric: 'number'">
+              {{ summary.inputTokens | metric: 'compact' }}
             </strong>
           </div>
           <div>
             <span>输出 Token</span>
-            <strong [attr.title]="formatNumber(summary.outputTokens)">
-              {{ formatTokens(summary.outputTokens) }}
+            <strong [attr.title]="summary.outputTokens | metric: 'number'">
+              {{ summary.outputTokens | metric: 'compact' }}
             </strong>
           </div>
           <div>
             <span>缓存 Token</span>
-            <strong [attr.title]="formatNumber(summary.cachedTokens)">
-              {{ formatTokens(summary.cachedTokens) }}
+            <strong [attr.title]="summary.cachedTokens | metric: 'number'">
+              {{ summary.cachedTokens | metric: 'compact' }}
             </strong>
           </div>
         </div>
@@ -244,7 +251,7 @@
           <strong>{{ reliabilityLabel }}</strong>
           <span
             >失败率 {{ failureRate }}，平均延迟
-            {{ formatMs(summary.avgLatencyMs) }}。出现异常时可从调用记录下钻定位。</span
+            {{ summary.avgLatencyMs | metric: 'duration' }}。出现异常时可从调用记录下钻定位。</span
           >
         </div>
         <div class="quick-actions">

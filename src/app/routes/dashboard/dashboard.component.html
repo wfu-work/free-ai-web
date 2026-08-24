@@ -37,7 +37,7 @@
             <div class="eyebrow">{{ metrics.name || 'FreeAiGo' }} · 本地网关</div>
             <h2>{{ readinessLabel }}</h2>
             <p>
-              就绪度 {{ readinessScore }}%，累计处理 {{ formatCompact(stats.total) }} 次请求。
+              就绪度 {{ readinessScore }}%，累计处理 {{ stats.total | metric: 'compact' }} 次请求。
               @if (lastUpdatedAt) {
                 最近更新 {{ formatTime(lastUpdatedAt) }}。
               }
@@ -52,22 +52,22 @@
         <dl class="window-metrics">
           <div>
             <dt>窗口请求</dt>
-            <dd>{{ formatCompact(recentRequestCount) }}</dd>
-            <small>{{ recentServiceRequestCount }} 次纳入服务质量</small>
+            <dd>{{ recentRequestCount | metric: 'compact' }}</dd>
+            <small>{{ recentServiceRequestCount | metric: 'number' }} 次纳入服务质量</small>
           </div>
           <div>
             <dt>服务端失败</dt>
-            <dd>{{ formatCompact(recentFailureCount) }}</dd>
+            <dd>{{ recentFailureCount | metric: 'compact' }}</dd>
             <small>不含客户端主动断开</small>
           </div>
           <div>
             <dt>客户端断开</dt>
-            <dd>{{ formatCompact(recentClientDisconnectedCount) }}</dd>
+            <dd>{{ recentClientDisconnectedCount | metric: 'compact' }}</dd>
             <small>单独观察，不计服务失败</small>
           </div>
           <div>
             <dt>Token 流量</dt>
-            <dd>{{ formatCompact(recentTokenCount) }}</dd>
+            <dd>{{ recentTokenCount | metric: 'compact' }}</dd>
             <small>输入与输出合计</small>
           </div>
           <div>
@@ -174,12 +174,12 @@
                 <div>
                   <span>Token</span>
                   <strong>{{
-                    formatCompact((item.inputTokens || 0) + (item.outputTokens || 0))
+                    (item.inputTokens || 0) + (item.outputTokens || 0) | metric: 'compact'
                   }}</strong>
                 </div>
                 <div>
                   <span>耗时</span>
-                  <strong>{{ formatDuration(item.latencyMs) }}</strong>
+                  <strong>{{ item.latencyMs | metric: 'duration' }}</strong>
                 </div>
                 <div class="request-status">
                   <b
@@ -212,7 +212,10 @@
                 <div class="meter-row">
                   <div>
                     <strong>{{ item.group }}</strong>
-                    <span>{{ item.available }} / {{ item.total }} 可用</span>
+                    <span
+                      >{{ item.available | metric: 'number' }} /
+                      {{ item.total | metric: 'number' }} 可用</span
+                    >
                   </div>
                   <div class="meter-track"><i [style.width.%]="item.percent"></i></div>
                   <b>{{ item.percent }}%</b>
@@ -238,7 +241,7 @@
                 <div class="meter-row">
                   <div>
                     <strong>{{ item.label }}</strong>
-                    <span>{{ item.count }} 次</span>
+                    <span>{{ item.count | metric: 'number' }} 次</span>
                   </div>
                   <div class="meter-track"><i [style.width.%]="item.percent"></i></div>
                   <b>{{ item.percent }}%</b>

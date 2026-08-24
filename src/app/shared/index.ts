@@ -14,6 +14,7 @@ export * from './utils/byte.util';
 export * from './utils/date.util';
 export * from './utils/degree.util';
 export * from './utils/metric.util';
+export * from './pipes/metric.pipe';
 export * from './utils/pattern.util';
 
 // Module

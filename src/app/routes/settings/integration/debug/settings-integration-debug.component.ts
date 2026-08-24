@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, ChangeDetectorRef, Component, inject } from '@angular/core';
-import { SHARED_IMPORTS } from '@shared';
+import { SHARED_IMPORTS, formatMetricDuration } from '@shared';
 import { NzMessageService } from 'ng-zorro-antd/message';
 import { NZ_MODAL_DATA } from 'ng-zorro-antd/modal';
 import { firstValueFrom } from 'rxjs';
@@ -128,7 +128,7 @@ export class SettingsIntegrationDebugComponent {
       const response = await firstValueFrom(
         this.platformKeysService.debug(this.form.platformKeyGuid, request),
       );
-      this.resultStatus = `${response.statusCode} ${response.statusText || ''} · ${response.latencyMs}ms`;
+      this.resultStatus = `${response.statusCode} ${response.statusText || ''} · ${formatMetricDuration(response.latencyMs)}`;
       this.resultText = this.formatResponse(response.body);
       if (response.statusCode >= 200 && response.statusCode < 300) {
         this.message.success('调试请求完成');

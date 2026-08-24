@@ -50,6 +50,7 @@ export interface AccountGatewayUsage {
   totalTokens: number;
   costMicrousd: number;
   costAmount: number;
+  priceableRequests: number;
   pricedRequests: number;
   costAvailable: boolean;
 }
@@ -150,6 +151,22 @@ export interface AccountImportPayload {
   priority?: number;
   weight?: number;
   remark?: string;
+}
+
+export interface AccountImportItemResult {
+  index: number;
+  name?: string;
+  status: string;
+  account?: Account;
+  error?: string;
+}
+
+export interface AccountImportBatchResult {
+  format: string;
+  total: number;
+  imported: number;
+  failed: number;
+  items: AccountImportItemResult[];
 }
 
 export interface AccountPoolPayload {

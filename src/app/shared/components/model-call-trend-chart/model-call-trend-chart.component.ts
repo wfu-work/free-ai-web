@@ -1,7 +1,9 @@
 import { ChangeDetectionStrategy, Component, Input, inject } from '@angular/core';
 import type { EChartsCoreOption } from 'echarts';
 
+import { MetricPipe } from '../../pipes/metric.pipe';
 import { ThemeColorService } from '../../services/theme-color.service';
+import { formatCompactMetric, formatMetricNumber } from '../../utils/metric.util';
 import { LineChartComponent, LineChartSeriesItem } from '../line-chart/line-chart.component';
 
 /** 一个模型在连续时间桶中的调用数量。 */
@@ -15,7 +17,7 @@ export interface ModelCallTrendSeries {
   selector: 'app-model-call-trend-chart',
   templateUrl: './model-call-trend-chart.component.html',
   styleUrls: ['./model-call-trend-chart.component.less'],
-  imports: [LineChartComponent],
+  imports: [LineChartComponent, MetricPipe],
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -96,14 +98,11 @@ export class ModelCallTrendChartComponent {
   }
 
   protected formatCompact(value?: number): string {
-    const count = Number(value || 0);
-    if (Math.abs(count) >= 1_000_000) return `${(count / 1_000_000).toFixed(1)}M`;
-    if (Math.abs(count) >= 1_000) return `${(count / 1_000).toFixed(1)}K`;
-    return Math.round(count).toLocaleString('zh-CN');
+    return formatCompactMetric(value);
   }
 
   private formatNumber(value?: number): string {
-    return Math.round(Number(value || 0)).toLocaleString('zh-CN');
+    return formatMetricNumber(value);
   }
 
   private escapeHtml(value: string): string {

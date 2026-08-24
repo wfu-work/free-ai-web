@@ -46,22 +46,28 @@
         <dl class="hero-metrics">
           <div>
             <dt>总耗时</dt>
-            <dd>{{ formatMs(record.latencyMs) }}</dd>
+            <dd [attr.title]="(record.latencyMs | metric: 'number') + ' ms'">
+              {{ record.latencyMs | metric: 'duration' }}
+            </dd>
             <small>端到端处理</small>
           </div>
           <div>
             <dt>首个正文 Token</dt>
-            <dd>{{ formatStageMs(record.firstTokenMs) }}</dd>
+            <dd [attr.title]="(record.firstTokenMs | metric: 'number') + ' ms'">
+              {{ record.firstTokenMs | metric: 'duration' }}
+            </dd>
             <small>流式首字延迟</small>
           </div>
           <div>
             <dt>Token 总量</dt>
-            <dd>{{ formatNumber(tokenTotal(record)) }}</dd>
+            <dd [attr.title]="tokenTotal(record) | metric: 'number'">
+              {{ tokenTotal(record) | metric: 'compact' }}
+            </dd>
             <small>输入与输出</small>
           </div>
           <div class="cost-metric">
             <dt>估算成本</dt>
-            <dd>{{ formatMoney(record.costAmount) }}</dd>
+            <dd>{{ record.costAmount | metric: 'currency' : 6 }}</dd>
             <small>{{ record.pricingMatched ? '已匹配官方定价' : '暂无定价' }}</small>
           </div>
         </dl>
@@ -200,11 +206,11 @@
                 <dl>
                   <div>
                     <dt>网关排队</dt>
-                    <dd>{{ formatStageMs(record.gatewayQueueMs) }}</dd>
+                    <dd>{{ record.gatewayQueueMs | metric: 'duration' }}</dd>
                   </div>
                   <div>
                     <dt>请求准备</dt>
-                    <dd>{{ formatStageMs(record.preparationMs) }}</dd>
+                    <dd>{{ record.preparationMs | metric: 'duration' }}</dd>
                   </div>
                 </dl>
               </section>
@@ -214,15 +220,15 @@
                 <dl>
                   <div>
                     <dt>DNS 解析</dt>
-                    <dd>{{ formatStageMs(record.dnsMs) }}</dd>
+                    <dd>{{ record.dnsMs | metric: 'duration' }}</dd>
                   </div>
                   <div>
                     <dt>连接建立</dt>
-                    <dd>{{ formatStageMs(record.connectMs) }}</dd>
+                    <dd>{{ record.connectMs | metric: 'duration' }}</dd>
                   </div>
                   <div>
                     <dt>TLS 握手</dt>
-                    <dd>{{ formatStageMs(record.tlsHandshakeMs) }}</dd>
+                    <dd>{{ record.tlsHandshakeMs | metric: 'duration' }}</dd>
                   </div>
                 </dl>
               </section>
@@ -232,19 +238,19 @@
                 <dl>
                   <div>
                     <dt>请求写完</dt>
-                    <dd>{{ formatStageMs(record.wroteRequestMs) }}</dd>
+                    <dd>{{ record.wroteRequestMs | metric: 'duration' }}</dd>
                   </div>
                   <div>
                     <dt>请求上传</dt>
-                    <dd>{{ formatStageMs(record.requestUploadMs) }}</dd>
+                    <dd>{{ record.requestUploadMs | metric: 'duration' }}</dd>
                   </div>
                   <div>
                     <dt>纯上游等待</dt>
-                    <dd>{{ formatStageMs(record.upstreamWaitMs) }}</dd>
+                    <dd>{{ record.upstreamWaitMs | metric: 'duration' }}</dd>
                   </div>
                   <div>
                     <dt>响应头到达</dt>
-                    <dd>{{ formatStageMs(record.upstreamHeaderMs) }}</dd>
+                    <dd>{{ record.upstreamHeaderMs | metric: 'duration' }}</dd>
                   </div>
                 </dl>
               </section>
@@ -254,11 +260,11 @@
                 <dl>
                   <div>
                     <dt>首个 SSE 事件</dt>
-                    <dd>{{ formatStageMs(record.firstEventMs) }}</dd>
+                    <dd>{{ record.firstEventMs | metric: 'duration' }}</dd>
                   </div>
                   <div>
                     <dt>首个正文 Token</dt>
-                    <dd>{{ formatStageMs(record.firstTokenMs) }}</dd>
+                    <dd>{{ record.firstTokenMs | metric: 'duration' }}</dd>
                   </div>
                 </dl>
               </section>
@@ -340,27 +346,35 @@
 
             <div class="token-total">
               <span>Token 总量</span>
-              <strong>{{ formatNumber(tokenTotal(record)) }}</strong>
+              <strong [attr.title]="tokenTotal(record) | metric: 'number'">
+                {{ tokenTotal(record) | metric: 'compact' }}
+              </strong>
             </div>
 
             <dl class="token-breakdown">
               <div>
                 <dt>普通输入</dt>
-                <dd>{{ formatNumber(normalInputTokens(record)) }}</dd>
+                <dd [attr.title]="normalInputTokens(record) | metric: 'number'">
+                  {{ normalInputTokens(record) | metric: 'compact' }}
+                </dd>
               </div>
               <div>
                 <dt>缓存输入</dt>
-                <dd>{{ formatNumber(record.cachedInputTokens) }}</dd>
+                <dd [attr.title]="record.cachedInputTokens | metric: 'number'">
+                  {{ record.cachedInputTokens | metric: 'compact' }}
+                </dd>
               </div>
               <div>
                 <dt>输出</dt>
-                <dd>{{ formatNumber(record.outputTokens) }}</dd>
+                <dd [attr.title]="record.outputTokens | metric: 'number'">
+                  {{ record.outputTokens | metric: 'compact' }}
+                </dd>
               </div>
             </dl>
 
             <div class="cost-highlight">
               <span>官方参考成本</span>
-              <strong>{{ formatMoney(record.costAmount) }}</strong>
+              <strong>{{ record.costAmount | metric: 'currency' : 6 }}</strong>
               <small>
                 来源：{{
                   record.pricingSource || '未匹配官方定价'

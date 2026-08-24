@@ -133,11 +133,15 @@
               <div class="gateway-usage-title">近 30 天网关用量</div>
               <div class="gateway-usage-grid">
                 <div class="gateway-usage-item">
-                  <strong>{{ formatCompactUsage(item.gatewayUsage?.requests) }}</strong>
+                  <strong [attr.title]="item.gatewayUsage?.requests | metric: 'number'">
+                    {{ item.gatewayUsage?.requests | metric: 'compact' }}
+                  </strong>
                   <span>次请求</span>
                 </div>
                 <div class="gateway-usage-item">
-                  <strong>{{ formatCompactUsage(item.gatewayUsage?.totalTokens) }}</strong>
+                  <strong [attr.title]="item.gatewayUsage?.totalTokens | metric: 'number'">
+                    {{ item.gatewayUsage?.totalTokens | metric: 'compact' }}
+                  </strong>
                   <span>Token</span>
                 </div>
                 <div
@@ -381,7 +385,9 @@
         </div>
         <div>
           <span>延迟</span>
-          <strong>{{ testResult.latencyMs ?? '-' }} ms</strong>
+          <strong [attr.title]="(testResult.latencyMs | metric: 'number') + ' ms'">
+            {{ testResult.latencyMs | metric: 'duration' }}
+          </strong>
         </div>
         <div>
           <span>上游状态</span>

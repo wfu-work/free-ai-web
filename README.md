@@ -6,7 +6,7 @@ FreeAI Web 是 FreeAiGo OAuth 账号池的管理界面。它只管理 ChatGPT/Co
 
 ## 当前功能
 
-- OAuth 账号 JSON 的本地结构校验和导入。
+- FreeAI OAuth 账号 JSON 与 sub2api-data v1 文件的本地识别和导入。
 - 账号启停、分组、优先级、权重和官方模型同步。
 - 敏感账号文件导出确认。
 - 从官方 Codex 接口获取模型清单。
@@ -19,7 +19,7 @@ FreeAI Web 是 FreeAiGo OAuth 账号池的管理界面。它只管理 ChatGPT/Co
 
 ## 账号导入
 
-在“账号池 → 导入账号”中选择 Codex/ChatGPT OAuth JSON。浏览器只做字段形状校验，文件随后发送给后端加密保存。
+在“账号池 → 导入账号”中选择 Codex/ChatGPT OAuth JSON 或 sub2api-data v1 文件。浏览器只做字段形状校验，文件随后发送给后端逐个校验并加密保存。sub2api 文件最多包含 100 个账号，单条失败不会阻止其他有效账号入池。
 
 文件至少应包含：
 
@@ -62,6 +62,7 @@ FreeAI Web 是 FreeAiGo OAuth 账号池的管理界面。它只管理 ChatGPT/Co
 
 ```text
 POST /api/accounts/import
+POST /api/accounts/import-file
 GET  /api/accounts/list
 GET  /api/accounts/:guid/export
 POST /api/accounts/:guid/refresh-usage

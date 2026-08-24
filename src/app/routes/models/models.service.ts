@@ -34,6 +34,10 @@ export class ModelsService {
     return this.http.put<ModelCatalogItem>(`/models/${guid}`, payload);
   }
 
+  delete(guid: string): Observable<boolean> {
+    return this.http.delete<boolean>(`/models/${guid}`);
+  }
+
   sync(payload: ModelSyncPayload = {}): Observable<ModelSyncResult> {
     return this.http.post<ModelSyncResult>('/models/sync', payload);
   }

@@ -51,7 +51,9 @@
     <article class="usage-summary-card">
       <div>
         <span>总使用 Token</span>
-        <strong>{{ formatTokens(stats.totalTokens) }}</strong>
+        <strong [attr.title]="stats.totalTokens | metric: 'number'">
+          {{ stats.totalTokens | metric: 'compact' }}
+        </strong>
         <p>按全部API 密钥累计</p>
       </div>
       <i nz-icon nzType="thunderbolt"></i>
@@ -59,7 +61,7 @@
     <article class="usage-summary-card">
       <div>
         <span>总费用</span>
-        <strong>{{ formatAmount(stats.totalAmount) }}</strong>
+        <strong>{{ stats.totalAmount | metric: 'currency' }}</strong>
         <p>按全部API 密钥累计</p>
       </div>
       <i nz-icon nzType="dollar"></i>
@@ -163,9 +165,11 @@
       </ng-template>
 
       <ng-template st-row="usageRender" let-item>
-        <div class="usage-main">{{ formatTokens(item.usedTokens) }}</div>
+        <div class="usage-main" [attr.title]="item.usedTokens | metric: 'number'">
+          {{ item.usedTokens | metric: 'compact' }}
+        </div>
         <div class="usage-sub">
-          已花费 {{ formatAmount(item.usedAmount) }} · {{ formatTokenLimitText(item) }}
+          已花费 {{ item.usedAmount | metric: 'currency' }} · {{ formatTokenLimitText(item) }}
         </div>
       </ng-template>
 

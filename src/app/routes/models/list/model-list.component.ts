@@ -94,6 +94,12 @@ export class ModelListComponent implements OnInit {
           click: (item) => this.setEnabled(item.guid, false),
           iif: (item) => item.enabled,
         },
+        {
+          text: '删除',
+          className: 'text-error',
+          click: (item) => this.delete(item),
+          iif: (item) => item.availableAccountCount <= 0,
+        },
       ],
     },
   ];
@@ -204,6 +210,27 @@ export class ModelListComponent implements OnInit {
           request.subscribe({
             next: () => {
               this.message.success(enabled ? '模型已启用' : '模型已停用');
+              this.getData();
+              resolve();
+            },
+            error: reject,
+          });
+        }),
+    });
+  }
+
+  protected delete(item: ModelCatalogItem): void {
+    const modelName = item.displayName || item.remoteModelId;
+    this.modal.confirm({
+      nzTitle: '确定删除该模型目录？',
+      nzContent: `“${modelName}”当前没有可用账号，删除后会清理模型策略和账号关联记录；后续同步仍可重新发现该模型。`,
+      nzOkDanger: true,
+      nzOnOk: () =>
+        new Promise<void>((resolve, reject) => {
+          this.modelsService.delete(item.guid).subscribe({
+            next: () => {
+              this.message.success('模型目录已删除');
+              if (this.data.length === 1 && this.q.page > 1) this.q.page -= 1;
               this.getData();
               resolve();
             },

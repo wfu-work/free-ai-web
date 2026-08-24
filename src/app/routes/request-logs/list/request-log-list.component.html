@@ -17,22 +17,30 @@
   </div>
 
   <div class="metric-grid">
-    <app-metric-card label="请求总数" [value]="stats.total || 0" description="全部网关调用" />
+    <app-metric-card
+      label="请求总数"
+      [value]="stats.total | metric: 'compact'"
+      [valueTitle]="stats.total | metric: 'number'"
+      description="全部网关调用"
+    />
     <app-metric-card
       label="成功请求"
-      [value]="stats.success || 0"
+      [value]="stats.success | metric: 'compact'"
+      [valueTitle]="stats.success | metric: 'number'"
       [description]="'成功率 ' + successRate"
       tone="success"
     />
     <app-metric-card
       label="服务端失败"
-      [value]="stats.failures || 0"
+      [value]="stats.failures | metric: 'compact'"
+      [valueTitle]="stats.failures | metric: 'number'"
       description="上游或网关失败"
       tone="danger"
     />
     <app-metric-card
       label="客户端断开"
-      [value]="stats.clientDisconnected || 0"
+      [value]="stats.clientDisconnected | metric: 'compact'"
+      [valueTitle]="stats.clientDisconnected | metric: 'number'"
       description="调用方提前取消"
       tone="warning"
     />
@@ -48,7 +56,7 @@
     <div class="list-toolbar">
       <div class="list-summary">
         <h2>请求记录</h2>
-        <span>共 {{ totalCount }} 条记录</span>
+        <span>共 {{ totalCount | metric: 'number' }} 条记录</span>
       </div>
       <div class="filter-controls">
         <nz-select
@@ -276,12 +284,14 @@
       </ng-template>
 
       <ng-template st-row="tokenRender" let-item>
-        <div>总 {{ formatNumber(tokenTotal(item)) }}</div>
+        <div [attr.title]="tokenTotal(item) | metric: 'number'">
+          总 {{ tokenTotal(item) | metric: 'compact' }}
+        </div>
         <span class="muted"
-          >输入 {{ formatNumber(item.inputTokens) }} · 输出
-          {{ formatNumber(item.outputTokens) }}</span
+          >输入 {{ item.inputTokens | metric: 'compact' }} · 输出
+          {{ item.outputTokens | metric: 'compact' }}</span
         >
-        <span class="muted">缓存 {{ formatNumber(item.cachedInputTokens) }}</span>
+        <span class="muted">缓存 {{ item.cachedInputTokens | metric: 'compact' }}</span>
         <span class="muted">{{
           item.pricingMatched ? formatMoney(item.costAmount) : '暂无匹配定价'
         }}</span>

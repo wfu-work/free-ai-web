@@ -37,40 +37,55 @@ interface NavigationGroup {
 
 const NAVIGATION_GROUPS: NavigationGroup[] = [
   {
-    label: '概览',
-    items: [{ key: 'dashboard', title: '工作台', icon: 'dashboard', link: '/dashboard' }],
+    label: '运行概览',
+    items: [{ key: 'dashboard', title: '工作台', icon: 'control', link: '/dashboard' }],
   },
   {
-    label: '资源',
+    label: '资源管理',
     items: [
-      { key: 'accounts', title: '官方账号', icon: 'team', link: '/accounts/list' },
-      { key: 'account-groups', title: '账号分组', icon: 'cluster', link: '/accounts/groups' },
-      { key: 'models', title: '模型目录', icon: 'api', link: '/models/list' },
+      { key: 'accounts', title: '官方账号', icon: 'idcard', link: '/accounts/list' },
+      {
+        key: 'account-groups',
+        title: '账号分组',
+        icon: 'partition',
+        link: '/accounts/groups',
+      },
+      { key: 'models', title: '模型目录', icon: 'deployment-unit', link: '/models/list' },
     ],
   },
   {
-    label: '服务',
+    label: '接入服务',
     items: [
       { key: 'access-keys', title: 'API 密钥', icon: 'key', link: '/access/keys' },
       { key: 'access-guide', title: '接入指南', icon: 'link', link: '/access/guide' },
     ],
   },
   {
-    label: '观测',
+    label: '运行观测',
     items: [
-      { key: 'request-logs', title: '调用记录', icon: 'history', link: '/request-logs/list' },
-      { key: 'usage', title: '用量分析', icon: 'bar-chart', link: '/usage' },
+      {
+        key: 'request-logs',
+        title: '调用记录',
+        icon: 'file-search',
+        link: '/request-logs/list',
+      },
+      { key: 'usage', title: '用量分析', icon: 'line-chart', link: '/usage' },
       { key: 'tasks', title: '任务中心', icon: 'schedule', link: '/ops/tasks' },
     ],
   },
   {
-    label: '系统',
+    label: '系统管理',
     items: [
-      { key: 'gateway-settings', title: '网关设置', icon: 'global', link: '/settings/gateway' },
+      {
+        key: 'gateway-settings',
+        title: '网关设置',
+        icon: 'gateway',
+        link: '/settings/gateway',
+      },
       {
         key: 'security-settings',
         title: '安全设置',
-        icon: 'safety-certificate',
+        icon: 'security-scan',
         link: '/settings/security',
       },
       { key: 'data-settings', title: '数据管理', icon: 'database', link: '/settings/retention' },
@@ -124,6 +139,7 @@ export function resolveNavigationKey(url: string): NavigationKey {
                 [title]="item.title"
                 [nzSelected]="activeKey === item.key"
                 [routerLink]="item.link"
+                [attr.aria-current]="activeKey === item.key ? 'page' : null"
                 (click)="navigate.emit()"
               >
                 <i nz-icon [nzType]="item.icon"></i>
@@ -138,6 +154,9 @@ export function resolveNavigationKey(url: string): NavigationKey {
   styles: [
     `
       :host {
+        --menu-item-height: 42px;
+        --menu-item-radius: 10px;
+
         display: flex;
         flex: 1;
         min-height: 0;
@@ -155,26 +174,27 @@ export function resolveNavigationKey(url: string): NavigationKey {
         display: flex;
         flex: 0 0 auto;
         flex-direction: column;
-        gap: 8px;
+        gap: 7px;
         align-items: flex-start;
-        min-height: 78px;
-        padding: 0 8px 12px;
+        min-height: 86px;
+        padding: 2px 10px 17px;
+        border-bottom: 1px solid rgb(var(--nm-primary-rgb) / 9%);
         color: var(--nm-text);
         text-decoration: none;
       }
 
       .brand-heading {
         display: flex;
-        gap: 8px;
+        gap: 10px;
         align-items: center;
-        min-height: 50px;
+        min-height: 45px;
       }
 
       .brand-logo {
-        width: 38px;
-        height: 38px;
+        width: 36px;
+        height: 36px;
         object-fit: contain;
-        transition: transform 0.2s ease;
+        transition: transform 180ms cubic-bezier(0.22, 1, 0.36, 1);
       }
 
       .brand:hover .brand-logo {
@@ -183,20 +203,21 @@ export function resolveNavigationKey(url: string): NavigationKey {
 
       .brand-name {
         overflow: hidden;
-        font-size: 21px;
-        font-weight: 720;
-        letter-spacing: 0;
+        color: var(--nm-text);
+        font-size: 1.25rem;
+        font-weight: 700;
+        line-height: 1.1;
+        letter-spacing: -0.025em;
         white-space: nowrap;
       }
 
       .brand-description {
         max-width: 100%;
-        padding-inline: 2px;
         color: var(--nm-text-secondary);
-        font-size: 11px;
+        font-size: 0.6875rem;
         font-weight: 500;
-        line-height: 1.55;
-        letter-spacing: 0.01em;
+        line-height: 1.45;
+        letter-spacing: 0.015em;
       }
 
       .menu-scroll {
@@ -205,7 +226,7 @@ export function resolveNavigationKey(url: string): NavigationKey {
         overscroll-behavior: contain;
         flex: 1;
         min-height: 0;
-        padding-top: 15px;
+        padding: 10px 0 12px;
         -webkit-overflow-scrolling: touch;
         -ms-overflow-style: none;
       }
@@ -221,13 +242,24 @@ export function resolveNavigationKey(url: string): NavigationKey {
       }
 
       .menu-section-label {
-        height: 23px;
-        padding: 5px 12px 2px;
+        display: block;
+        height: auto;
+        margin: 0;
+        padding: 10px 14px 6px 8px;
         color: var(--nm-text-secondary);
-        font-size: 11px;
-        font-weight: 700;
-        line-height: 16px;
-        letter-spacing: 0;
+        font-size: 0.6875rem;
+        font-weight: 600;
+        line-height: 1.2;
+        letter-spacing: 0.075em;
+        opacity: 0.82;
+      }
+
+      .menu-section-label:first-child {
+        padding-top: 5px;
+      }
+
+      .menu-section-label:not(:first-child) {
+        margin-top: 4px;
       }
 
       :host ::ng-deep {
@@ -239,18 +271,22 @@ export function resolveNavigationKey(url: string): NavigationKey {
 
         .menu-list .anticon {
           display: inline-flex;
+          flex: 0 0 18px;
           align-items: center;
           justify-content: center;
-          width: 16px;
-          height: 16px;
+          width: 18px;
+          height: 18px;
+          margin-inline-end: 0 !important;
           color: var(--nm-text-secondary);
-          font-size: 16px;
-          transition: color 0.2s ease;
+          font-size: 17px;
+          transition:
+            color 180ms ease,
+            transform 180ms cubic-bezier(0.22, 1, 0.36, 1);
         }
 
         .ant-menu {
           color: var(--nm-text-secondary);
-          font-size: 14px;
+          font-size: 0.875rem;
         }
 
         .ant-menu-inline {
@@ -260,38 +296,80 @@ export function resolveNavigationKey(url: string): NavigationKey {
         .ant-menu-inline .ant-menu-item {
           box-sizing: border-box;
           display: flex;
+          gap: 11px;
           align-items: center;
           width: auto;
-          height: 40px;
-          margin: 1px 3px;
-          padding-inline: 12px !important;
-          border-radius: 7px;
+          height: var(--menu-item-height);
+          margin: 1px 4px;
+          padding-inline: 13px !important;
+          border: 1px solid transparent;
+          border-radius: var(--menu-item-radius);
           color: var(--nm-text-secondary);
-          font-size: 14px;
-          font-weight: 620;
-          line-height: 40px;
+          font-size: 0.875rem;
+          font-weight: 500;
+          line-height: var(--menu-item-height);
+          letter-spacing: 0.005em;
           transition:
-            background-color 0.2s ease,
-            color 0.2s ease;
+            border-color 180ms ease,
+            background-color 180ms ease,
+            color 180ms ease,
+            transform 180ms cubic-bezier(0.22, 1, 0.36, 1),
+            box-shadow 180ms ease;
         }
 
         .ant-menu-inline .ant-menu-item::after {
           display: none;
         }
 
+        .ant-menu-inline .ant-menu-item .ant-menu-title-content {
+          overflow: hidden;
+          flex: 1;
+          margin-inline-start: 0;
+          text-overflow: ellipsis;
+        }
+
         .ant-menu-inline .ant-menu-item:hover {
           color: var(--nm-text);
-          background: rgb(var(--nm-primary-rgb) / 6%);
+          background: rgb(var(--nm-primary-rgb) / 5%);
+          transform: translateX(2px);
+        }
+
+        .ant-menu-inline .ant-menu-item:hover .anticon {
+          color: var(--nm-primary);
+        }
+
+        .ant-menu-inline .ant-menu-item:focus-visible {
+          outline: 2px solid rgb(var(--nm-primary-rgb) / 32%);
+          outline-offset: 1px;
         }
 
         .ant-menu-inline .ant-menu-item-selected {
-          color: #fff !important;
-          background: var(--nm-primary) !important;
-          box-shadow: 0 6px 14px rgb(var(--nm-primary-rgb) / 16%);
+          border-color: rgb(var(--nm-primary-rgb) / 13%);
+          color: color-mix(in srgb, var(--nm-primary) 82%, var(--nm-text)) !important;
+          background: var(--nm-primary-soft) !important;
+          box-shadow:
+            inset 0 1px 0 rgb(255 255 255 / 32%),
+            0 5px 14px rgb(var(--nm-primary-rgb) / 8%);
+          font-weight: 600;
+          transform: none;
+        }
+
+        .ant-menu-inline .ant-menu-item-selected::before {
+          position: absolute;
+          top: 50%;
+          right: 12px;
+          width: 5px;
+          height: 5px;
+          border-radius: 50%;
+          background: var(--nm-primary);
+          box-shadow: 0 0 0 4px rgb(var(--nm-primary-rgb) / 9%);
+          content: '';
+          transform: translateY(-50%);
         }
 
         .ant-menu-inline .ant-menu-item-selected .anticon {
-          color: #fff !important;
+          color: var(--nm-primary) !important;
+          transform: scale(1.04);
         }
       }
 
@@ -299,13 +377,13 @@ export function resolveNavigationKey(url: string): NavigationKey {
         flex-direction: row;
         justify-content: center;
         align-items: center;
-        min-height: 50px;
-        padding-inline: 0;
+        min-height: 58px;
+        padding: 0 0 14px;
       }
 
       :host-context(.app-sider.ant-layout-sider-collapsed) .brand-logo {
-        width: 38px;
-        height: 38px;
+        width: 34px;
+        height: 34px;
       }
 
       :host-context(.app-sider.ant-layout-sider-collapsed) .brand-name,
@@ -315,22 +393,23 @@ export function resolveNavigationKey(url: string): NavigationKey {
       }
 
       :host-context(.app-sider.ant-layout-sider-collapsed) .menu-scroll {
-        padding-top: 8px;
+        padding-top: 10px;
       }
 
       :host-context(.app-sider.ant-layout-sider-collapsed) ::ng-deep {
         .menu-list {
-          width: 48px;
+          width: 50px;
           margin-inline: auto;
         }
 
         .ant-menu-inline .ant-menu-item {
           justify-content: center;
-          width: 48px;
+          width: 46px;
           height: 44px;
           margin: 2px 0;
           padding-inline: 0 !important;
-          border-radius: 8px;
+          border-radius: 10px;
+          transform: none;
         }
 
         .ant-menu-inline .ant-menu-item .anticon {
@@ -347,6 +426,23 @@ export function resolveNavigationKey(url: string): NavigationKey {
 
         .ant-menu-inline .ant-menu-item .ant-menu-title-content > span:not(.anticon) {
           display: none !important;
+        }
+
+        .ant-menu-inline .ant-menu-item-selected::before {
+          right: 5px;
+          width: 4px;
+          height: 4px;
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        .brand-logo {
+          transition: none;
+        }
+
+        :host ::ng-deep .ant-menu-inline .ant-menu-item,
+        :host ::ng-deep .menu-list .anticon {
+          transition: none;
         }
       }
     `,

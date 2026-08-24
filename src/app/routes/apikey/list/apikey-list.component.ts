@@ -283,18 +283,6 @@ export class PlatformKeyListComponent implements OnInit {
     return normalized.length > 1 ? normalized.replace(/\/+$/, '') : '/v1';
   }
 
-  protected formatTokens(value?: number): string {
-    const tokens = Number(value || 0);
-    if (tokens >= 1000000000) return `${(tokens / 1000000000).toFixed(2)}B`;
-    if (tokens >= 1000000) return `${(tokens / 1000000).toFixed(2)}M`;
-    if (tokens >= 1000) return `${(tokens / 1000).toFixed(2)}K`;
-    return tokens.toFixed(2);
-  }
-
-  protected formatAmount(value?: number): string {
-    return `$${Number(value || 0).toFixed(2)}`;
-  }
-
   protected formatTokenLimitText(item: PlatformKey): string {
     return item.totalTokenLimit && item.totalTokenLimit > 0
       ? `${this.formatTokenLimit(item)}`

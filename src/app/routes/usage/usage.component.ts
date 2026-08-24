@@ -13,8 +13,8 @@ import {
   TitleLabelComponent,
   TokenTrendChartComponent,
   TokenTrendPoint,
-  formatCompactMetric,
   formatMetricDuration,
+  formatMetricNumber,
 } from '@shared';
 import { NzMessageService } from 'ng-zorro-antd/message';
 import { finalize } from 'rxjs';
@@ -162,12 +162,12 @@ export class UsageComponent implements OnInit {
       },
       {
         title: '失败压力',
-        text: `${this.failurePressureLabel}，失败 ${this.formatNumber(this.summary.failedRequests)} 次，失败率 ${this.failureRate}。`,
+        text: `${this.failurePressureLabel}，失败 ${formatMetricNumber(this.summary.failedRequests)} 次，失败率 ${this.failureRate}。`,
         tone: this.failurePercent <= 5 ? 'good' : this.failurePercent <= 15 ? 'warn' : 'bad',
       },
       {
         title: '延迟表现',
-        text: `平均延迟 ${this.formatMs(this.summary.avgLatencyMs)}，当前判断为“${this.latencyLabel}”。`,
+        text: `平均延迟 ${formatMetricDuration(this.summary.avgLatencyMs)}，当前判断为“${this.latencyLabel}”。`,
         tone:
           Number(this.summary.avgLatencyMs || 0) <= 5000
             ? 'good'
@@ -223,22 +223,6 @@ export class UsageComponent implements OnInit {
         data: bucketStarts.map((bucketStart) => requestsByBucket.get(bucketStart) || 0),
       };
     });
-  }
-
-  protected formatNumber(value?: number): string {
-    return Number(value || 0).toLocaleString('zh-CN');
-  }
-
-  protected formatTokens(value?: number): string {
-    return formatCompactMetric(value);
-  }
-
-  protected formatCost(value?: number): string {
-    return `$${Number(value || 0).toFixed(4)}`;
-  }
-
-  protected formatMs(value?: number): string {
-    return formatMetricDuration(value);
   }
 
   protected formatDate(value?: number): string {
