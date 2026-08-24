@@ -8,11 +8,16 @@
   min-width: 0;
 }
 
+:host ::ng-deep .ant-spin-container {
+  display: grid;
+  gap: 16px;
+}
+
 .header-row {
   display: flex;
+  gap: 16px;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 16px;
 }
 
 .header-actions {
@@ -54,33 +59,38 @@
   padding: 16px 18px;
 }
 
+.status-card-posture {
+  border-color: rgb(var(--nm-primary-rgb) / 18%);
+  background: color-mix(in srgb, var(--nm-primary) 6%, var(--nm-surface-glass));
+}
+
 .status-card span,
 .detail-grid span {
   display: block;
-  color: var(--nm-text-secondary);
   font-size: 13px;
   font-weight: 700;
+  color: var(--nm-text-secondary);
 }
 
 .status-card strong,
 .detail-grid strong {
+  overflow: hidden;
   display: block;
   margin-top: 6px;
-  overflow: hidden;
-  color: var(--nm-text);
   font-size: 20px;
   font-weight: 850;
   line-height: 1.25;
+  color: var(--nm-text);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .status-card small {
+  overflow: hidden;
   display: block;
   margin-top: 8px;
-  overflow: hidden;
-  color: var(--nm-text-secondary);
   font-size: 12px;
+  color: var(--nm-text-secondary);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -98,6 +108,23 @@
   color: var(--nm-danger) !important;
 }
 
+.metric-neutral strong,
+.posture-unknown strong {
+  color: var(--nm-text-secondary);
+}
+
+.posture-success strong {
+  color: var(--nm-success);
+}
+
+.posture-warning strong {
+  color: var(--nm-warning);
+}
+
+.posture-danger strong {
+  color: var(--nm-danger);
+}
+
 .panel-card {
   overflow: hidden;
 }
@@ -113,9 +140,40 @@
 }
 
 .panel-title {
-  color: var(--nm-text);
   font-size: 16px;
   font-weight: 850;
+  color: var(--nm-text);
+}
+
+.panel-title-row {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.panel-status {
+  flex: 0 0 auto;
+  padding: 3px 9px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--nm-text-secondary);
+  background: var(--nm-surface-muted);
+}
+
+.status-ok {
+  color: var(--nm-success);
+  background: var(--nm-success-bg);
+}
+
+.status-danger {
+  color: var(--nm-danger);
+  background: var(--nm-danger-bg);
+}
+
+.status-unknown {
+  color: var(--nm-text-secondary);
 }
 
 .detail-grid div {
@@ -148,9 +206,9 @@
   gap: 9px;
   margin: 0;
   padding-left: 18px;
-  color: var(--nm-text-secondary);
   font-size: 14px;
   line-height: 1.62;
+  color: var(--nm-text-secondary);
 }
 
 .check-list {
@@ -159,6 +217,9 @@
 }
 
 .check-item {
+  display: grid;
+  grid-template-columns: 36px minmax(0, 1fr);
+  gap: 12px;
   min-width: 0;
   padding: 12px 14px;
   border: 1px solid var(--nm-border);
@@ -166,34 +227,55 @@
   background: var(--nm-surface-muted);
 }
 
+.check-icon {
+  display: inline-grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  color: var(--nm-text-secondary);
+  background: var(--nm-surface-raised);
+}
+
+.check-content {
+  min-width: 0;
+}
+
 .check-head {
   display: flex;
+  gap: 12px;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
 }
 
 .check-head strong {
-  color: var(--nm-text);
   font-size: 14px;
   font-weight: 800;
+  color: var(--nm-text);
 }
 
 .check-head span {
   flex: 0 0 auto;
   padding: 2px 8px;
   border-radius: 999px;
-  color: var(--nm-text-secondary);
   font-size: 12px;
   font-weight: 800;
+  color: var(--nm-text-secondary);
   background: var(--nm-surface-raised);
 }
 
 .check-item p {
   margin: 6px 0 0;
-  color: var(--nm-text-secondary);
   font-size: 13px;
   line-height: 1.55;
+  color: var(--nm-text-secondary);
+}
+
+.check-content > a {
+  height: auto;
+  margin-top: 7px;
+  padding: 0;
+  font-weight: 700;
 }
 
 .check-ok {
@@ -206,12 +288,17 @@
   background: var(--nm-success-bg);
 }
 
-.check-warn {
+.check-ok .check-icon {
+  color: var(--nm-success);
+}
+
+.check-warning {
   border-color: var(--nm-warning-border);
   background: var(--nm-warning-bg);
 }
 
-.check-warn .check-head span {
+.check-warning .check-head span,
+.check-warning .check-icon {
   color: var(--nm-warning);
   background: var(--nm-warning-bg);
 }
@@ -224,6 +311,14 @@
 .check-danger .check-head span {
   color: var(--nm-danger);
   background: var(--nm-danger-bg);
+}
+
+.check-danger .check-icon {
+  color: var(--nm-danger);
+}
+
+.check-unknown {
+  border-style: dashed;
 }
 
 @media (max-width: 1200px) {

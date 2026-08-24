@@ -102,9 +102,7 @@
                   <nz-option [nzValue]="strategy.value" [nzLabel]="strategy.label" />
                 }
               </nz-select>
-              <div class="field-extra">
-                顺序优先按账号优先级选择；自适应均衡以权重为基础，并结合近期首响、过载率和当前并发动态分流。
-              </div>
+              <div class="field-extra">{{ strategyDescription }}</div>
             </se>
 
             <se label="上游 Originator">

@@ -1,5 +1,6 @@
 import { Routes } from '@angular/router';
 
+import { AccountDetailComponent } from './detail/account-detail.component';
 import { AccountEditComponent } from './edit/account-edit.component';
 import { AccountGroupsComponent } from './groups/account-groups.component';
 import { AccountListComponent } from './list/account-list.component';
@@ -10,6 +11,11 @@ export const routes: Routes = [
     path: 'list',
     component: AccountListComponent,
     data: { title: '官方账号' },
+  },
+  {
+    path: 'detail/:guid',
+    component: AccountDetailComponent,
+    data: { title: '账号详情' },
   },
   {
     path: 'edit',

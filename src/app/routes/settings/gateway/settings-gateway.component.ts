@@ -33,7 +33,7 @@ const STORAGE_KEY = 'freeai.gateway.config';
 
 const DEFAULT_GATEWAY_CONFIG: GatewayConfig = {
   listenAddress: '127.0.0.1',
-  accountSelectionStrategy: 'ordered',
+  accountSelectionStrategy: 'round_robin',
   originator: 'codex_cli_rs',
   residency: '',
   upstreamProxyEnabled: false,
@@ -71,8 +71,46 @@ export class SettingsGatewayComponent implements OnInit {
   ];
 
   protected readonly strategyOptions = [
-    { label: '顺序优先 (Ordered)', value: 'ordered' },
-    { label: '自适应均衡 (Adaptive)', value: 'round_robin' },
+    {
+      label: '顺序优先 (Ordered)',
+      value: 'ordered',
+      description: '始终优先使用排序靠前的可用账号；失败重试时再切换到后续账号。',
+    },
+    {
+      label: '自适应均衡 (Adaptive)',
+      value: 'round_robin',
+      description: '推荐。结合账号权重、近期首响、过载率和当前并发动态分流。',
+    },
+    {
+      label: '纯轮询 (Round Robin)',
+      value: 'equal_round_robin',
+      description: '忽略账号权重，按顺序平均轮换所有可用账号。',
+    },
+    {
+      label: '静态权重轮询 (Weighted)',
+      value: 'weighted',
+      description: '严格按照账号权重比例分流，不根据实时性能自动调整。',
+    },
+    {
+      label: '额度优先 (Quota First)',
+      value: 'quota_first',
+      description: '优先选择最紧张额度窗口剩余比例更高的账号。',
+    },
+    {
+      label: '会话亲和 (Sticky)',
+      value: 'session_affinity',
+      description: '根据会话标识稳定绑定账号；账号不可用或重试时自动切换。',
+    },
+    {
+      label: '配额感知自适应 (Quota Adaptive)',
+      value: 'quota_adaptive',
+      description: '在自适应分流基础上结合额度剩余比例和重置时间，降低额度紧张账号的流量。',
+    },
+    {
+      label: '最久未用 (Least Recently Used)',
+      value: 'least_recently_used',
+      description: '优先选择最久没有被调用的账号，使账号使用更均匀。',
+    },
   ];
 
   protected readonly residencyOptions = [
@@ -176,6 +214,11 @@ export class SettingsGatewayComponent implements OnInit {
     return this.strategyOptions.find((item) => item.value === value)?.label || '-';
   }
 
+  protected get strategyDescription(): string {
+    const value = this.form.controls.accountSelectionStrategy.value;
+    return this.strategyOptions.find((item) => item.value === value)?.description || '';
+  }
+
   protected get upstreamModeLabel(): string {
     return this.form.controls.upstreamProxyEnabled.value ? '代理转发' : '直连上游';
   }
@@ -232,6 +275,9 @@ export class SettingsGatewayComponent implements OnInit {
     return {
       ...value,
       listenAddress: this.normalizeListenAddress(value.listenAddress),
+      accountSelectionStrategy: this.normalizeAccountSelectionStrategy(
+        value.accountSelectionStrategy,
+      ),
       originator: value.originator.trim() || DEFAULT_GATEWAY_CONFIG.originator,
       upstreamProxyEnabled: Boolean(value.upstreamProxyEnabled),
       upstreamProxyUrl: value.upstreamProxyUrl.trim(),
@@ -260,6 +306,12 @@ export class SettingsGatewayComponent implements OnInit {
 
   private normalizeListenAddress(value: string): string {
     return value === '0.0.0.0' ? '0.0.0.0' : '127.0.0.1';
+  }
+
+  private normalizeAccountSelectionStrategy(value: string): string {
+    return this.strategyOptions.some((item) => item.value === value)
+      ? value
+      : DEFAULT_GATEWAY_CONFIG.accountSelectionStrategy;
   }
 
   private get gatewayPort(): string {

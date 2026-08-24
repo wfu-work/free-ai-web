@@ -19,7 +19,6 @@ export type NavigationKey =
   | 'usage'
   | 'tasks'
   | 'gateway-settings'
-  | 'security-settings'
   | 'data-settings'
   | '';
 
@@ -56,8 +55,13 @@ const NAVIGATION_GROUPS: NavigationGroup[] = [
   {
     label: '接入服务',
     items: [
-      { key: 'access-keys', title: 'API 密钥', icon: 'key', link: '/access/keys' },
-      { key: 'access-guide', title: '接入指南', icon: 'link', link: '/access/guide' },
+      {
+        key: 'access-keys',
+        title: 'API 密钥',
+        icon: 'safety-certificate',
+        link: '/access/keys',
+      },
+      { key: 'access-guide', title: '接入指南', icon: 'read', link: '/access/guide' },
     ],
   },
   {
@@ -82,12 +86,6 @@ const NAVIGATION_GROUPS: NavigationGroup[] = [
         icon: 'gateway',
         link: '/settings/gateway',
       },
-      {
-        key: 'security-settings',
-        title: '安全设置',
-        icon: 'security-scan',
-        link: '/settings/security',
-      },
       { key: 'data-settings', title: '数据管理', icon: 'database', link: '/settings/retention' },
     ],
   },
@@ -106,7 +104,6 @@ export function resolveNavigationKey(url: string): NavigationKey {
   if (path.startsWith('/usage')) return 'usage';
   if (path.startsWith('/ops/tasks')) return 'tasks';
   if (path.startsWith('/settings/gateway') || path === '/settings') return 'gateway-settings';
-  if (path.startsWith('/settings/security')) return 'security-settings';
   if (path.startsWith('/settings/retention')) return 'data-settings';
   return '';
 }

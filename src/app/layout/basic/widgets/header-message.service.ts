@@ -158,7 +158,7 @@ export class HeaderMessageService {
         this.createMessage(
           'ops:master-key-not-loaded',
           '主密钥未加载',
-          source.masterKey.error || 'API 密钥解密依赖主密钥，请在系统设置中检查主密钥文件状态。',
+          source.masterKey.error || 'API 密钥解密依赖主密钥，请在安全诊断中检查主密钥文件状态。',
           source.masterKey.updatedAt || now,
           'warning',
           '/settings/security',

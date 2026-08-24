@@ -39,7 +39,7 @@ export interface Account {
   cooldownUntil: number;
   remark: string;
   quotas?: AccountQuota[];
-  resetCredits?: AccountResetCreditSummary;
+  resetCredits?: AccountResetCreditsResult;
   gatewayUsage?: AccountGatewayUsage;
 }
 
@@ -58,6 +58,8 @@ export interface AccountGatewayUsage {
 export interface AccountResetCreditSummary {
   availableCount: number;
   applicableAvailableCount?: number | null;
+  expiresAt?: number;
+  syncedAt?: number;
 }
 
 export interface AccountResetCredit {
@@ -82,7 +84,7 @@ export interface ConsumeAccountResetCreditResult {
   outcome: 'reset' | 'alreadyRedeemed' | 'nothingToReset' | 'noCredit' | string;
   creditId?: string;
   idempotencyKey: string;
-  resetCredits: AccountResetCreditsResult;
+  resetCredits?: AccountResetCreditsResult;
   usage?: AccountUsageRefreshResult;
   refreshWarning?: string;
 }

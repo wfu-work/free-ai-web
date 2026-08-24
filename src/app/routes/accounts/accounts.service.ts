@@ -25,6 +25,7 @@ import {
   ConsumeAccountResetCreditResult,
   ReorderAccountItem,
 } from './account.model';
+import { UsageSummary } from '../usage/usage.model';
 
 @Injectable({ providedIn: 'root' })
 export class AccountsService {
@@ -44,6 +45,10 @@ export class AccountsService {
 
   get(guid: string): Observable<Account> {
     return this.http.get<Account>(`/accounts/${guid}`);
+  }
+
+  usage(guid: string, days = 90): Observable<UsageSummary> {
+    return this.http.get<UsageSummary>(`/accounts/${guid}/usage`, { params: { days } });
   }
 
   importAccount(payload: AccountImportPayload): Observable<Account> {

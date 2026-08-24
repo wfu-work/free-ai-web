@@ -224,26 +224,70 @@
                     <span class="empty-value">暂无 7 天官方额度</span>
                   }
                   <div
-                    class="reset-credit-row"
-                    [class.reset-credit-ready]="canInspectResetCredits(item)"
+                    class="reset-credit-panel quota-item"
+                    [class.reset-credit-ready]="canConsumeResetCredit(item)"
                   >
-                    <div class="reset-credit-copy">
-                      <span class="reset-credit-label">
-                        <i nz-icon nzType="thunderbolt"></i>
-                        额度重置券
-                      </span>
-                      <small>{{ resetCreditHint(item) }}</small>
+                    <div class="reset-credit-row">
+                      <div class="reset-credit-copy">
+                        <span class="reset-credit-label">
+                          <i nz-icon nzType="thunderbolt"></i>
+                          额度重置券
+                        </span>
+                        <small>{{ resetCreditHint(item) }}</small>
+                      </div>
+                      <button
+                        nz-button
+                        nzSize="small"
+                        nzType="default"
+                        [disabled]="!canUseResetCreditAction(item)"
+                        [nzLoading]="resetCreditLoadingGuid === item.guid"
+                        (click)="handleResetCreditAction(item)"
+                      >
+                        {{ resetCreditActionText(item) }}
+                      </button>
                     </div>
-                    <button
-                      nz-button
-                      nzSize="small"
-                      nzType="default"
-                      [disabled]="!canInspectResetCredits(item)"
-                      [nzLoading]="resetCreditLoadingGuid === item.guid"
-                      (click)="inspectResetCredits(item)"
-                    >
-                      {{ resetCreditActionText(item) }}
-                    </button>
+
+                    @if (hasQueriedResetCredits(item) && item.resetCredits; as resetCredits) {
+                      <div class="reset-credit-summary">
+                        <span class="reset-credit-count">
+                          可用 <strong>{{ resetCredits.availableCount }}</strong> 张
+                        </span>
+                        @if (resetCreditExpiry(resetCredits); as expiresAt) {
+                          <span>
+                            <i nz-icon nzType="clock-circle"></i>
+                            最近到期 {{ formatTime(expiresAt) }}
+                          </span>
+                        }
+                      </div>
+
+                      @if (availableResetCredits(resetCredits); as credits) {
+                        @if (credits.length) {
+                          <div class="reset-credit-details">
+                            @for (credit of credits; track credit.id || $index) {
+                              <div class="reset-credit-detail reset-credit-row">
+                                <span class="reset-credit-detail-title">
+                                  <i nz-icon nzType="check-circle" nzTheme="fill"></i>
+                                  {{ resetCreditTitle(credit) }}
+                                </span>
+                                <span class="reset-credit-detail-expiry">
+                                  {{
+                                    credit.expiresAt
+                                      ? '有效期至 ' + formatTime(credit.expiresAt)
+                                      : '长期有效'
+                                  }}
+                                </span>
+                              </div>
+                            }
+                          </div>
+                        } @else if (
+                          resetCredits.availableCount > 0 && !resetCredits.detailsAvailable
+                        ) {
+                          <div class="reset-credit-detail-note">
+                            官方仅返回可用数量，消耗时会自动匹配一张重置券
+                          </div>
+                        }
+                      }
+                    }
                   </div>
                 </div>
               }
@@ -275,9 +319,18 @@
             }
 
             <div class="card-actions">
+              <button
+                nz-button
+                nzType="text"
+                nzSize="small"
+                class="detail-link"
+                (click)="detail(item)"
+              >
+                详情
+              </button>
               <button nz-button nzType="text" nzSize="small" (click)="edit(item)">编辑</button>
               <button nz-button nzType="text" nzSize="small" (click)="openTest(item)">
-                {{ isImageAPIAccount(item) ? '验证密钥' : '主动探测' }}
+                {{ isImageAPIAccount(item) ? '验证' : '探测' }}
               </button>
               @if (!isImageAPIAccount(item)) {
                 <button nz-button nzType="text" nzSize="small" (click)="exportAccount(item)">

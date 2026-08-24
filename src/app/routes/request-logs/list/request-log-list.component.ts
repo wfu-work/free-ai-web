@@ -68,9 +68,9 @@ export class RequestLogListComponent implements OnInit {
 
   protected readonly columns: Array<STColumn<RequestLog>> = [
     { title: '时间', index: 'createdAtUnix', render: 'timeRender', width: 180, fixed: 'left' },
-    { title: '类型 / 方法 / 路径', index: 'path', render: 'requestRender', width: 220 },
+    { title: '类型 / 方法 / 路径', index: 'path', render: 'requestRender', width: 180 },
     { title: '账号 / 密钥', index: 'accountName', render: 'identityRender', width: 250 },
-    { title: '模型 / 推理 / 等级', index: 'model', render: 'modelRender', width: 230 },
+    { title: '模型 / 推理 / 等级', index: 'model', render: 'modelRender', width: 210 },
     { title: '状态', index: 'statusCode', type: 'tag', tag: this.statusTag, width: 95 },
     { title: '耗时', index: 'latencyMs', render: 'latencyRender', width: 190 },
     { title: 'Token / 成本', index: 'inputTokens', render: 'tokenRender', width: 180 },

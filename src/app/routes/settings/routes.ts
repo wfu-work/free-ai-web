@@ -20,7 +20,7 @@ export const routes: Routes = [
   {
     path: 'security',
     component: SettingsSecurityComponent,
-    data: { title: '安全设置' },
+    data: { title: '安全诊断' },
   },
   {
     path: 'retention',

@@ -1,8 +1,8 @@
 <section class="settings-page">
   <div class="d-flex justify-content-between header-row">
     <title-label
-      title="安全设置"
-      description="查看主密钥、代理边界、API 密钥和上游安全姿态，帮助你判断当前部署是否适合对外提供服务。"
+      title="安全诊断"
+      description="只检查主密钥、管理入口暴露面和上游代理配置，发现问题后前往对应设置处理。"
     />
     <div class="header-actions">
       <button nz-button (click)="load()">
@@ -14,32 +14,63 @@
 
   <nz-spin [nzSpinning]="loading">
     <div class="status-strip">
-      <article class="status-card" [class]="postureTone">
-        <span>安全姿态</span>
-        <strong>{{ postureLabel }}</strong>
-        <small>{{ masterKey?.loaded ? '主密钥已就绪' : '主密钥异常时请优先处理' }}</small>
+      <article class="status-card status-card-posture" [class]="postureTone">
+        <span>诊断结果</span>
+        <strong>{{ postureStatus }}</strong>
+        <small>{{ postureLabel }}</small>
       </article>
-      <article class="status-card">
-        <span>API 密钥</span>
-        <strong>{{ enabledKeysLabel }}</strong>
-        <small>当前启用的业务侧访问密钥</small>
+      <article
+        class="status-card"
+        [class]="
+          !masterKey ? 'metric-neutral' : masterKey.loaded ? 'metric-success' : 'metric-danger'
+        "
+      >
+        <span>主密钥</span>
+        <strong>{{ statusLabel }}</strong>
+        <small>用于加密保存账号和 API 密钥</small>
       </article>
-      <article class="status-card">
-        <span>可用账号</span>
-        <strong>{{ availableAccountsLabel }}</strong>
-        <small>可用于代理转发的账号池</small>
+      <article
+        class="status-card"
+        [class]="
+          !gatewayConfig ? 'metric-neutral' : isLanExposed ? 'metric-warning' : 'metric-success'
+        "
+      >
+        <span>管理入口</span>
+        <strong>{{ listenLabel }}</strong>
+        <small>{{
+          !gatewayConfig ? '等待诊断数据' : isLanExposed ? '已暴露到全部网卡' : '仅本机可访问'
+        }}</small>
       </article>
-      <article class="status-card">
-        <span>代理前缀</span>
-        <strong>{{ proxyPrefixLabel }}</strong>
-        <small>业务请求统一入口</small>
+      <article
+        class="status-card"
+        [class]="
+          !gatewayConfig
+            ? 'metric-neutral'
+            : isProxyConfigIncomplete
+              ? 'metric-danger'
+              : 'metric-success'
+        "
+      >
+        <span>上游代理</span>
+        <strong>{{ upstreamProxyLabel }}</strong>
+        <small>{{ isProxyConfigIncomplete ? '缺少代理地址' : proxyTargetLabel }}</small>
       </article>
     </div>
 
-    <div class="security-layout mt-lg">
+    <div class="security-layout">
       <div class="security-column">
         <nz-card class="panel-card panel-card-wide" [nzBordered]="false">
-          <div class="panel-title">主密钥与访问边界</div>
+          <div class="panel-title-row">
+            <div class="panel-title">主密钥状态</div>
+            <span
+              class="panel-status"
+              [class]="
+                !masterKey ? 'status-unknown' : masterKey.loaded ? 'status-ok' : 'status-danger'
+              "
+            >
+              {{ statusLabel }}
+            </span>
+          </div>
           <div class="detail-grid">
             <div>
               <span>文件路径</span>
@@ -57,18 +88,6 @@
               <span>更新时间</span>
               <strong>{{ formatTime(masterKey?.updatedAt) }}</strong>
             </div>
-            <div>
-              <span>监听模式</span>
-              <strong>{{ listenLabel }}</strong>
-            </div>
-            <div>
-              <span>上游代理</span>
-              <strong>{{ upstreamProxyLabel }}</strong>
-            </div>
-            <div class="span-2">
-              <span>代理目标</span>
-              <strong>{{ proxyTargetLabel }}</strong>
-            </div>
             <div class="span-2">
               <span>错误信息</span>
               <strong class="danger-text">{{ masterKey?.error || '无' }}</strong>
@@ -77,56 +96,66 @@
         </nz-card>
 
         <nz-card class="panel-card" [nzBordered]="false">
-          <div class="panel-title">密钥保护建议</div>
-          <div class="detail-grid compact-grid">
-            <div>
-              <span>API 密钥数量</span>
-              <strong>{{ enabledKeysLabel }}</strong>
-            </div>
-            <div>
-              <span>是否建议开放局域网</span>
-              <strong>{{ isLanExposed ? '不建议' : '较安全' }}</strong>
-            </div>
-            <div>
-              <span>账号池健康度</span>
-              <strong>{{ availableAccountsLabel }}</strong>
-            </div>
-            <div>
-              <span>主密钥文件风险</span>
-              <strong>{{ masterKey?.loaded ? '正常' : '高' }}</strong>
-            </div>
+          <div class="panel-title">处理建议</div>
+          <div class="check-list">
+            @for (item of checklist; track item.title) {
+              <article class="check-item" [class]="checklistTone(item)">
+                <div class="check-icon" aria-hidden="true">
+                  <i nz-icon [nzType]="item.icon"></i>
+                </div>
+                <div class="check-content">
+                  <div class="check-head">
+                    <strong>{{ item.title }}</strong>
+                    <span>{{ item.statusLabel }}</span>
+                  </div>
+                  <p>{{ item.desc }}</p>
+                  @if (item.link && item.status !== 'ok') {
+                    <a nz-button nzType="link" nzSize="small" [routerLink]="item.link">
+                      {{ item.actionLabel }}
+                      <i nz-icon nzType="right"></i>
+                    </a>
+                  }
+                </div>
+              </article>
+            }
           </div>
         </nz-card>
       </div>
 
       <div class="security-column">
         <nz-card class="panel-card" [nzBordered]="false">
-          <div class="panel-title">安全边界</div>
-          <ul class="note-list">
-            <li>
-              OAuth 账号文件只在后端使用主密钥加密保存；前端只展示账号 ID、套餐和 Token
-              状态，不回显令牌。
-            </li>
-            <li>API 密钥用于业务侧访问 `/v1/*` 代理接口，和后台管理登录鉴权是两条独立边界。</li>
-            <li>主密钥文件异常时，新增账号、刷新账号、解密 Secret 和导入备份都会受影响。</li>
-            <li>开启上游代理后，OpenAI 登录、模型拉取与转发请求都会优先走代理地址。</li>
-            <li>仅本机监听更适合单机部署；若暴露到局域网，建议叠加防火墙或反向代理鉴权。</li>
-          </ul>
+          <div class="panel-title">监听与代理边界</div>
+          <div class="detail-grid compact-grid">
+            <div>
+              <span>监听模式</span>
+              <strong>{{ listenLabel }}</strong>
+            </div>
+            <div>
+              <span>监听地址</span>
+              <strong>{{ gatewayConfig?.listenAddress || '-' }}</strong>
+            </div>
+            <div>
+              <span>上游代理</span>
+              <strong>{{ upstreamProxyLabel }}</strong>
+            </div>
+            <div>
+              <span>代理目标</span>
+              <strong>{{ proxyTargetLabel }}</strong>
+            </div>
+          </div>
+          <a nz-button nzType="default" routerLink="/settings/gateway">
+            打开网关设置
+            <i nz-icon nzType="right"></i>
+          </a>
         </nz-card>
 
         <nz-card class="panel-card" [nzBordered]="false">
-          <div class="panel-title">运维检查清单</div>
-          <div class="check-list">
-            @for (item of checklist; track item.title) {
-              <article class="check-item" [class]="checklistTone(item)">
-                <div class="check-head">
-                  <strong>{{ item.title }}</strong>
-                  <span>{{ item.ok ? '通过' : item.warn ? '需关注' : '未通过' }}</span>
-                </div>
-                <p>{{ item.desc }}</p>
-              </article>
-            }
-          </div>
+          <div class="panel-title">安全边界</div>
+          <ul class="note-list">
+            <li>主密钥只用于后端加解密，页面不会回显 OAuth 令牌或 OpenAI API 密钥。</li>
+            <li>仅本机监听更适合单机部署；开放到局域网前应确认防火墙或反向代理鉴权已经生效。</li>
+            <li>开启上游代理后，OpenAI 登录、模型拉取和网关转发都会使用该代理地址。</li>
+          </ul>
         </nz-card>
       </div>
     </div>

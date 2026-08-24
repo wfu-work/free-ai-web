@@ -134,6 +134,10 @@ export class AccountListComponent implements OnInit {
     this.router.navigate(['/accounts/edit', item.guid]);
   }
 
+  protected detail(item: Account): void {
+    this.router.navigate(['/accounts/detail', item.guid]);
+  }
+
   protected setEnabled(item: Account, enabled: boolean): void {
     const title = enabled ? '确定启用该账号？' : '确定禁用该账号？';
     this.modal.confirm({
@@ -178,20 +182,48 @@ export class AccountListComponent implements OnInit {
           this.cdr.markForCheck();
         }),
       )
-      .subscribe((result) => this.confirmResetCredit(item, result));
+      .subscribe((result) => {
+        item.resetCredits = result;
+        if (result.availableCount <= 0) {
+          this.message.info('该账号当前没有可用额度重置券');
+        } else if (result.applicableAvailableCount === 0) {
+          this.message.info(`查询到 ${result.availableCount} 张重置券，当前没有可重置的额度窗口`);
+        } else {
+          this.message.success(`查询到 ${result.availableCount} 张可用额度重置券`);
+        }
+        this.cdr.markForCheck();
+      });
+  }
+
+  protected handleResetCreditAction(item: Account): void {
+    if (this.resetCreditLoadingGuid) return;
+    if (!this.hasQueriedResetCredits(item)) {
+      this.inspectResetCredits(item);
+      return;
+    }
+    if (this.canConsumeResetCredit(item) && item.resetCredits) {
+      this.confirmResetCredit(item, item.resetCredits);
+    }
   }
 
   protected resetCreditActionText(item: Account): string {
     const summary = item.resetCredits;
+    if (!this.hasQueriedResetCredits(item)) return '查询重置券';
     if (!summary) return '查询重置券';
     if (summary.availableCount <= 0) return '暂无重置券';
-    if (summary.applicableAvailableCount === 0) return '当前无需重置';
-    return '使用重置券';
+    if (summary.applicableAvailableCount === 0) return '暂不可消耗';
+    return '消耗重置券';
   }
 
   protected resetCreditHint(item: Account): string {
     const summary = item.resetCredits;
-    if (!summary) return '同步额度后可查询官方重置券';
+    if (!this.hasQueriedResetCredits(item)) {
+      if (summary?.availableCount) {
+        return `额度快照显示持有 ${summary.availableCount} 张，查询后可查看有效期`;
+      }
+      return '查询官方可用数量和到期时间';
+    }
+    if (!summary) return '查询官方可用数量和到期时间';
     if (summary.availableCount <= 0) return '账号当前没有可用额度重置券';
     if (summary.applicableAvailableCount === 0) {
       return `持有 ${summary.availableCount} 张，当前没有符合条件的限额窗口`;
@@ -199,12 +231,48 @@ export class AccountListComponent implements OnInit {
     if (summary.applicableAvailableCount != null) {
       return `持有 ${summary.availableCount} 张，可用于当前限额 ${summary.applicableAvailableCount} 张`;
     }
-    return `持有 ${summary.availableCount} 张，点击查询可用状态`;
+    return `持有 ${summary.availableCount} 张可用额度重置券`;
   }
 
-  protected canInspectResetCredits(item: Account): boolean {
+  protected hasQueriedResetCredits(item: Account): boolean {
+    return Number(item.resetCredits?.syncedAt || 0) > 0;
+  }
+
+  protected canConsumeResetCredit(item: Account): boolean {
     const summary = item.resetCredits;
-    return !summary || (summary.availableCount > 0 && summary.applicableAvailableCount !== 0);
+    return Boolean(
+      this.hasQueriedResetCredits(item) &&
+      summary &&
+      summary.availableCount > 0 &&
+      summary.applicableAvailableCount !== 0,
+    );
+  }
+
+  protected canUseResetCreditAction(item: Account): boolean {
+    return !this.hasQueriedResetCredits(item) || this.canConsumeResetCredit(item);
+  }
+
+  protected availableResetCredits(result: AccountResetCreditsResult): AccountResetCredit[] {
+    return [...(result.credits || [])]
+      .filter((credit) => !credit.status || credit.status.toLowerCase() === 'available')
+      .sort((left, right) => {
+        if (!left.expiresAt) return 1;
+        if (!right.expiresAt) return -1;
+        return left.expiresAt - right.expiresAt;
+      });
+  }
+
+  protected resetCreditExpiry(result: AccountResetCreditsResult): number {
+    return result.expiresAt || this.preferredResetCredit(result.credits)?.expiresAt || 0;
+  }
+
+  protected resetCreditTitle(credit: AccountResetCredit): string {
+    const title = credit.title?.trim();
+    if (!title) return '额度重置券';
+    const titleMap: Record<string, string> = {
+      'full reset': '完整重置',
+    };
+    return titleMap[title.toLowerCase()] || title;
   }
 
   private confirmResetCredit(item: Account, result: AccountResetCreditsResult): void {
@@ -214,13 +282,14 @@ export class AccountListComponent implements OnInit {
     }
     if (result.applicableAvailableCount === 0) {
       this.message.info('账号持有重置券，但当前没有符合条件的限额窗口');
-      this.updateResetCreditSummary(item, result);
+      item.resetCredits = result;
+      this.cdr.markForCheck();
       return;
     }
     const credit = this.preferredResetCredit(result.credits);
     const expiry = credit?.expiresAt ? `，有效期至 ${this.formatTime(credit.expiresAt)}` : '';
     const detail = result.detailsAvailable
-      ? `将消耗 1 张${credit?.title ? `“${credit.title}”` : '额度重置券'}${expiry}。`
+      ? `将消耗 1 张${credit?.title ? `“${this.resetCreditTitle(credit)}”` : '额度重置券'}${expiry}。`
       : '官方仅返回可用数量，将由官方自动选择一张额度重置券。';
     this.modal.confirm({
       nzTitle: `使用 ${item.name || item.email} 的额度重置券？`,
@@ -246,6 +315,10 @@ export class AccountListComponent implements OnInit {
         )
         .subscribe({
           next: (result) => {
+            if (result.resetCredits) {
+              item.resetCredits = result.resetCredits;
+              this.cdr.markForCheck();
+            }
             switch (result.outcome) {
               case 'reset':
                 this.message.success('额度重置成功，账号状态已重新同步');
@@ -274,21 +347,7 @@ export class AccountListComponent implements OnInit {
   }
 
   private preferredResetCredit(credits: AccountResetCredit[]): AccountResetCredit | undefined {
-    return [...(credits || [])]
-      .filter((credit) => !credit.status || credit.status === 'available')
-      .sort((left, right) => {
-        if (!left.expiresAt) return 1;
-        if (!right.expiresAt) return -1;
-        return left.expiresAt - right.expiresAt;
-      })[0];
-  }
-
-  private updateResetCreditSummary(item: Account, result: AccountResetCreditsResult): void {
-    item.resetCredits = {
-      availableCount: result.availableCount,
-      applicableAvailableCount: result.applicableAvailableCount,
-    };
-    this.cdr.markForCheck();
+    return this.availableResetCredits({ credits } as AccountResetCreditsResult)[0];
   }
 
   protected delete(item: Account): void {
