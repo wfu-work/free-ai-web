@@ -26,243 +26,245 @@
         nzDescription="账号可能已被删除，或当前服务暂时不可用。请返回账号列表后重试。"
       />
     } @else if (account; as currentAccount) {
-      <div class="account-identity">
-        <nz-avatar
-          class="account-avatar"
-          nzShape="square"
-          [nzText]="vendorMark(currentAccount.vendorCode)"
-        />
-        <div class="identity-main">
-          <div class="identity-title-row">
-            <strong>{{ currentAccount.name || '未命名账号' }}</strong>
-            <span class="status-pill" [class]="statusTone(currentAccount.status)">
-              {{ statusText(currentAccount.status) }}
+      <div class="detail-content">
+        <div class="account-identity">
+          <nz-avatar
+            class="account-avatar"
+            nzShape="square"
+            [nzText]="vendorMark(currentAccount.vendorCode)"
+          />
+          <div class="identity-main">
+            <div class="identity-title-row">
+              <strong>{{ currentAccount.name || '未命名账号' }}</strong>
+              <span class="status-pill" [class]="statusTone(currentAccount.status)">
+                {{ statusText(currentAccount.status) }}
+              </span>
+            </div>
+            <span>{{ currentAccount.email || currentAccount.credentialHint || '-' }}</span>
+          </div>
+          <div class="identity-facts">
+            <div>
+              <span>账号组</span>
+              <strong>{{ currentAccount.accountGroup || 'default' }}</strong>
+            </div>
+            <div>
+              <span>套餐</span>
+              <strong>{{ planLabel(currentAccount) }}</strong>
+            </div>
+            <div>
+              <span>最近使用</span>
+              <strong>{{ formatTime(currentAccount.lastUsedAt) }}</strong>
+            </div>
+          </div>
+        </div>
+
+        <div class="source-note" [class.source-note-warning]="usageUnavailable">
+          <i nz-icon [nzType]="usageUnavailable ? 'warning' : 'info-circle'"></i>
+          <div>
+            <strong>{{ usageUnavailable ? '用量数据暂时不可用' : '统计口径：本系统网关' }}</strong>
+            <span>
+              @if (usageUnavailable) {
+                账号信息已加载，但用量汇总请求失败，请稍后刷新。
+              } @else {
+                Token 来自该账号经本网关调用时上游响应中的 usage
+                字段；官方额度百分比不参与此处计算。
+              }
             </span>
           </div>
-          <span>{{ currentAccount.email || currentAccount.credentialHint || '-' }}</span>
-        </div>
-        <div class="identity-facts">
-          <div>
-            <span>账号组</span>
-            <strong>{{ currentAccount.accountGroup || 'default' }}</strong>
-          </div>
-          <div>
-            <span>套餐</span>
-            <strong>{{ planLabel(currentAccount) }}</strong>
-          </div>
-          <div>
-            <span>最近使用</span>
-            <strong>{{ formatTime(currentAccount.lastUsedAt) }}</strong>
-          </div>
-        </div>
-      </div>
-
-      <div class="source-note" [class.source-note-warning]="usageUnavailable">
-        <i nz-icon [nzType]="usageUnavailable ? 'warning' : 'info-circle'"></i>
-        <div>
-          <strong>{{ usageUnavailable ? '用量数据暂时不可用' : '统计口径：本系统网关' }}</strong>
-          <span>
-            @if (usageUnavailable) {
-              账号信息已加载，但用量汇总请求失败，请稍后刷新。
-            } @else {
-              Token 来自该账号经本网关调用时上游响应中的 usage 字段；官方额度百分比不参与此处计算。
-            }
-          </span>
-        </div>
-      </div>
-
-      <div class="metric-grid">
-        <app-metric-card
-          label="请求总数"
-          [value]="summary.totalRequests | metric: 'compact'"
-          [valueTitle]="summary.totalRequests | metric: 'number'"
-          [description]="'成功率 ' + successRate"
-        />
-        <app-metric-card
-          label="Token 总量"
-          [value]="totalTokens | metric: 'compact'"
-          [valueTitle]="(totalTokens | metric: 'number') + ' Token'"
-          [description]="'最近 ' + days + ' 天'"
-          tone="info"
-        />
-        <app-metric-card
-          label="输入 Token"
-          [value]="summary.inputTokens | metric: 'compact'"
-          [valueTitle]="(summary.inputTokens | metric: 'number') + ' Token'"
-          [description]="'缓存命中率 ' + cacheHitRate"
-        />
-        <app-metric-card
-          label="输出 Token"
-          [value]="summary.outputTokens | metric: 'compact'"
-          [valueTitle]="(summary.outputTokens | metric: 'number') + ' Token'"
-          description="模型生成内容"
-          tone="success"
-        />
-        <app-metric-card
-          label="缓存 Token"
-          [value]="summary.cachedTokens | metric: 'compact'"
-          [valueTitle]="(summary.cachedTokens | metric: 'number') + ' Token'"
-          description="输入 Token 的缓存命中部分"
-          tone="warning"
-        />
-        <app-metric-card
-          label="参考成本"
-          [value]="summary.costAmount | metric: 'currency'"
-          description="忽略未配置定价的模型"
-        />
-      </div>
-
-      <section class="usage-grid-panel" aria-labelledby="usage-grid-title">
-        <div class="panel-head">
-          <div>
-            <h2 id="usage-grid-title">Token 用量网格</h2>
-            <p>{{ formatPeriod() }} · 每格代表一天，颜色越深表示 Token 消耗越高。</p>
-          </div>
-          <div class="range-switch" role="group" aria-label="统计时间范围">
-            @for (range of ranges; track range) {
-              <button
-                nz-button
-                nzSize="small"
-                [nzType]="days === range ? 'primary' : 'default'"
-                [attr.aria-pressed]="days === range"
-                (click)="load(range)"
-              >
-                {{ range }} 天
-              </button>
-            }
-          </div>
         </div>
 
-        <div class="usage-grid-scroll">
-          <div class="usage-grid-layout">
-            <div class="weekday-labels" aria-hidden="true">
-              <span></span>
-              <span>二</span>
-              <span></span>
-              <span>四</span>
-              <span></span>
-              <span>六</span>
-              <span></span>
+        <div class="metric-grid">
+          <app-metric-card
+            label="请求总数"
+            [value]="summary.totalRequests | metric: 'compact'"
+            [valueTitle]="summary.totalRequests | metric: 'number'"
+            [description]="'成功率 ' + successRate"
+          />
+          <app-metric-card
+            label="Token 总量"
+            [value]="totalTokens | metric: 'compact'"
+            [valueTitle]="(totalTokens | metric: 'number') + ' Token'"
+            [description]="'最近 ' + days + ' 天'"
+            tone="info"
+          />
+          <app-metric-card
+            label="输入 Token"
+            [value]="summary.inputTokens | metric: 'compact'"
+            [valueTitle]="(summary.inputTokens | metric: 'number') + ' Token'"
+            [description]="'缓存命中率 ' + cacheHitRate"
+          />
+          <app-metric-card
+            label="输出 Token"
+            [value]="summary.outputTokens | metric: 'compact'"
+            [valueTitle]="(summary.outputTokens | metric: 'number') + ' Token'"
+            description="模型生成内容"
+            tone="success"
+          />
+          <app-metric-card
+            label="缓存 Token"
+            [value]="summary.cachedTokens | metric: 'compact'"
+            [valueTitle]="(summary.cachedTokens | metric: 'number') + ' Token'"
+            description="输入 Token 的缓存命中部分"
+            tone="warning"
+          />
+          <app-metric-card
+            label="参考成本"
+            [value]="summary.costAmount | metric: 'currency'"
+            description="忽略未配置定价的模型"
+          />
+        </div>
+
+        <section class="usage-grid-panel" aria-labelledby="usage-grid-title">
+          <div class="panel-head">
+            <div>
+              <h2 id="usage-grid-title">Token 用量网格</h2>
+              <p>{{ formatPeriod() }} · 每格代表一天，显示 Token 总量与请求数；颜色越深表示用量越高。</p>
             </div>
-            <div class="usage-grid" role="grid" aria-label="每日 Token 用量网格">
+            <div class="range-switch" role="group" aria-label="统计时间范围">
+              @for (range of ranges; track range) {
+                <button
+                  nz-button
+                  nzSize="small"
+                  [nzType]="days === range ? 'primary' : 'default'"
+                  [attr.aria-pressed]="days === range"
+                  (click)="load(range)"
+                >
+                  {{ range }} 天
+                </button>
+              }
+            </div>
+          </div>
+
+          <div class="usage-grid-scroll">
+            <div
+              class="usage-grid"
+              [class.usage-grid-seven]="days === 7"
+              role="grid"
+              aria-label="每日 Token 用量网格"
+            >
               @for (cell of usageGridCells; track cell.key) {
                 <span
                   class="usage-grid-cell"
-                  [class.usage-grid-blank]="cell.blank"
-                  [class.usage-level-0]="!cell.blank && cell.level === 0"
+                  [class.usage-level-0]="cell.level === 0"
                   [class.usage-level-1]="cell.level === 1"
                   [class.usage-level-2]="cell.level === 2"
                   [class.usage-level-3]="cell.level === 3"
                   [class.usage-level-4]="cell.level === 4"
-                  [attr.role]="cell.blank ? null : 'gridcell'"
-                  [attr.aria-label]="cell.blank ? null : usageCellLabel(cell)"
-                  [attr.title]="cell.blank ? null : usageCellLabel(cell)"
-                ></span>
+                  role="gridcell"
+                  [attr.aria-label]="usageCellLabel(cell)"
+                  [attr.title]="usageCellLabel(cell)"
+                >
+                  <small>{{ formatShortDate(cell.timestamp) }}</small>
+                  <strong [title]="(cell.totalTokens | metric: 'number') + ' Token'">
+                    {{ cell.totalTokens | metric: 'compact' }}
+                  </strong>
+                  <span>{{ cell.requests | metric: 'compact' }} 次请求</span>
+                </span>
               }
             </div>
           </div>
-        </div>
 
-        <div class="grid-footer">
-          @if (!summary.totalRequests) {
-            <span>当前范围暂无请求；后续使用该账号转发请求后会自动形成网格。</span>
-          } @else {
-            <span>共 {{ summary.totalRequests | metric: 'number' }} 次请求</span>
-          }
-          <div class="grid-legend" aria-label="用量强度图例">
-            <span>少</span>
-            @for (level of [0, 1, 2, 3, 4]; track level) {
-              <i [class]="'usage-level-' + level"></i>
+          <div class="grid-footer">
+            @if (!summary.totalRequests) {
+              <span>当前范围暂无请求；后续使用该账号转发请求后会自动形成网格。</span>
+            } @else {
+              <span>共 {{ summary.totalRequests | metric: 'number' }} 次请求 · 最多保留 30 天</span>
             }
-            <span>多</span>
+            <div class="grid-legend" aria-label="用量强度图例">
+              <span>少</span>
+              @for (level of [0, 1, 2, 3, 4]; track level) {
+                <i [class]="'usage-level-' + level"></i>
+              }
+              <span>多</span>
+            </div>
           </div>
+        </section>
+
+        <app-token-trend-chart
+          class="token-trend"
+          title="Token 消耗趋势"
+          subtitle="输入、输出与缓存命中均来自本系统保存的上游 usage 数据。"
+          [periodLabel]="days + ' 天'"
+          [points]="tokenTrendPoints"
+          [loading]="loading"
+          [height]="300"
+        />
+
+        <div class="detail-grid">
+          <section class="model-panel">
+            <div class="panel-head">
+              <div>
+                <h2>模型用量</h2>
+                <p>按 Token 总量查看该账号的主要消耗来源。</p>
+              </div>
+            </div>
+            <div class="model-table-wrap">
+              <table class="model-table">
+                <thead>
+                  <tr>
+                    <th>模型</th>
+                    <th>请求</th>
+                    <th>Token</th>
+                    <th>占比</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (row of modelRows; track row.dimension) {
+                    <tr>
+                      <td [title]="row.dimension">{{ row.dimension }}</td>
+                      <td>{{ row.requests | metric: 'compact' }}</td>
+                      <td [title]="modelTokens(row) | metric: 'number'">
+                        {{ modelTokens(row) | metric: 'compact' }}
+                      </td>
+                      <td>{{ modelShare(row) }}</td>
+                    </tr>
+                  } @empty {
+                    <tr>
+                      <td colspan="4" class="empty-cell">当前范围暂无模型用量。</td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          </section>
+
+          <section class="profile-panel">
+            <div class="panel-head">
+              <div>
+                <h2>账号信息</h2>
+                <p>用于识别调度身份和凭据状态。</p>
+              </div>
+            </div>
+            <dl class="profile-list">
+              <div>
+                <dt>账号 GUID</dt>
+                <dd [title]="currentAccount.guid">{{ currentAccount.guid }}</dd>
+              </div>
+              <div>
+                <dt>调度参数</dt>
+                <dd>
+                  优先级 {{ currentAccount.priority || 0 }} · 权重 {{ currentAccount.weight || 1 }}
+                </dd>
+              </div>
+              <div>
+                <dt>凭据状态</dt>
+                <dd>{{ currentAccount.tokenStatus || '-' }}</dd>
+              </div>
+              <div>
+                <dt>最近同步</dt>
+                <dd>{{ formatTime(currentAccount.lastRefreshedAt) }}</dd>
+              </div>
+              <div>
+                <dt>订阅到期</dt>
+                <dd>{{ formatTime(currentAccount.subscriptionExpiredAt) }}</dd>
+              </div>
+              <div>
+                <dt>备注</dt>
+                <dd>{{ currentAccount.remark || '无' }}</dd>
+              </div>
+            </dl>
+          </section>
         </div>
-      </section>
-
-      <app-token-trend-chart
-        class="token-trend"
-        title="Token 消耗趋势"
-        subtitle="输入、输出与缓存命中均来自本系统保存的上游 usage 数据。"
-        [periodLabel]="days + ' 天'"
-        [points]="tokenTrendPoints"
-        [loading]="loading"
-        [height]="300"
-      />
-
-      <div class="detail-grid">
-        <section class="model-panel">
-          <div class="panel-head">
-            <div>
-              <h2>模型用量</h2>
-              <p>按 Token 总量查看该账号的主要消耗来源。</p>
-            </div>
-          </div>
-          <div class="model-table-wrap">
-            <table class="model-table">
-              <thead>
-                <tr>
-                  <th>模型</th>
-                  <th>请求</th>
-                  <th>Token</th>
-                  <th>占比</th>
-                </tr>
-              </thead>
-              <tbody>
-                @for (row of modelRows; track row.dimension) {
-                  <tr>
-                    <td [title]="row.dimension">{{ row.dimension }}</td>
-                    <td>{{ row.requests | metric: 'compact' }}</td>
-                    <td [title]="modelTokens(row) | metric: 'number'">
-                      {{ modelTokens(row) | metric: 'compact' }}
-                    </td>
-                    <td>{{ modelShare(row) }}</td>
-                  </tr>
-                } @empty {
-                  <tr>
-                    <td colspan="4" class="empty-cell">当前范围暂无模型用量。</td>
-                  </tr>
-                }
-              </tbody>
-            </table>
-          </div>
-        </section>
-
-        <section class="profile-panel">
-          <div class="panel-head">
-            <div>
-              <h2>账号信息</h2>
-              <p>用于识别调度身份和凭据状态。</p>
-            </div>
-          </div>
-          <dl class="profile-list">
-            <div>
-              <dt>账号 GUID</dt>
-              <dd [title]="currentAccount.guid">{{ currentAccount.guid }}</dd>
-            </div>
-            <div>
-              <dt>调度参数</dt>
-              <dd>
-                优先级 {{ currentAccount.priority || 0 }} · 权重 {{ currentAccount.weight || 1 }}
-              </dd>
-            </div>
-            <div>
-              <dt>凭据状态</dt>
-              <dd>{{ currentAccount.tokenStatus || '-' }}</dd>
-            </div>
-            <div>
-              <dt>最近同步</dt>
-              <dd>{{ formatTime(currentAccount.lastRefreshedAt) }}</dd>
-            </div>
-            <div>
-              <dt>订阅到期</dt>
-              <dd>{{ formatTime(currentAccount.subscriptionExpiredAt) }}</dd>
-            </div>
-            <div>
-              <dt>备注</dt>
-              <dd>{{ currentAccount.remark || '无' }}</dd>
-            </div>
-          </dl>
-        </section>
       </div>
     }
   </nz-spin>

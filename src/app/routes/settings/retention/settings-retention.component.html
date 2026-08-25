@@ -98,7 +98,7 @@
               </div>
               <p>
                 保留最近一段时间的日志，清理超出窗口的数据。默认与后端 cleanup-log-retention-days
-                保持 30 天。
+                保持 30 天，系统最长保留 30 天。
               </p>
             </div>
 
@@ -108,6 +108,7 @@
                 id="retentionDays"
                 formControlName="retentionDays"
                 [nzMin]="1"
+                [nzMax]="30"
                 [nzStep]="1"
               />
               <span class="input-unit">天</span>

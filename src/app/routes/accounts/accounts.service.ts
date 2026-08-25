@@ -47,7 +47,7 @@ export class AccountsService {
     return this.http.get<Account>(`/accounts/${guid}`);
   }
 
-  usage(guid: string, days = 90): Observable<UsageSummary> {
+  usage(guid: string, days = 30): Observable<UsageSummary> {
     return this.http.get<UsageSummary>(`/accounts/${guid}/usage`, { params: { days } });
   }
 

@@ -22,7 +22,6 @@ import { AccountsService } from '../accounts.service';
 
 interface UsageGridCell {
   key: string;
-  blank: boolean;
   timestamp: number;
   totalTokens: number;
   requests: number;
@@ -42,10 +41,10 @@ export class AccountDetailComponent implements OnInit {
   private readonly accountsService = inject(AccountsService);
   private readonly cdr = inject(ChangeDetectorRef);
 
-  protected readonly ranges = [7, 30, 90];
+  protected readonly ranges = [7, 30];
   protected account: Account | null = null;
   protected summary: UsageSummary = this.emptySummary();
-  protected days = 90;
+  protected days = 30;
   protected loading = false;
   protected loadFailed = false;
   protected usageUnavailable = false;
@@ -144,29 +143,16 @@ export class AccountDetailComponent implements OnInit {
       (point) => Number(point.inputTokens || 0) + Number(point.outputTokens || 0),
     );
     const maximum = Math.max(...totals, 0);
-    const firstDate = new Date(Number(points[0].bucketStart));
-    const leadingBlanks = Number.isNaN(firstDate.getTime()) ? 0 : (firstDate.getDay() + 6) % 7;
-    const cells: UsageGridCell[] = Array.from({ length: leadingBlanks }, (_, index) => ({
-      key: `blank-${index}`,
-      blank: true,
-      timestamp: 0,
-      totalTokens: 0,
-      requests: 0,
-      level: 0,
-    }));
-
-    points.forEach((point, index) => {
+    return points.map((point, index) => {
       const totalTokens = totals[index];
-      cells.push({
+      return {
         key: String(point.bucketStart),
-        blank: false,
         timestamp: Number(point.bucketStart),
         totalTokens,
         requests: Number(point.requests || 0),
         level: this.usageLevel(totalTokens, maximum),
-      });
+      };
     });
-    return cells;
   }
 
   protected get modelRows(): UsageDimension[] {
@@ -183,7 +169,6 @@ export class AccountDetailComponent implements OnInit {
   }
 
   protected usageCellLabel(cell: UsageGridCell): string {
-    if (cell.blank) return '';
     return `${this.formatLongDate(cell.timestamp)}，${formatMetricNumber(cell.totalTokens)} Token，${formatMetricNumber(cell.requests)} 次请求`;
   }
 
@@ -245,14 +230,15 @@ export class AccountDetailComponent implements OnInit {
 
   private usageLevel(value: number, maximum: number): number {
     if (value <= 0 || maximum <= 0) return 0;
-    const ratio = Math.log1p(value) / Math.log1p(maximum);
-    if (ratio < 0.35) return 1;
-    if (ratio < 0.6) return 2;
-    if (ratio < 0.82) return 3;
+    // 使用线性比例而不是对数比例，避免几十万/几千万的低用量被压到同一档。
+    const ratio = value / maximum;
+    if (ratio < 0.1) return 1;
+    if (ratio < 0.25) return 2;
+    if (ratio < 0.55) return 3;
     return 4;
   }
 
-  private formatShortDate(value?: number): string {
+  protected formatShortDate(value?: number): string {
     if (!value) return '-';
     const date = new Date(value);
     if (Number.isNaN(date.getTime())) return '-';

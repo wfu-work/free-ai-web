@@ -19,6 +19,7 @@ import { RequestLog, OpsStats } from '../../request-logs/request-log.model';
 import { RequestLogsService } from '../../request-logs/request-logs.service';
 
 const DEFAULT_RETENTION_DAYS = 30;
+const MAX_RETENTION_DAYS = 30;
 
 @Component({
   selector: 'app-settings-retention',
@@ -77,9 +78,12 @@ export class SettingsRetentionComponent implements OnInit {
   }
 
   protected clearByRetention(): void {
-    const days = Math.max(
-      Number(this.retentionForm.controls.retentionDays.value || DEFAULT_RETENTION_DAYS),
-      1,
+    const days = Math.min(
+      Math.max(
+        Number(this.retentionForm.controls.retentionDays.value || DEFAULT_RETENTION_DAYS),
+        1,
+      ),
+      MAX_RETENTION_DAYS,
     );
     this.modal.confirm({
       nzTitle: `确定清理 ${days} 天前的请求日志？`,

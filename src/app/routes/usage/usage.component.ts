@@ -43,7 +43,7 @@ export class UsageComponent implements OnInit {
   private readonly message = inject(NzMessageService);
   private readonly cdr = inject(ChangeDetectorRef);
 
-  protected readonly ranges = [1, 7, 30, 90];
+  protected readonly ranges = [1, 7, 30];
   protected readonly dimensions: Array<{ key: UsageDimensionKey; label: string }> = [
     { key: 'models', label: '按模型' },
     { key: 'accounts', label: '按账号' },
