@@ -235,16 +235,30 @@
                         </span>
                         <small>{{ resetCreditHint(item) }}</small>
                       </div>
-                      <button
-                        nz-button
-                        nzSize="small"
-                        nzType="default"
-                        [disabled]="!canUseResetCreditAction(item)"
-                        [nzLoading]="resetCreditLoadingGuid === item.guid"
-                        (click)="handleResetCreditAction(item)"
-                      >
-                        {{ resetCreditActionText(item) }}
-                      </button>
+                      <div class="reset-credit-actions">
+                        <button
+                          nz-button
+                          nzSize="small"
+                          nzType="default"
+                          [disabled]="!!resetCreditLoadingGuid"
+                          [nzLoading]="resetCreditLoadingGuid === item.guid"
+                          (click)="inspectResetCredits(item)"
+                        >
+                          查询重置券
+                        </button>
+                        @if (canConsumeResetCredit(item) && item.resetCredits; as resetCredits) {
+                          <button
+                            nz-button
+                            nzSize="small"
+                            nzType="primary"
+                            [disabled]="!!resetCreditLoadingGuid"
+                            [nzLoading]="resetCreditLoadingGuid === item.guid"
+                            (click)="confirmResetCredit(item, resetCredits)"
+                          >
+                            消耗重置券
+                          </button>
+                        }
+                      </div>
                     </div>
 
                     @if (hasQueriedResetCredits(item) && item.resetCredits; as resetCredits) {

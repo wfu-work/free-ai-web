@@ -195,26 +195,6 @@ export class AccountListComponent implements OnInit {
       });
   }
 
-  protected handleResetCreditAction(item: Account): void {
-    if (this.resetCreditLoadingGuid) return;
-    if (!this.hasQueriedResetCredits(item)) {
-      this.inspectResetCredits(item);
-      return;
-    }
-    if (this.canConsumeResetCredit(item) && item.resetCredits) {
-      this.confirmResetCredit(item, item.resetCredits);
-    }
-  }
-
-  protected resetCreditActionText(item: Account): string {
-    const summary = item.resetCredits;
-    if (!this.hasQueriedResetCredits(item)) return '查询重置券';
-    if (!summary) return '查询重置券';
-    if (summary.availableCount <= 0) return '暂无重置券';
-    if (summary.applicableAvailableCount === 0) return '暂不可消耗';
-    return '消耗重置券';
-  }
-
   protected resetCreditHint(item: Account): string {
     const summary = item.resetCredits;
     if (!this.hasQueriedResetCredits(item)) {
@@ -248,10 +228,6 @@ export class AccountListComponent implements OnInit {
     );
   }
 
-  protected canUseResetCreditAction(item: Account): boolean {
-    return !this.hasQueriedResetCredits(item) || this.canConsumeResetCredit(item);
-  }
-
   protected availableResetCredits(result: AccountResetCreditsResult): AccountResetCredit[] {
     return [...(result.credits || [])]
       .filter((credit) => !credit.status || credit.status.toLowerCase() === 'available')
@@ -275,7 +251,7 @@ export class AccountListComponent implements OnInit {
     return titleMap[title.toLowerCase()] || title;
   }
 
-  private confirmResetCredit(item: Account, result: AccountResetCreditsResult): void {
+  protected confirmResetCredit(item: Account, result: AccountResetCreditsResult): void {
     if (result.availableCount <= 0) {
       this.message.info('该账号当前没有可用额度重置券');
       return;
