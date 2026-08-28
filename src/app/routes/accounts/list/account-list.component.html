@@ -201,27 +201,37 @@
                 </div>
               } @else {
                 <div class="section-title">
-                  <span>7 天官方额度</span>
+                  <span>官方额度窗口</span>
                   <button nz-button nzType="link" nzSize="small" (click)="refresh(item)">
                     同步额度
                   </button>
                 </div>
-                <div class="quota-list">
-                  @if (officialSevenDayQuota(item.quotas); as quota) {
-                    <div class="quota-item" [class]="quotaTone(quota)">
-                      <nz-progress
-                        nzSize="small"
-                        [nzPercent]="quotaRemainingPercent(quota)"
-                        [nzStrokeColor]="quotaProgressColor(quota)"
-                        [nzFormat]="quotaProgressFormat"
-                      />
-                      <div class="quota-meta">
-                        <span>已使用 {{ quotaUsedPercent(quota) }}%</span>
-                        <span>重置时间 {{ formatTime(quota.resetAt) }}</span>
-                      </div>
+                <div
+                  class="quota-list official-quota-list"
+                  [class.official-quota-list-dual]="shouldShowFiveHourQuota(item)"
+                >
+                  @for (quotaWindow of officialQuotaWindows(item); track quotaWindow.key) {
+                    <div class="quota-window">
+                      <div class="gateway-usage-title">{{ quotaWindow.label }}</div>
+                      @if (quotaWindow.quota; as quota) {
+                        <div class="quota-item" [class]="quotaTone(quota)">
+                          <nz-progress
+                            nzSize="small"
+                            [nzPercent]="quotaRemainingPercent(quota)"
+                            [nzStrokeColor]="quotaProgressColor(quota)"
+                            [nzFormat]="quotaProgressFormat"
+                          />
+                          <div class="quota-meta">
+                            <span>已使用 {{ quotaUsedPercent(quota) }}%</span>
+                            <span>重置时间 {{ formatTime(quota.resetAt) }}</span>
+                          </div>
+                        </div>
+                      } @else {
+                        <div class="quota-item">
+                          <span class="empty-value">{{ quotaWindow.emptyLabel }}</span>
+                        </div>
+                      }
                     </div>
-                  } @else {
-                    <span class="empty-value">暂无 7 天官方额度</span>
                   }
                   <div
                     class="reset-credit-panel quota-item"

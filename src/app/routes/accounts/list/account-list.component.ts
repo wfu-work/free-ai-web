@@ -477,10 +477,82 @@ export class AccountListComponent implements OnInit {
   }
 
   private normalizedAccountPlan(item: Account): string {
-    return (item.planType || item.subscriptionPlan || '')
+    const planType = this.normalizePlanValue(item.planType);
+    const subscriptionPlan = this.normalizePlanValue(item.subscriptionPlan);
+    const knownPlans = ['free', 'plus', 'pro', 'team', 'business', 'enterprise', 'edu'];
+    const plans = [planType, subscriptionPlan];
+
+    // 订阅接口和历史账号文件可能分别写入 planType/subscriptionPlan，优先采用
+    // 能识别的套餐，避免 planType=chatgpt 时把 Plus 账号误判成未知套餐。
+    return (
+      plans.find((plan) => plan === 'plus' || plan === 'pro') ||
+      plans.find((plan) => knownPlans.includes(plan)) ||
+      planType ||
+      subscriptionPlan
+    );
+  }
+
+  private normalizePlanValue(value?: string): string {
+    const normalized = (value || '')
       .trim()
       .toLowerCase()
-      .replace(/^chatgpt[\s_-]*/, '');
+      .replace(/^chatgpt[\s_-]*/, '')
+      .replace(/[\s-]+/g, '_');
+    const compact = normalized.replace(/_/g, '');
+    const planAlias = compact.match(
+      /^(?:chatgpt)?(free|plus|pro|team|business|enterprise|edu)(?:plan)?$/,
+    );
+    if (planAlias) return planAlias[1];
+    const knownPlan = normalized.match(
+      /(?:^|[_-])(free|plus|pro|team|business|enterprise|edu)(?:$|[_-])/,
+    );
+    return knownPlan?.[1] || normalized;
+  }
+
+  protected isPlusAccount(item: Account): boolean {
+    return !this.isImageAPIAccount(item) && this.normalizedAccountPlan(item) === 'plus';
+  }
+
+  protected isProAccount(item: Account): boolean {
+    return !this.isImageAPIAccount(item) && this.normalizedAccountPlan(item) === 'pro';
+  }
+
+  /**
+   * Plus 账号固定展示两个官方窗口；Pro 账号按官方规则只展示 7 天窗口。
+   * 其他套餐仅在服务端确实返回 5 小时窗口时展示，避免凭空增加空白卡片。
+   */
+  protected shouldShowFiveHourQuota(item: Account): boolean {
+    if (this.isImageAPIAccount(item) || this.isProAccount(item)) return false;
+    return this.isPlusAccount(item) || Boolean(this.officialFiveHourQuota(item.quotas));
+  }
+
+  protected officialQuotaWindows(item: Account): Array<{
+    key: '5h' | '7d';
+    label: string;
+    emptyLabel: string;
+    quota: AccountQuota | null;
+  }> {
+    const windows: Array<{
+      key: '5h' | '7d';
+      label: string;
+      emptyLabel: string;
+      quota: AccountQuota | null;
+    }> = [];
+    if (this.shouldShowFiveHourQuota(item)) {
+      windows.push({
+        key: '5h',
+        label: '5 小时窗口',
+        emptyLabel: '暂无 5 小时官方额度',
+        quota: this.officialFiveHourQuota(item.quotas),
+      });
+    }
+    windows.push({
+      key: '7d',
+      label: '7 天窗口',
+      emptyLabel: '暂无 7 天官方额度',
+      quota: this.officialSevenDayQuota(item.quotas),
+    });
+    return windows;
   }
 
   protected isImageAPIAccount(item?: Account | null): boolean {
@@ -582,13 +654,34 @@ export class AccountListComponent implements OnInit {
   }
 
   protected officialSevenDayQuota(quotas?: AccountQuota[]): AccountQuota | null {
-    return (
-      (quotas || []).find((quota) => {
-        const source = (quota.source || '').trim().toLowerCase();
-        const windowType = (quota.windowType || '').trim().toLowerCase();
-        return source === 'wham' && (windowType === '7d' || windowType.endsWith(':7d'));
-      }) ?? null
-    );
+    return this.findOfficialQuota(quotas, '7d');
+  }
+
+  protected officialFiveHourQuota(quotas?: AccountQuota[]): AccountQuota | null {
+    return this.findOfficialQuota(quotas, '5h');
+  }
+
+  private findOfficialQuota(
+    quotas: AccountQuota[] | undefined,
+    window: '5h' | '7d',
+  ): AccountQuota | null {
+    const expectedSeconds = window === '5h' ? 5 * 60 * 60 : 7 * 24 * 60 * 60;
+    const matches = (quotas || []).filter((quota) => {
+      if ((quota.source || '').trim().toLowerCase() !== 'wham') return false;
+      const windowType = (quota.windowType || '').trim().toLowerCase();
+      if (
+        windowType === window ||
+        windowType.endsWith(`:${window}`) ||
+        (window === '5h' && /(?:^|[:_-])(?:5hour|5hours|fivehour|five_hours)$/.test(windowType)) ||
+        (window === '7d' &&
+          /(?:^|[:_-])(?:7day|7days|sevenday|seven_days|weekly)$/.test(windowType))
+      ) {
+        return true;
+      }
+      return Number(quota.limitWindowSeconds || 0) === expectedSeconds;
+    });
+    if (!matches.length) return null;
+    return [...matches].sort((left, right) => right.lastSyncedAt - left.lastSyncedAt)[0];
   }
 
   protected formatTime(value?: number): string {

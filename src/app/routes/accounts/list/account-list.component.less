@@ -120,10 +120,6 @@
   border-top: 3px solid #c96f3b;
 }
 
-.account-item-card.vendor-unknown {
-  border-top: 3px solid #8a96a6;
-}
-
 // 账号状态优先于厂商色：停用保持中性，暂时不可调度使用警告色，明确不可用使用错误色。
 .account-item-card.account-card-disabled {
   border-color: var(--nm-border);
@@ -210,10 +206,6 @@
   background: linear-gradient(135deg, #aa5f38, #de8b59);
 }
 
-.vendor-unknown .account-avatar {
-  background: linear-gradient(135deg, #718096, #9aa5b3);
-}
-
 .account-heading {
   min-width: 0;
 }
@@ -273,11 +265,6 @@
 .vendor-anthropic .vendor-badge {
   color: #e09971;
   background: rgb(201 111 59 / 16%);
-}
-
-.vendor-unknown .vendor-badge {
-  color: var(--nm-text-secondary);
-  background: var(--nm-surface-raised);
 }
 
 .account-email {
@@ -489,6 +476,14 @@
   display: grid;
   gap: 10px;
   margin-top: 8px;
+}
+
+.official-quota-list-dual {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.official-quota-list .reset-credit-panel {
+  grid-column: 1 / -1;
 }
 
 .quota-item {
@@ -846,5 +841,9 @@
 
   .gateway-usage-item:last-child {
     grid-column: 1 / -1;
+  }
+
+  .official-quota-list-dual {
+    grid-template-columns: 1fr;
   }
 }
