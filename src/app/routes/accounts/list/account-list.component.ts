@@ -632,14 +632,24 @@ export class AccountListComponent implements OnInit {
   }
 
   protected isQuotaExhausted(quota: AccountQuota): boolean {
-    const usedPercent = Number(quota.usedPercent || 0);
+    const rawUsedPercent = quota.usedPercent;
+    const usedPercent = Number(rawUsedPercent);
+    const hasWindowUsage =
+      rawUsedPercent !== null && rawUsedPercent !== undefined && Number.isFinite(usedPercent);
+
+    // `allowed` and `limitReached` are group-level fields in the official
+    // /wham/usage response. A concrete usage value belongs to this window,
+    // so it must take precedence over those legacy group flags regardless of
+    // whether the raw snapshot is still available.
+    if (hasWindowUsage) return usedPercent >= 99.5;
     if (quota.status === 'exhausted') return true;
-    return quota.limitReached === true || quota.allowed === false || usedPercent >= 99.5;
+    return quota.limitReached === true || quota.allowed === false;
   }
 
   protected quotaUsedPercent(quota: AccountQuota): number {
     if (this.isQuotaExhausted(quota)) return 100;
-    return Math.round(Math.min(100, Math.max(0, Number(quota.usedPercent || 0))));
+    const usedPercent = Number(quota.usedPercent);
+    return Number.isFinite(usedPercent) ? Math.round(Math.min(100, Math.max(0, usedPercent))) : 0;
   }
 
   protected quotaRemainingPercent(quota: AccountQuota): number {
