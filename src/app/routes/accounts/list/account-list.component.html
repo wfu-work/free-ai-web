@@ -215,14 +215,24 @@
                       <div class="gateway-usage-title">{{ quotaWindow.label }}</div>
                       @if (quotaWindow.quota; as quota) {
                         <div class="quota-item" [class]="quotaTone(quota)">
-                          <nz-progress
-                            nzSize="small"
-                            [nzPercent]="quotaRemainingPercent(quota)"
-                            [nzStrokeColor]="quotaProgressColor(quota)"
-                            [nzFormat]="quotaProgressFormat"
-                          />
+                          @if (shouldRenderQuotaProgress(quota)) {
+                            <nz-progress
+                              nzSize="small"
+                              [nzPercent]="quotaRemainingPercent(quota)"
+                              [nzStrokeColor]="quotaProgressColor(quota)"
+                              [nzFormat]="quotaProgressFormat"
+                            />
+                          } @else {
+                            <div class="empty-value">官方未提供已用比例</div>
+                          }
                           <div class="quota-meta">
-                            <span>已使用 {{ quotaUsedPercent(quota) }}%</span>
+                            <span>
+                              @if (hasQuotaUsage(quota) || isQuotaExhausted(quota)) {
+                                已使用 {{ quotaUsedPercent(quota) }}%
+                              } @else {
+                                用量未知
+                              }
+                            </span>
                             <span>重置时间 {{ formatTime(quota.resetAt) }}</span>
                           </div>
                         </div>

@@ -543,14 +543,14 @@ export class AccountListComponent implements OnInit {
         key: '5h',
         label: '5 小时窗口',
         emptyLabel: '暂无 5 小时官方额度',
-        quota: this.officialFiveHourQuota(item.quotas),
+        quota: this.officialFiveHourQuota(item),
       });
     }
     windows.push({
       key: '7d',
       label: '7 天窗口',
       emptyLabel: '暂无 7 天官方额度',
-      quota: this.officialSevenDayQuota(item.quotas),
+      quota: this.officialSevenDayQuota(item),
     });
     return windows;
   }
@@ -616,9 +616,11 @@ export class AccountListComponent implements OnInit {
 
   protected quotaTone(quota: AccountQuota): string {
     if (this.isQuotaExhausted(quota)) return 'quota-danger';
-    const remaining = 100 - Math.min(100, Math.max(0, Number(quota.usedPercent || 0)));
-    if (remaining <= 20) return 'quota-danger';
-    if (remaining <= 40) return 'quota-warning';
+    if (this.hasQuotaUsage(quota)) {
+      const remaining = 100 - Math.min(100, Math.max(0, Number(quota.usedPercent)));
+      if (remaining <= 20) return 'quota-danger';
+      if (remaining <= 40) return 'quota-warning';
+    }
     switch (quota.status) {
       case 'available':
         return 'quota-success';
@@ -652,6 +654,19 @@ export class AccountListComponent implements OnInit {
     return Number.isFinite(usedPercent) ? Math.round(Math.min(100, Math.max(0, usedPercent))) : 0;
   }
 
+  /**
+   * 官方有时只返回窗口的重置时间和状态，不返回已用比例。
+   * 这不是 0%，不能把缺失值伪装成“剩余 100%”。
+   */
+  protected hasQuotaUsage(quota: AccountQuota): boolean {
+    const value = Number(quota.usedPercent);
+    return quota.usedPercent !== null && quota.usedPercent !== undefined && Number.isFinite(value);
+  }
+
+  protected shouldRenderQuotaProgress(quota: AccountQuota): boolean {
+    return this.hasQuotaUsage(quota) || this.isQuotaExhausted(quota);
+  }
+
   protected quotaRemainingPercent(quota: AccountQuota): number {
     return 100 - this.quotaUsedPercent(quota);
   }
@@ -663,35 +678,75 @@ export class AccountListComponent implements OnInit {
     return '#20a77a';
   }
 
-  protected officialSevenDayQuota(quotas?: AccountQuota[]): AccountQuota | null {
-    return this.findOfficialQuota(quotas, '7d');
+  protected officialSevenDayQuota(itemOrQuotas?: Account | AccountQuota[]): AccountQuota | null {
+    const item = Array.isArray(itemOrQuotas) ? undefined : itemOrQuotas;
+    const quotas = Array.isArray(itemOrQuotas) ? itemOrQuotas : item?.quotas;
+    return this.findOfficialQuota(quotas, '7d', item);
   }
 
-  protected officialFiveHourQuota(quotas?: AccountQuota[]): AccountQuota | null {
-    return this.findOfficialQuota(quotas, '5h');
+  protected officialFiveHourQuota(itemOrQuotas?: Account | AccountQuota[]): AccountQuota | null {
+    const item = Array.isArray(itemOrQuotas) ? undefined : itemOrQuotas;
+    const quotas = Array.isArray(itemOrQuotas) ? itemOrQuotas : item?.quotas;
+    return this.findOfficialQuota(quotas, '5h', item);
   }
 
   private findOfficialQuota(
     quotas: AccountQuota[] | undefined,
     window: '5h' | '7d',
+    item?: Account,
   ): AccountQuota | null {
     const expectedSeconds = window === '5h' ? 5 * 60 * 60 : 7 * 24 * 60 * 60;
-    const matches = (quotas || []).filter((quota) => {
-      if ((quota.source || '').trim().toLowerCase() !== 'wham') return false;
+    const isPro = Boolean(item && this.isProAccount(item));
+    const candidates = (quotas || []).flatMap((quota) => {
+      if ((quota.source || '').trim().toLowerCase() !== 'wham') return [];
       const windowType = (quota.windowType || '').trim().toLowerCase();
-      if (
-        windowType === window ||
-        windowType.endsWith(`:${window}`) ||
+      const seconds = Number(quota.limitWindowSeconds || 0);
+      const isAdditional = windowType.includes(':');
+      const hasKnownDuration = seconds > 0;
+      const durationMatches =
+        seconds === expectedSeconds ||
+        (window === '7d' && seconds >= 6 * 24 * 60 * 60) ||
+        (window === '5h' && seconds > 0 && seconds <= 6 * 60 * 60);
+
+      // Main `rate_limit` rows are authoritative. Additional rows (Spark,
+      // Code Review, ...) can also have a 7-day window, but must not replace
+      // the account's own Pro/Plus quota merely because they were synced later.
+      let rank: number | null = null;
+      if (!isAdditional && windowType === window) {
+        rank = 0;
+      } else if (!isAdditional && hasKnownDuration && durationMatches) {
+        rank = 1;
+      } else if (!isAdditional && !hasKnownDuration) {
+        if (window === '5h' && (windowType === 'primary' || windowType === 'primary_window'))
+          rank = 2;
+        if (window === '7d' && (windowType === 'secondary' || windowType === 'secondary_window'))
+          rank = 2;
+        // Pro accounts may expose only one unlabelled primary window. The
+        // official endpoint uses it for the weekly Pro quota after the plan
+        // change; prefer it over an additional feature's 7-day window.
+        if (
+          window === '7d' &&
+          isPro &&
+          (windowType === 'primary' || windowType === 'primary_window')
+        )
+          rank = 3;
+      }
+
+      const semanticAlias =
         (window === '5h' && /(?:^|[:_-])(?:5hour|5hours|fivehour|five_hours)$/.test(windowType)) ||
         (window === '7d' &&
-          /(?:^|[:_-])(?:7day|7days|sevenday|seven_days|weekly)$/.test(windowType))
-      ) {
-        return true;
-      }
-      return Number(quota.limitWindowSeconds || 0) === expectedSeconds;
+          /(?:^|[:_-])(?:7day|7days|sevenday|seven_days|weekly|week|weekly_window|week_window)$/.test(
+            windowType,
+          ));
+      if (rank === null && semanticAlias) rank = isAdditional ? 4 : 2;
+      if (rank === null && isAdditional && durationMatches) rank = 4;
+      if (rank === null) return [];
+      return [{ quota, rank }];
     });
-    if (!matches.length) return null;
-    return [...matches].sort((left, right) => right.lastSyncedAt - left.lastSyncedAt)[0];
+    if (!candidates.length) return null;
+    return [...candidates].sort(
+      (left, right) => left.rank - right.rank || right.quota.lastSyncedAt - left.quota.lastSyncedAt,
+    )[0].quota;
   }
 
   protected formatTime(value?: number): string {
