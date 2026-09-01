@@ -8,7 +8,12 @@ import {
 } from '@angular/core';
 import { FormBuilder, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
-import { MetricCardComponent, SHARED_IMPORTS, TitleLabelComponent } from '@shared';
+import {
+  MetricCardComponent,
+  SHARED_IMPORTS,
+  TitleLabelComponent,
+  translateErrorMessage,
+} from '@shared';
 import { NzMessageService } from 'ng-zorro-antd/message';
 import { NzModalService } from 'ng-zorro-antd/modal';
 import { NzSegmentedModule } from 'ng-zorro-antd/segmented';
@@ -21,6 +26,7 @@ import {
   mergeStringOptions,
   normalizeOfficialVendorCode,
 } from '../account-options';
+import { effectiveAccountStatus } from '../account-status.util';
 import {
   Account,
   AccountAPIKeyPayload,
@@ -408,7 +414,7 @@ export class AccountEditComponent implements OnInit, OnDestroy {
         ) {
           const batch = result as AccountImportBatchResult;
           if (batch.failed > 0) {
-            const firstError = batch.items.find((item) => item.error)?.error;
+            const firstError = translateErrorMessage(batch.items.find((item) => item.error)?.error);
             this.message.warning(
               `批量导入完成：成功 ${batch.imported} 个，失败 ${batch.failed} 个${
                 firstError ? `；首个错误：${firstError}` : ''
@@ -658,7 +664,7 @@ export class AccountEditComponent implements OnInit, OnDestroy {
     return Number.isNaN(date.getTime()) ? '-' : date.toLocaleString('zh-CN', { hour12: false });
   }
 
-  protected statusText(status?: string): string {
+  protected statusText(status?: string, tokenStatus?: string): string {
     const map: Record<string, string> = {
       available: '可用',
       limited: '限流',
@@ -669,7 +675,8 @@ export class AccountEditComponent implements OnInit, OnDestroy {
       invalid: '失效',
       unknown: '未知',
     };
-    return map[status || ''] || status || '-';
+    const value = effectiveAccountStatus(status, tokenStatus);
+    return map[value] || value || '-';
   }
 
   protected tokenStatusText(status?: string): string {

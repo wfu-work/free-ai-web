@@ -112,8 +112,8 @@
                 </div>
               </div>
               <div class="account-statuses">
-                <span class="status-pill" [class]="statusTone(item.status)">
-                  {{ statusText(item.status) }}
+                <span class="status-pill" [class]="statusTone(item.status, item.tokenStatus)">
+                  {{ statusText(item.status, item.tokenStatus) }}
                 </span>
               </div>
             </div>
@@ -348,7 +348,7 @@
 
             @if (item.remark || item.lastError) {
               <div class="account-note" [class.account-note-error]="!!item.lastError">
-                {{ item.lastError || item.remark }}
+                {{ (item.lastError | errorMessage) || item.remark }}
               </div>
             }
 
@@ -487,7 +487,7 @@
         @if (testResult.errorSummary) {
           <div>
             <span>错误摘要</span>
-            <strong>{{ testResult.errorSummary }}</strong>
+            <strong>{{ testResult.errorSummary | errorMessage }}</strong>
           </div>
         }
       </div>

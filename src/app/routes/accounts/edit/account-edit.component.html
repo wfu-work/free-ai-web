@@ -23,7 +23,7 @@
       <div class="metric-grid mt-lg">
         <app-metric-card
           label="账号状态"
-          [value]="statusText(account.status)"
+          [value]="statusText(account.status, account.tokenStatus)"
           description="当前运行状态"
           tone="success"
         />
@@ -195,7 +195,7 @@
                   nzType="error"
                   nzShowIcon
                   nzMessage="授权未完成"
-                  [nzDescription]="oauthSession?.error || null"
+                  [nzDescription]="oauthSession?.error | errorMessage"
                 />
               }
             </section>
@@ -486,7 +486,7 @@
               nzType="error"
               nzShowIcon
               nzMessage="最近同步错误"
-              [nzDescription]="account.lastError"
+              [nzDescription]="account.lastError | errorMessage"
             />
           }
         }

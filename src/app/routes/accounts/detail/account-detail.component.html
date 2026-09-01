@@ -36,8 +36,11 @@
           <div class="identity-main">
             <div class="identity-title-row">
               <strong>{{ currentAccount.name || '未命名账号' }}</strong>
-              <span class="status-pill" [class]="statusTone(currentAccount.status)">
-                {{ statusText(currentAccount.status) }}
+              <span
+                class="status-pill"
+                [class]="statusTone(currentAccount.status, currentAccount.tokenStatus)"
+              >
+                {{ statusText(currentAccount.status, currentAccount.tokenStatus) }}
               </span>
             </div>
             <span>{{ currentAccount.email || currentAccount.credentialHint || '-' }}</span>
@@ -118,7 +121,9 @@
           <div class="panel-head">
             <div>
               <h2 id="usage-grid-title">Token 用量网格</h2>
-              <p>{{ formatPeriod() }} · 每格代表一天，显示 Token 总量与请求数；颜色越深表示用量越高。</p>
+              <p>
+                {{ formatPeriod() }} · 每格代表一天，显示 Token 总量与请求数；颜色越深表示用量越高。
+              </p>
             </div>
             <div class="range-switch" role="group" aria-label="统计时间范围">
               @for (range of ranges; track range) {
@@ -248,7 +253,7 @@
               </div>
               <div>
                 <dt>凭据状态</dt>
-                <dd>{{ currentAccount.tokenStatus || '-' }}</dd>
+                <dd>{{ tokenStatusText(currentAccount.tokenStatus) }}</dd>
               </div>
               <div>
                 <dt>最近同步</dt>

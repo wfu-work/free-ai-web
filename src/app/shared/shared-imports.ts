@@ -5,6 +5,7 @@ import { DatePipe, I18nPipe } from '@delon/theme';
 
 import { ConsLogsComponent } from './components/cons-logs/cons-logs.component';
 import { PasswordInputComponent } from './components/password-input/password-input.component';
+import { ErrorMessagePipe } from './pipes/error-message.pipe';
 import { MetricPipe } from './pipes/metric.pipe';
 import { SHARED_DELON_MODULES } from './shared-delon.module';
 import { SHARED_ZORRO_MODULES } from './shared-zorro.module';
@@ -21,6 +22,7 @@ export const SHARED_IMPORTS = [
   AsyncPipe,
   ConsLogsComponent,
   PasswordInputComponent,
+  ErrorMessagePipe,
   MetricPipe,
   ...SHARED_DELON_MODULES,
   ...SHARED_ZORRO_MODULES,

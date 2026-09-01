@@ -17,6 +17,7 @@ import {
 import { catchError, finalize, forkJoin, of } from 'rxjs';
 
 import { UsageDimension, UsageSummary } from '../../usage/usage.model';
+import { effectiveAccountStatus } from '../account-status.util';
 import { Account } from '../account.model';
 import { AccountsService } from '../accounts.service';
 
@@ -172,12 +173,13 @@ export class AccountDetailComponent implements OnInit {
     return `${this.formatLongDate(cell.timestamp)}，${formatMetricNumber(cell.totalTokens)} Token，${formatMetricNumber(cell.requests)} 次请求`;
   }
 
-  protected statusText(status?: string): string {
-    return this.statusTextMap[status || 'unknown'] || status || '未知';
+  protected statusText(status?: string, tokenStatus?: string): string {
+    const value = effectiveAccountStatus(status, tokenStatus) || 'unknown';
+    return this.statusTextMap[value] || value || '未知';
   }
 
-  protected statusTone(status?: string): string {
-    switch (status) {
+  protected statusTone(status?: string, tokenStatus?: string): string {
+    switch (effectiveAccountStatus(status, tokenStatus)) {
       case 'available':
         return 'status-available';
       case 'limited':
@@ -190,6 +192,17 @@ export class AccountDetailComponent implements OnInit {
       default:
         return 'status-neutral';
     }
+  }
+
+  protected tokenStatusText(status?: string): string {
+    const map: Record<string, string> = {
+      active: '有效',
+      refresh_needed: '需要刷新',
+      refresh_failed: '刷新失败',
+      invalid: '无效',
+    };
+    const value = (status || '').trim().toLowerCase();
+    return map[value] || value || '-';
   }
 
   protected vendorMark(vendorCode?: string): string {

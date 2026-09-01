@@ -8,6 +8,7 @@ import { AlainThemeModule } from '@delon/theme';
 
 import { ConsLogsComponent } from './components/cons-logs/cons-logs.component';
 import { PasswordInputComponent } from './components/password-input/password-input.component';
+import { ErrorMessagePipe } from './pipes/error-message.pipe';
 import { MetricPipe } from './pipes/metric.pipe';
 import { SHARED_DELON_MODULES } from './shared-delon.module';
 import { SHARED_ZORRO_MODULES } from './shared-zorro.module';
@@ -38,6 +39,7 @@ const STANDALONE_COMPONENTS: Array<Type<void>> = [ConsLogsComponent, PasswordInp
     ...SHARED_DELON_MODULES,
     ...SHARED_ZORRO_MODULES,
     ...STANDALONE_COMPONENTS,
+    ErrorMessagePipe,
     MetricPipe,
     // third libs
     ...THIRDMODULES,
@@ -58,6 +60,7 @@ const STANDALONE_COMPONENTS: Array<Type<void>> = [ConsLogsComponent, PasswordInp
     ...SHARED_DELON_MODULES,
     ...SHARED_ZORRO_MODULES,
     ...STANDALONE_COMPONENTS,
+    ErrorMessagePipe,
     MetricPipe,
     // third libs
     ...THIRDMODULES,

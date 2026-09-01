@@ -17,6 +17,7 @@ import { NzTagModule } from 'ng-zorro-antd/tag';
 import { finalize } from 'rxjs';
 
 import { OFFICIAL_VENDOR_OPTIONS, normalizeOfficialVendorCode } from '../account-options';
+import { effectiveAccountStatus } from '../account-status.util';
 import {
   Account,
   AccountQuota,
@@ -398,14 +399,14 @@ export class AccountListComponent implements OnInit {
       });
   }
 
-  protected statusText(status?: string): string {
-    const value = (status || '').trim();
+  protected statusText(status?: string, tokenStatus?: string): string {
+    const value = effectiveAccountStatus(status, tokenStatus);
     if (!value) return '-';
     return this.statusTextMap[value] || value;
   }
 
-  protected statusTone(status?: string): string {
-    switch ((status || '').trim()) {
+  protected statusTone(status?: string, tokenStatus?: string): string {
+    switch (effectiveAccountStatus(status, tokenStatus)) {
       case 'available':
         return 'status-success';
       case 'limited':
@@ -580,7 +581,7 @@ export class AccountListComponent implements OnInit {
       classes.push('account-card-disabled');
       return classes;
     }
-    switch ((item.status || '').trim()) {
+    switch (effectiveAccountStatus(item.status, item.tokenStatus)) {
       case 'limited':
       case 'cooldown':
         classes.push('account-card-waiting');

@@ -16,6 +16,7 @@ import { Observable, catchError, mergeMap, of, throwError } from 'rxjs';
 
 import { ReThrowHttpError, getAdditionalHeaders, goTo, toLogin } from './helper';
 import { tryRefreshToken } from './refresh-token';
+import { translateErrorMessage } from '../../shared/utils/error-message.util';
 
 type ApiResponseBody = Partial<{
   code: number;
@@ -44,7 +45,9 @@ function handleData(
             toLogin(injector);
           }
           const customError = req.context.get(CUSTOM_ERROR);
-          if (!customError) injector.get(NzMessageService).error(body.msg ?? '请求失败');
+          if (!customError) {
+            injector.get(NzMessageService).error(translateErrorMessage(body.msg ?? '请求失败'));
+          }
           return !customError
             ? throwError(() => ({ ...body, _throw: true }) as ReThrowHttpError)
             : of();
