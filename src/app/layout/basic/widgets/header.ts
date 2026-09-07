@@ -73,7 +73,7 @@ import { ThemeColorComponent } from './theme-color';
         min-height: 68px;
         padding: 10px 18px;
         border: 1px solid transparent;
-        border-radius: 0 0 8px 8px;
+        border-radius: 0;
         background: transparent;
         box-shadow: none;
         backdrop-filter: none;
@@ -87,12 +87,12 @@ import { ThemeColorComponent } from './theme-color';
 
       .header-container-scrolled,
       :host-context(html.cdk-global-scrollblock) .header-container {
-        border-color: var(--nm-border);
-        background: var(--nm-surface-glass);
-        box-shadow:
-          0 12px 32px rgb(41 99 119 / 10%),
-          inset 0 1px 0 var(--nm-border);
-        backdrop-filter: blur(18px);
+        border-color: color-mix(in srgb, var(--nm-border) 50%, transparent);
+        background:
+          radial-gradient(circle at 35% 100%, rgb(var(--nm-primary-rgb) / 6%), transparent 34%),
+          linear-gradient(180deg, var(--nm-surface) 0%, var(--nm-surface-muted) 100%);
+        box-shadow: none;
+        backdrop-filter: none;
       }
 
       .header-container-collapsed {
@@ -207,7 +207,7 @@ import { ThemeColorComponent } from './theme-color';
           left: 0;
           min-height: 60px;
           padding: 8px 12px;
-          border-radius: 0 0 18px 18px;
+          border-radius: 0;
         }
 
         .trigger {

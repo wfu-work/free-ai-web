@@ -236,7 +236,7 @@ export class AccountEditComponent implements OnInit, OnDestroy {
   protected readonly form = this.fb.nonNullable.group({
     name: [''],
     vendorCode: [DEFAULT_OFFICIAL_VENDOR_CODE],
-    accountGroup: [''],
+    accountGroup: ['default'],
     priority: [0],
     weight: [1, [Validators.min(1)]],
     remark: [''],
@@ -261,7 +261,7 @@ export class AccountEditComponent implements OnInit, OnDestroy {
     } else {
       this.formMode = 'create';
       this.form.controls.accountGroup.setValue(
-        (this.route.snapshot.queryParamMap.get('group') || '').trim(),
+        (this.route.snapshot.queryParamMap.get('group') || '').trim() || 'default',
       );
     }
   }
