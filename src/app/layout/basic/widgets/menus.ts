@@ -341,12 +341,10 @@ export function resolveNavigationKey(url: string): NavigationKey {
         }
 
         .ant-menu-inline .ant-menu-item-selected {
-          border-color: rgb(var(--nm-primary-rgb) / 13%);
+          border-color: transparent;
           color: color-mix(in srgb, var(--nm-primary) 82%, var(--nm-text)) !important;
           background: var(--nm-primary-soft) !important;
-          box-shadow:
-            inset 0 1px 0 rgb(255 255 255 / 32%),
-            0 5px 14px rgb(var(--nm-primary-rgb) / 8%);
+          box-shadow: none;
           font-weight: 600;
           transform: none;
         }
@@ -359,7 +357,7 @@ export function resolveNavigationKey(url: string): NavigationKey {
           height: 5px;
           border-radius: 50%;
           background: var(--nm-primary);
-          box-shadow: 0 0 0 4px rgb(var(--nm-primary-rgb) / 9%);
+          box-shadow: none;
           content: '';
           transform: translateY(-50%);
         }

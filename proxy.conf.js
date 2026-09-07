@@ -14,4 +14,12 @@ module.exports = {
     },
     changeOrigin: true,
   },
+    '/dev/': {
+    target: 'http://127.0.0.1:8787/api/',
+    secure: false,
+    pathRewrite: {
+      '^/dev/': '',
+    },
+    changeOrigin: true,
+  },
 };

@@ -30,14 +30,12 @@
     height: auto;
     padding: 16px 12px;
     border: 0;
-    border-right: 1px solid var(--nm-border);
+    border-right: 1px solid color-mix(in srgb, var(--nm-border) 50%, transparent);
     border-radius: 0;
     background:
       radial-gradient(circle at 35% 100%, rgb(var(--nm-primary-rgb) / 6%), transparent 34%),
       linear-gradient(180deg, var(--nm-surface) 0%, var(--nm-surface-muted) 100%);
-    box-shadow:
-      10px 0 34px rgb(41 65 119 / 7%),
-      inset -1px 0 0 rgb(255 255 255 / 28%);
+    box-shadow: none;
   }
 
   nz-sider > .ant-layout-sider-children {
