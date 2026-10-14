@@ -77,7 +77,9 @@
       </div>
       <div class="backup-notes">
         <span>备份文件不包含请求日志正文，适合在清理日志前保留核心配置。</span>
-        <span>密钥以数据库加密字段形式导出，不会在文件中生成明文 Bearer 或 API Key。</span>
+        <span
+          >账号密钥和代理认证均以密文导出。恢复加密凭据需要原主密钥文件，请单独保管；备份不包含主密钥。</span
+        >
       </div>
     </nz-card>
 

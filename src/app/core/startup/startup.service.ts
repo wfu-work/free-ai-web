@@ -12,6 +12,8 @@ import { CUSTOM_ERROR, MenuService, SettingsService, TitleService } from '@delon
 import type { NzSafeAny } from 'ng-zorro-antd/core/types';
 import { Observable, catchError, map, of } from 'rxjs';
 
+import { clearLegacyGatewayConfigStorage } from '../../shared/utils/gateway-config-storage.util';
+
 /**
  * Used for application startup
  * Generally used to get the basic data of the application, like: Menu Data, User Data, etc.
@@ -91,6 +93,7 @@ export class StartupService {
   }
 
   load(): Observable<void> {
+    clearLegacyGatewayConfigStorage();
     return this.viaHttp();
   }
 }

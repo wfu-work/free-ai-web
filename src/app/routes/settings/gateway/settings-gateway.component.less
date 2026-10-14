@@ -3,6 +3,8 @@
 }
 
 .gateway-page {
+  container-name: gateway;
+  container-type: inline-size;
   display: grid;
   gap: 24px;
   min-width: 0;
@@ -33,15 +35,15 @@
 
 .config-grid {
   display: grid;
-  grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
+  grid-template-columns: minmax(0, 1fr);
   gap: 24px;
-  align-items: stretch;
+  align-items: start;
 }
 
 .config-section-card {
   overflow: hidden;
   min-width: 0;
-  height: 100%;
+  margin-bottom: 0;
   border: 1px solid rgb(var(--nm-primary-rgb) / 10%);
   border-radius: 10px;
   background: var(--nm-surface);
@@ -54,15 +56,7 @@
 }
 
 .config-section-card ::ng-deep .ant-card-body {
-  height: 100%;
-  padding: clamp(24px, 2vw, 30px);
-}
-
-.listen-card,
-.capacity-card,
-.context-card,
-.connection-card {
-  grid-column: 1 / -1;
+  padding: 24px;
 }
 
 .context-note {
@@ -230,15 +224,37 @@
 }
 
 .gateway-form ::ng-deep .field-stack,
+.gateway-form ::ng-deep .routing-fields,
+.gateway-form ::ng-deep .proxy-fields,
+.gateway-form ::ng-deep .proxy-credential-fields,
 .gateway-form ::ng-deep .capacity-fields,
 .gateway-form ::ng-deep .context-fields,
 .gateway-form ::ng-deep .connection-fields {
   display: grid;
-  gap: 24px 22px;
+  gap: 24px;
 }
 
 .gateway-form ::ng-deep .field-stack {
   grid-template-columns: minmax(0, 1fr);
+}
+
+.gateway-form ::ng-deep .routing-fields {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.gateway-form ::ng-deep .proxy-fields,
+.gateway-form ::ng-deep .proxy-credential-fields {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px 16px;
+  margin-top: 0;
+}
+
+.gateway-form ::ng-deep .proxy-credential-fields {
+  margin-top: 20px;
+}
+
+.gateway-form ::ng-deep .proxy-address-field {
+  grid-column: 1 / -1;
 }
 
 .gateway-form ::ng-deep .capacity-fields {
@@ -254,6 +270,9 @@
 }
 
 .gateway-form ::ng-deep .field-stack .se__item,
+.gateway-form ::ng-deep .routing-fields .se__item,
+.gateway-form ::ng-deep .proxy-fields .se__item,
+.gateway-form ::ng-deep .proxy-credential-fields .se__item,
 .gateway-form ::ng-deep .capacity-fields .se__item,
 .gateway-form ::ng-deep .context-fields .se__item,
 .gateway-form ::ng-deep .connection-fields .se__item {
@@ -289,15 +308,154 @@
   width: 100%;
 }
 
-.proxy-scope {
+.proxy-layout {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px 18px;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 32px;
+  align-items: start;
   margin-top: 24px;
-  padding: 14px 16px;
-  border: 1px solid var(--nm-border);
-  border-radius: 8px;
-  background: var(--nm-surface-muted);
+}
+
+.proxy-settings,
+.proxy-diagnostics {
+  min-width: 0;
+}
+
+.proxy-auth-footer {
+  margin-top: 20px;
+}
+
+.proxy-diagnostics {
+  padding-left: 32px;
+  border-left: 1px solid var(--nm-border);
+}
+
+.proxy-diagnostics-head {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+.proxy-diagnostics-head h4 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--nm-text);
+}
+
+.proxy-diagnostics-head .field-extra {
+  margin-top: 4px;
+}
+
+.proxy-diagnostics-head button {
+  flex: 0 0 auto;
+}
+
+.proxy-test-result {
+  margin-top: 24px;
+}
+
+.proxy-exit-ip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  align-items: baseline;
+}
+
+.proxy-exit-ip strong {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--nm-primary);
+  overflow-wrap: anywhere;
+}
+
+.proxy-checks {
+  border-collapse: collapse;
+  width: 100%;
+  margin-top: 16px;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.proxy-checks thead th {
+  padding: 8px 0;
+  border-block: 1px solid var(--nm-border);
+  font-weight: 500;
+  color: var(--nm-text-secondary);
+  text-align: left;
+}
+
+.proxy-check-summary th,
+.proxy-check-summary td {
+  padding: 12px 0 4px;
+  text-align: left;
+  vertical-align: top;
+}
+
+.proxy-check-summary th {
+  width: 40%;
+  padding-right: 8px;
+  font-weight: 600;
+  color: var(--nm-text);
+}
+
+.proxy-check-summary td {
+  padding-left: 8px;
+  white-space: nowrap;
+}
+
+.proxy-checks thead th:not(:first-child) {
+  padding-left: 8px;
+}
+
+.proxy-checks th:last-child,
+.proxy-checks td:last-child:not([colspan]) {
+  text-align: right;
+}
+
+.proxy-check-detail td {
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--nm-border);
+  color: var(--nm-text-secondary);
+  overflow-wrap: anywhere;
+}
+
+.proxy-test-empty {
+  margin-top: 24px;
+  padding-block: 20px;
+  border-block: 1px dashed var(--nm-border);
+  color: var(--nm-text-secondary);
+}
+
+.proxy-test-empty p {
+  margin: 0 0 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--nm-text);
+}
+
+.proxy-test-empty span {
+  font-size: 12px;
+  line-height: 1.65;
+}
+
+.proxy-check-success {
+  color: var(--nm-success);
+}
+
+.proxy-test-error {
+  color: var(--nm-danger);
+}
+
+.proxy-scope {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 20px;
+  align-items: center;
+  margin-top: 24px;
+  padding-top: 16px;
+  border-top: 1px solid var(--nm-border);
 }
 
 .proxy-scope span {
@@ -310,13 +468,35 @@
   color: var(--nm-text-secondary);
 }
 
-.proxy-scope span::before {
+.proxy-scope span:not(.proxy-scope-label)::before {
   content: '';
   flex: 0 0 auto;
   width: 6px;
   height: 6px;
   border-radius: 50%;
   background: rgb(var(--nm-primary-rgb) / 45%);
+}
+
+.proxy-scope .proxy-scope-label {
+  font-weight: 400;
+}
+
+@container gateway (max-width: 900px) {
+  .proxy-layout {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 24px;
+  }
+
+  .proxy-diagnostics {
+    padding-top: 24px;
+    padding-left: 0;
+    border-top: 1px solid var(--nm-border);
+    border-left: 0;
+  }
+
+  .gateway-form ::ng-deep .routing-fields {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
 
 @media (max-width: 1200px) {
@@ -326,19 +506,6 @@
 
   .gateway-form ::ng-deep .capacity-fields {
     grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
-
-@media (max-width: 1080px) {
-  .config-grid {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
-  .listen-card,
-  .capacity-card,
-  .context-card,
-  .connection-card {
-    grid-column: auto;
   }
 }
 
@@ -363,9 +530,12 @@
   }
 
   .summary-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
   }
 
+  .gateway-form ::ng-deep .proxy-fields,
+  .gateway-form ::ng-deep .proxy-credential-fields,
   .gateway-form ::ng-deep .capacity-fields,
   .gateway-form ::ng-deep .context-fields,
   .gateway-form ::ng-deep .connection-fields {

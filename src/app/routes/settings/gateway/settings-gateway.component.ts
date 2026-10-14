@@ -11,13 +11,17 @@ import { MetricCardComponent, SHARED_IMPORTS, TitleLabelComponent } from '@share
 import { NzMessageService } from 'ng-zorro-antd/message';
 import { finalize } from 'rxjs';
 
+import { clearLegacyGatewayConfigStorage } from '../../../shared/utils/gateway-config-storage.util';
+
 interface GatewayConfig {
   listenAddress: string;
   accountSelectionStrategy: string;
   originator: string;
   residency: string;
   upstreamProxyEnabled: boolean;
+  upstreamProxyRequired: boolean;
   upstreamProxyUrl: string;
+  upstreamProxyHasCredentials: boolean;
   sseKeepAliveMs: number;
   upstreamTimeoutMs: number;
   upstreamStreamIdleTimeoutMs: number;
@@ -29,7 +33,18 @@ interface GatewayConfig {
   contextCompactionThresholdTokens: number;
 }
 
-const STORAGE_KEY = 'freeai.gateway.config';
+interface UpstreamProxyTestResult {
+  proxyAddress: string;
+  exitIp?: string;
+  checkedAt: number;
+  checks: Array<{
+    name: string;
+    reachable: boolean;
+    statusCode?: number;
+    latencyMs: number;
+    message: string;
+  }>;
+}
 
 const DEFAULT_GATEWAY_CONFIG: GatewayConfig = {
   listenAddress: '127.0.0.1',
@@ -37,7 +52,9 @@ const DEFAULT_GATEWAY_CONFIG: GatewayConfig = {
   originator: 'codex_cli_rs',
   residency: '',
   upstreamProxyEnabled: false,
+  upstreamProxyRequired: false,
   upstreamProxyUrl: '',
+  upstreamProxyHasCredentials: false,
   sseKeepAliveMs: 15000,
   upstreamTimeoutMs: 120000,
   upstreamStreamIdleTimeoutMs: 1800000,
@@ -64,6 +81,11 @@ export class SettingsGatewayComponent implements OnInit {
 
   protected loading = false;
   protected saving = false;
+  protected configLoaded = false;
+  protected testingProxy = false;
+  protected proxyTestError = '';
+  private testedProxyUrl = '';
+  private proxyTestResult: UpstreamProxyTestResult | null = null;
 
   protected readonly listenAddressOptions = [
     { label: '仅本机 (127.0.0.1)', value: '127.0.0.1' },
@@ -124,7 +146,9 @@ export class SettingsGatewayComponent implements OnInit {
     originator: [DEFAULT_GATEWAY_CONFIG.originator],
     residency: [DEFAULT_GATEWAY_CONFIG.residency],
     upstreamProxyEnabled: [DEFAULT_GATEWAY_CONFIG.upstreamProxyEnabled],
+    upstreamProxyRequired: [DEFAULT_GATEWAY_CONFIG.upstreamProxyRequired],
     upstreamProxyUrl: [DEFAULT_GATEWAY_CONFIG.upstreamProxyUrl],
+    upstreamProxyHasCredentials: [DEFAULT_GATEWAY_CONFIG.upstreamProxyHasCredentials],
     sseKeepAliveMs: [DEFAULT_GATEWAY_CONFIG.sseKeepAliveMs],
     upstreamTimeoutMs: [DEFAULT_GATEWAY_CONFIG.upstreamTimeoutMs],
     upstreamStreamIdleTimeoutMs: [DEFAULT_GATEWAY_CONFIG.upstreamStreamIdleTimeoutMs],
@@ -151,26 +175,39 @@ export class SettingsGatewayComponent implements OnInit {
     ],
   });
 
+  protected readonly proxyCredentials = this.fb.nonNullable.group({
+    upstreamProxyUsername: [''],
+    upstreamProxyPassword: [''],
+    upstreamProxyClearCredentials: [false],
+  });
+
   ngOnInit(): void {
-    this.loadLocalConfig();
+    clearLegacyGatewayConfigStorage();
     this.loadRemoteConfig();
   }
 
   protected save(): void {
+    if (!this.configLoaded || this.saving) return;
     if (this.form.invalid) {
       this.form.markAllAsTouched();
       this.message.warning('请先修正超出允许范围的配置项');
       return;
     }
     const payload = this.normalizeConfig(this.form.getRawValue());
-    if (payload.upstreamProxyEnabled && !payload.upstreamProxyUrl) {
-      this.message.warning('开启翻墙代理后需要填写代理地址');
+    if (payload.upstreamProxyRequired && !payload.upstreamProxyEnabled) {
+      this.message.warning('必须使用代理时，请开启上游代理并填写地址');
       return;
     }
+    if (payload.upstreamProxyEnabled && !payload.upstreamProxyUrl) {
+      this.message.warning('开启上游代理后需要填写代理地址');
+      return;
+    }
+    const credentials = this.proxyCredentialInput();
+    if (!credentials) return;
     this.form.patchValue(payload);
     this.saving = true;
     this.http
-      .put<Partial<GatewayConfig>>('/ops/gateway-config', payload)
+      .put<Partial<GatewayConfig>>('/ops/gateway-config', { ...payload, ...credentials })
       .pipe(
         finalize(() => {
           this.saving = false;
@@ -179,9 +216,19 @@ export class SettingsGatewayComponent implements OnInit {
       )
       .subscribe({
         next: (remote) => {
-          const saved = this.normalizeConfig({ ...payload, ...remote });
+          const saved = this.normalizeConfig({
+            ...payload,
+            ...remote,
+            upstreamProxyUrl: this.redactedProxyAddress(
+              remote.upstreamProxyUrl ?? payload.upstreamProxyUrl,
+            ),
+          });
           this.form.patchValue(saved);
-          localStorage.setItem(STORAGE_KEY, JSON.stringify(saved));
+          this.proxyCredentials.reset();
+          this.testedProxyUrl = '';
+          this.proxyTestResult = null;
+          this.proxyTestError = '';
+          clearLegacyGatewayConfigStorage();
           this.message.success('网关配置已保存');
         },
         error: () => {
@@ -190,9 +237,48 @@ export class SettingsGatewayComponent implements OnInit {
       });
   }
 
+  protected testProxy(): void {
+    const upstreamProxyUrl = this.form.controls.upstreamProxyUrl.value.trim();
+    if (!upstreamProxyUrl || this.testingProxy) return;
+    const credentials = this.proxyCredentialInput();
+    if (!credentials) return;
+    this.testedProxyUrl = this.proxyTestSignature;
+    this.proxyTestResult = null;
+    this.proxyTestError = '';
+    this.testingProxy = true;
+    this.http
+      .post<UpstreamProxyTestResult>('/ops/upstream-proxy-test', {
+        upstreamProxyUrl,
+        ...credentials,
+      })
+      .pipe(
+        finalize(() => {
+          this.testingProxy = false;
+          this.cdr.markForCheck();
+        }),
+      )
+      .subscribe({
+        next: (result) => {
+          this.proxyTestResult = result;
+        },
+        error: () => {
+          this.proxyTestError = '测试失败，请检查代理地址格式、认证和后端连接后重试';
+        },
+      });
+  }
+
+  protected get currentProxyTestResult(): UpstreamProxyTestResult | null {
+    return this.testedProxyUrl === this.proxyTestSignature ? this.proxyTestResult : null;
+  }
+
+  protected get currentProxyTestError(): string {
+    return this.testedProxyUrl === this.proxyTestSignature ? this.proxyTestError : '';
+  }
+
   protected resetDefaults(): void {
     this.form.reset(DEFAULT_GATEWAY_CONFIG);
-    localStorage.removeItem(STORAGE_KEY);
+    this.proxyCredentials.reset();
+    clearLegacyGatewayConfigStorage();
     this.save();
   }
 
@@ -220,6 +306,7 @@ export class SettingsGatewayComponent implements OnInit {
   }
 
   protected get upstreamModeLabel(): string {
+    if (this.form.controls.upstreamProxyRequired.value) return '必须使用代理';
     return this.form.controls.upstreamProxyEnabled.value ? '代理转发' : '直连上游';
   }
 
@@ -237,20 +324,45 @@ export class SettingsGatewayComponent implements OnInit {
     return `${this.form.controls.contextCompactionThresholdTokens.value.toLocaleString()} Token`;
   }
 
-  private loadLocalConfig(): void {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return;
+  private get proxyTestSignature(): string {
+    return JSON.stringify({
+      address: this.form.controls.upstreamProxyUrl.value.trim(),
+      ...this.proxyCredentials.getRawValue(),
+    });
+  }
 
+  private proxyCredentialInput(): {
+    upstreamProxyCredentials?: { username: string; password: string };
+    upstreamProxyClearCredentials?: boolean;
+  } | null {
+    const {
+      upstreamProxyUsername: username,
+      upstreamProxyPassword: password,
+      upstreamProxyClearCredentials: clear,
+    } = this.proxyCredentials.getRawValue();
+    if (clear && (username || password)) {
+      this.message.warning('清除认证时请留空用户名和密码');
+      return null;
+    }
+    if (password && !username) {
+      this.message.warning('更新代理认证时请填写用户名');
+      return null;
+    }
+    return {
+      upstreamProxyCredentials: username ? { username, password } : undefined,
+      upstreamProxyClearCredentials: clear || undefined,
+    };
+  }
+
+  private redactedProxyAddress(value: string): string {
+    if (!value) return '';
     try {
-      const parsed = JSON.parse(raw) as Partial<GatewayConfig>;
-      const migrated = {
-        ...parsed,
-        upstreamProxyUrl:
-          parsed.upstreamProxyUrl || (parsed as { upstreamProxy?: string }).upstreamProxy || '',
-      };
-      this.form.patchValue(this.normalizeConfig({ ...DEFAULT_GATEWAY_CONFIG, ...migrated }));
+      const address = new URL(value);
+      address.username = '';
+      address.password = '';
+      return address.toString();
     } catch {
-      localStorage.removeItem(STORAGE_KEY);
+      return '';
     }
   }
 
@@ -264,10 +376,17 @@ export class SettingsGatewayComponent implements OnInit {
           this.cdr.markForCheck();
         }),
       )
-      .subscribe((remote) => {
-        const payload = this.normalizeConfig({ ...this.form.getRawValue(), ...remote });
-        this.form.patchValue(payload);
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+      .subscribe({
+        next: (remote) => {
+          const payload = this.normalizeConfig({
+            ...DEFAULT_GATEWAY_CONFIG,
+            ...remote,
+            upstreamProxyUrl: this.redactedProxyAddress(remote.upstreamProxyUrl ?? ''),
+          });
+          this.form.patchValue(payload);
+          this.configLoaded = true;
+        },
+        error: () => this.message.error('网关配置读取失败，请刷新页面后重试'),
       });
   }
 
@@ -280,7 +399,9 @@ export class SettingsGatewayComponent implements OnInit {
       ),
       originator: value.originator.trim() || DEFAULT_GATEWAY_CONFIG.originator,
       upstreamProxyEnabled: Boolean(value.upstreamProxyEnabled),
+      upstreamProxyRequired: Boolean(value.upstreamProxyRequired),
       upstreamProxyUrl: value.upstreamProxyUrl.trim(),
+      upstreamProxyHasCredentials: Boolean(value.upstreamProxyHasCredentials),
       sseKeepAliveMs: Number(value.sseKeepAliveMs || DEFAULT_GATEWAY_CONFIG.sseKeepAliveMs),
       upstreamTimeoutMs: Number(value.upstreamTimeoutMs || 0),
       upstreamStreamIdleTimeoutMs: Number(

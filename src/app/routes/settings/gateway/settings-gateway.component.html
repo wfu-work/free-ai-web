@@ -5,8 +5,18 @@
       description="配置账号池路由、上游网络、容量保护和连接超时参数。"
     />
     <div class="header-actions">
-      <button nz-button (click)="resetDefaults()">恢复默认</button>
-      <button nz-button nzType="primary" [nzLoading]="saving" (click)="save()">保存配置</button>
+      <button nz-button [disabled]="!configLoaded || saving" (click)="resetDefaults()">
+        恢复默认
+      </button>
+      <button
+        nz-button
+        nzType="primary"
+        [nzLoading]="saving"
+        [disabled]="!configLoaded"
+        (click)="save()"
+      >
+        保存配置
+      </button>
     </div>
   </div>
 
@@ -80,7 +90,7 @@
           </div>
         </nz-card>
 
-        <nz-card class="config-section-card" [nzBordered]="false">
+        <nz-card class="config-section-card routing-card" [nzBordered]="false">
           <div class="section-head">
             <span class="section-icon">
               <i nz-icon nzType="cluster"></i>
@@ -92,7 +102,7 @@
             <span class="section-status">{{ strategyLabel }}</span>
           </div>
 
-          <se-container class="field-stack" col="1" nzLayout="vertical">
+          <se-container class="routing-fields" col="3" nzLayout="vertical">
             <se label="账号选择策略">
               <nz-select
                 formControlName="accountSelectionStrategy"
@@ -123,7 +133,7 @@
           </se-container>
         </nz-card>
 
-        <nz-card class="config-section-card" [nzBordered]="false">
+        <nz-card class="config-section-card proxy-card" [nzBordered]="false">
           <div class="section-head">
             <span class="section-icon section-icon-warning">
               <i nz-icon nzType="cloud"></i>
@@ -140,26 +150,138 @@
             </span>
           </div>
 
-          <se-container class="field-stack" col="1" nzLayout="vertical">
-            <se label="代理开关">
-              <label nz-checkbox formControlName="upstreamProxyEnabled">开启后端上游代理</label>
-              <div class="field-extra">
-                模型查询、额度同步、主动探测和网关请求将统一使用该代理。
+          <div class="proxy-layout">
+            <div class="proxy-settings">
+              <se-container class="proxy-fields" col="2" nzLayout="vertical">
+                <se label="代理开关">
+                  <label nz-checkbox formControlName="upstreamProxyEnabled">开启后端上游代理</label>
+                  <div class="field-extra">OpenAI 官方服务统一使用此出口。</div>
+                </se>
+                <se label="出口保护">
+                  <label nz-checkbox formControlName="upstreamProxyRequired">必须使用代理</label>
+                  <div class="field-extra">配置缺失或无效时阻止请求，禁止回退直连。</div>
+                </se>
+                <se label="代理地址" class="proxy-address-field">
+                  <input
+                    nz-input
+                    formControlName="upstreamProxyUrl"
+                    placeholder="socks5://代理主机:端口"
+                    autocomplete="off"
+                  />
+                  <div class="field-extra">支持 HTTP、HTTPS、SOCKS5；认证信息在下方填写。</div>
+                </se>
+              </se-container>
+
+              <div [formGroup]="proxyCredentials">
+                <se-container class="proxy-credential-fields" col="2" nzLayout="vertical">
+                  <se label="认证用户名">
+                    <input
+                      nz-input
+                      formControlName="upstreamProxyUsername"
+                      autocomplete="off"
+                      placeholder="留空沿用已保存认证"
+                    />
+                  </se>
+                  <se label="认证密码">
+                    <app-password-input
+                      formControlName="upstreamProxyPassword"
+                      autocomplete="off"
+                      size="default"
+                      placeholder="更新时填写，保存后清空"
+                    />
+                  </se>
+                </se-container>
+                <div class="proxy-auth-footer">
+                  <label nz-checkbox formControlName="upstreamProxyClearCredentials"
+                    >清除已保存的代理认证</label
+                  >
+                  <p class="field-extra">
+                    @if (form.controls.upstreamProxyHasCredentials.value) {
+                      已保存代理认证。更换代理主机时请重新填写认证或选择清除。
+                    } @else {
+                      尚未保存代理认证。认证信息加密保存，浏览器不缓存密码。
+                    }
+                  </p>
+                </div>
               </div>
-            </se>
+            </div>
 
-            <se label="代理地址">
-              <input
-                nz-input
-                formControlName="upstreamProxyUrl"
-                placeholder="http://127.0.0.1:7897"
-                [disabled]="!form.controls.upstreamProxyEnabled.value"
-              />
-              <div class="field-extra">支持 http、https 和 socks5 代理地址。</div>
-            </se>
-          </se-container>
-
+            <div class="proxy-diagnostics">
+              <div class="proxy-diagnostics-head">
+                <div>
+                  <h4>出口检测</h4>
+                  <p class="field-extra">测试当前填写的代理，不会保存配置。</p>
+                </div>
+                <button
+                  nz-button
+                  type="button"
+                  [nzLoading]="testingProxy"
+                  [disabled]="
+                    loading ||
+                    saving ||
+                    testingProxy ||
+                    !form.controls.upstreamProxyUrl.value.trim()
+                  "
+                  (click)="testProxy()"
+                >
+                  测试代理
+                </button>
+              </div>
+              @if (currentProxyTestError) {
+                <p class="proxy-test-error" role="alert">{{ currentProxyTestError }}</p>
+              }
+              @if (currentProxyTestResult; as result) {
+                <div class="proxy-test-result" aria-live="polite">
+                  <div class="proxy-exit-ip">
+                    <span>实际出口 IP</span>
+                    <strong>{{ result.exitIp || '未获取到' }}</strong>
+                  </div>
+                  <p class="field-extra">请与购买的静态 IP 核对；连通性不代表账号权限。</p>
+                  <table class="proxy-checks" aria-label="代理连通性检测结果">
+                    <thead>
+                      <tr>
+                        <th scope="col">检测目标</th>
+                        <th scope="col">状态</th>
+                        <th scope="col">耗时</th>
+                        <th scope="col">HTTP</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      @for (check of result.checks; track check.name) {
+                        <tr class="proxy-check-summary">
+                          <th scope="row">{{ check.name }}</th>
+                          <td>
+                            <span
+                              [class.proxy-check-success]="check.reachable"
+                              [class.proxy-test-error]="!check.reachable"
+                            >
+                              {{ check.reachable ? '可连接' : '未通过' }}
+                            </span>
+                          </td>
+                          <td>{{ check.latencyMs }} ms</td>
+                          <td>{{ check.statusCode || '—' }}</td>
+                        </tr>
+                        <tr class="proxy-check-detail">
+                          <td colspan="4">{{ check.message }}</td>
+                        </tr>
+                      }
+                    </tbody>
+                  </table>
+                </div>
+              } @else if (!currentProxyTestError) {
+                <div class="proxy-test-empty" aria-live="polite">
+                  <p>
+                    {{
+                      testingProxy ? '正在检测出口 IP 和上游连通性…' : '填写代理后，先核对出口 IP'
+                    }}
+                  </p>
+                  <span>检测 OpenAI API、ChatGPT / Codex 和认证服务，最长等待 12 秒。</span>
+                </div>
+              }
+            </div>
+          </div>
           <div class="proxy-scope">
+            <span class="proxy-scope-label">统一应用于</span>
             <span>模型目录</span>
             <span>额度同步</span>
             <span>主动探测</span>
