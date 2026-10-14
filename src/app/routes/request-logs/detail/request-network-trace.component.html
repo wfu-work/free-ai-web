@@ -5,7 +5,13 @@
     <p>请求发生时的来源、代理与上游连接快照</p>
   </div>
   @if (trace(); as network) {
-    <span class="network-count">{{ network.attempts?.length || 0 }} 次上游连接</span>
+    <span class="network-count">
+      @if (network.attempts?.length) {
+        {{ network.attempts?.length }} 次上游请求
+      } @else {
+        上游链路未采集
+      }
+    </span>
   }
 </div>
 
@@ -215,7 +221,7 @@
       </div>
     </details>
   } @empty {
-    <p class="network-empty">请求在网关内结束，未发起上游连接。</p>
+    <p class="network-empty">未采集到上游连接信息。历史记录无法补采，请查看升级后的新请求。</p>
   }
   @if (network.attempts?.length) {
     <p class="network-note">

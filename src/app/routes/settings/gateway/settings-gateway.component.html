@@ -324,7 +324,9 @@
 
             <se label="故障切换重试次数" required error="请输入 0 至 5">
               <nz-input-number formControlName="maxRetries" [nzMin]="0" [nzMax]="5" [nzStep]="1" />
-              <div class="field-extra">填写 0 表示上游失败后不切换备用账号。</div>
+              <div class="field-extra">
+                控制一般故障的账号切换次数。上游过载或 429 会在正文输出前自动等待重试，最多 5 分钟。
+              </div>
             </se>
 
             <se label="过载排队时间（ms）" required error="请输入 0 至 60000">
@@ -407,7 +409,8 @@
             <se label="上游首响应超时">
               <nz-input-number formControlName="upstreamTimeoutMs" [nzMin]="0" [nzStep]="1000" />
               <div class="field-extra">
-                流式请求限制首个 SSE 的等待时间；非流式请求仍限制总时长。填写 0 表示关闭。
+                控制每次上游调用的首个 SSE 等待时间或非流式总时长。填写 0
+                关闭单次限制；正文输出前的总等待仍最多 5 分钟。
               </div>
             </se>
 
