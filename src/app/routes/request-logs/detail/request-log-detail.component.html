@@ -5,10 +5,6 @@
       description="一次请求的完整链路、性能分段与用量诊断。"
       [showBack]="true"
     />
-    <button type="button" nz-button class="back-list-button" (click)="goList()">
-      <i nz-icon nzType="arrow-left"></i>
-      返回列表
-    </button>
   </div>
 
   <nz-spin [nzSpinning]="loading">
@@ -131,6 +127,10 @@
 
       <div class="detail-layout">
         <main class="main-column">
+          <section class="detail-panel">
+            <app-request-network-trace [trace]="record.networkTrace" />
+          </section>
+
           <section class="detail-panel route-panel">
             <div class="section-head">
               <span class="section-icon"><i nz-icon nzType="api"></i></span>
@@ -139,7 +139,7 @@
                 <p>从调用密钥到最终上游模型的实际路由</p>
               </div>
               <span class="switch-badge" [class.switch-badge-active]="record.switched">
-                {{ record.switched ? '已切换路由' : '直达上游' }}
+                {{ record.switched ? '已切换路由' : '单次账号路由' }}
               </span>
             </div>
 

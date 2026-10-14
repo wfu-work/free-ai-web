@@ -1,0 +1,230 @@
+<div class="section-head">
+  <span class="section-icon"><i nz-icon nzType="cluster"></i></span>
+  <div>
+    <h2>IP 网络链路</h2>
+    <p>请求发生时的来源、代理与上游连接快照</p>
+  </div>
+  @if (trace(); as network) {
+    <span class="network-count">{{ network.attempts?.length || 0 }} 次上游连接</span>
+  }
+</div>
+
+@if (trace(); as network) {
+  <h3 class="network-label">入站请求</h3>
+  <ol class="network-flow network-ingress">
+    <li>
+      <small>请求来源 · TCP 对端</small>
+      <button
+        type="button"
+        class="network-address"
+        [disabled]="!network.peerAddress"
+        (click)="copy(network.peerAddress, '请求来源地址')"
+        title="复制请求来源地址"
+      >
+        {{ network.peerAddress || '未采集到来源地址' }}
+        @if (network.peerAddress) {
+          <i nz-icon nzType="copy"></i>
+        }
+      </button>
+      <span>直接连接网关的客户端或反向代理</span>
+    </li>
+    <li>
+      <small>网关 · 入站连接</small>
+      <button
+        type="button"
+        class="network-address"
+        [disabled]="!network.gatewayAddress"
+        (click)="copy(network.gatewayAddress, '网关入站地址')"
+        title="复制网关入站地址"
+      >
+        {{ network.gatewayAddress || '未采集到入站地址' }}
+        @if (network.gatewayAddress) {
+          <i nz-icon nzType="copy"></i>
+        }
+      </button>
+      <span>服务器接收请求的本地 IP 与端口</span>
+    </li>
+  </ol>
+  @if (network.forwardedFor?.length || network.realIp || network.forwarded?.length) {
+    <div class="forwarded-heading"><span>请求头声明的来源链</span><small>未经验证</small></div>
+    <dl class="network-facts network-header-facts">
+      @if (network.forwardedFor?.length) {
+        <div>
+          <dt>X-Forwarded-For</dt>
+          <dd>{{ network.forwardedFor?.join(' → ') }}</dd>
+        </div>
+      }
+      @if (network.realIp) {
+        <div>
+          <dt>X-Real-IP</dt>
+          <dd>{{ network.realIp }}</dd>
+        </div>
+      }
+      @if (network.forwarded?.length) {
+        <div>
+          <dt>Forwarded · for</dt>
+          <dd>{{ network.forwarded?.join(' → ') }}</dd>
+        </div>
+      }
+    </dl>
+  }
+
+  @for (attempt of network.attempts || []; track $index; let last = $last) {
+    <details class="network-attempt" [open]="last">
+      <summary>
+        <span class="attempt-number">{{ $index + 1 }}</span>
+        <strong>{{ attempt.proxyAddress ? '代理连接' : '直连上游' }}</strong>
+        <span class="attempt-account">{{
+          attempt.accountName || attempt.accountGuid || '上游请求'
+        }}</span>
+        <span
+          class="attempt-status"
+          [class.attempt-status-success]="
+            !attempt.errorType &&
+            (attempt.statusCode || 0) >= 200 &&
+            (attempt.statusCode || 0) < 400
+          "
+          [class.attempt-status-error]="attempt.errorType || (attempt.statusCode || 0) >= 400"
+        >
+          {{
+            attempt.statusCode
+              ? 'HTTP ' + attempt.statusCode
+              : attempt.errorType
+                ? '连接失败'
+                : '未记录状态'
+          }}
+        </span>
+        <i nz-icon nzType="down"></i>
+      </summary>
+      <div class="network-attempt-body">
+        <div class="attempt-meta">
+          <time>{{ attempt.startedAt | date: 'yyyy/MM/dd HH:mm:ss' }}</time>
+          <span>{{
+            attempt.remoteAddress
+              ? attempt.connectionReused
+                ? '复用连接'
+                : '新建连接'
+              : '连接未建立'
+          }}</span>
+          @if (attempt.errorType) {
+            <span class="network-error">{{ errorLabel(attempt.errorType) }}</span>
+          }
+        </div>
+        <ol class="network-flow network-outbound">
+          <li>
+            <small>网关 · 出站连接</small>
+            <button
+              type="button"
+              class="network-address"
+              [disabled]="!attempt.localAddress"
+              (click)="copy(attempt.localAddress, '网关出站地址')"
+              title="复制网关出站地址"
+            >
+              {{ attempt.localAddress || '连接未建立' }}
+              @if (attempt.localAddress) {
+                <i nz-icon nzType="copy"></i>
+              }
+            </button>
+            <span>本地 IP 与端口</span>
+          </li>
+          @if (attempt.proxyAddress) {
+            <li>
+              <small>代理入口 · TCP 对端</small>
+              <button
+                type="button"
+                class="network-address"
+                (click)="copy(attempt.remoteAddress || attempt.proxyAddress, '代理入口地址')"
+                title="复制代理入口地址"
+              >
+                {{ attempt.remoteAddress || '连接未建立' }}
+                @if (attempt.remoteAddress) {
+                  <i nz-icon nzType="copy"></i>
+                }
+              </button>
+              <span>{{ attempt.proxyAddress }}</span>
+            </li>
+          }
+          <li>
+            <small>{{ attempt.proxyAddress ? '代理出口' : '公网出口' }} · 检测快照</small>
+            <button
+              type="button"
+              class="network-address"
+              [disabled]="!attempt.exitIp"
+              (click)="copy(attempt.exitIp, '出口 IP')"
+              title="复制出口 IP"
+            >
+              {{ attempt.exitIp || '暂未取得检测结果' }}
+              @if (attempt.exitIp) {
+                <i nz-icon nzType="copy"></i>
+              }
+            </button>
+            <span>{{
+              attempt.exitIpCheckedAt
+                ? (attempt.exitIpCheckedAt | date: 'yyyy/MM/dd HH:mm:ss')
+                : '后台检测中或检测不可用'
+            }}</span>
+          </li>
+          <li>
+            <small>上游目标</small>
+            <button
+              type="button"
+              class="network-address"
+              (click)="copy(attempt.target, '上游目标')"
+              title="复制上游目标"
+            >
+              {{ attempt.target }}<i nz-icon nzType="copy"></i>
+            </button>
+            <span>{{
+              attempt.proxyAddress
+                ? '目标 IP 由代理解析，网关不可见'
+                : attempt.remoteAddress || '连接未建立'
+            }}</span>
+          </li>
+        </ol>
+        <dl class="network-facts">
+          @for (lookup of attempt.dns || []; track $index) {
+            <div>
+              <dt>DNS · {{ lookup.host }}</dt>
+              <dd>{{ lookup.addresses?.join(' / ') || '未取得解析结果' }}</dd>
+            </div>
+          } @empty {
+            <div>
+              <dt>DNS 解析</dt>
+              <dd>
+                {{
+                  attempt.connectionReused
+                    ? '连接复用，本次未触发解析'
+                    : '本次未采集 DNS 解析（可能使用 IP 地址或由代理解析）'
+                }}
+              </dd>
+            </div>
+          }
+          @if (attempt.connectAddresses?.length) {
+            <div>
+              <dt>拨号地址</dt>
+              <dd>{{ attempt.connectAddresses?.join(' → ') }}</dd>
+            </div>
+          }
+          @if (attempt.tlsServerName) {
+            <div>
+              <dt>TLS · SNI</dt>
+              <dd>{{ attempt.tlsServerName }}</dd>
+            </div>
+          }
+        </dl>
+      </div>
+    </details>
+  } @empty {
+    <p class="network-empty">请求在网关内结束，未发起上游连接。</p>
+  }
+  @if (network.attempts?.length) {
+    <p class="network-note">
+      出口 IP 来自同一路由的独立检测，最长缓存 10 分钟，并非 OpenAI
+      返回的实际来源；代理入口与出口可能不同。复用连接仍显示实际连接地址。
+    </p>
+  }
+} @else {
+  <p class="network-empty">
+    该历史记录未采集 IP 链路。更新服务后，新请求会保存来源与上游连接信息。
+  </p>
+}

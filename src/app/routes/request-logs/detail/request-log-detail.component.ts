@@ -13,13 +13,14 @@ import { finalize } from 'rxjs';
 import { requestLogDiagnosticLabel, requestLogErrorLabel } from '../request-log-error';
 import { RequestLog } from '../request-log.model';
 import { RequestLogsService } from '../request-logs.service';
+import { RequestNetworkTraceComponent } from './request-network-trace.component';
 
 @Component({
   selector: 'app-request-log-detail',
   templateUrl: './request-log-detail.component.html',
   styleUrls: ['./request-log-detail.component.less'],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [SHARED_IMPORTS, TitleLabelComponent],
+  imports: [SHARED_IMPORTS, TitleLabelComponent, RequestNetworkTraceComponent],
 })
 export class RequestLogDetailComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);

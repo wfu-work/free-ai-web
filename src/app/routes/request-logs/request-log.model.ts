@@ -1,3 +1,35 @@
+export interface NetworkDNSLookup {
+  host: string;
+  addresses?: string[];
+}
+
+export interface UpstreamNetworkAttempt {
+  startedAt: number;
+  accountGuid?: string;
+  accountName?: string;
+  target: string;
+  proxyAddress?: string;
+  localAddress?: string;
+  remoteAddress?: string;
+  connectAddresses?: string[];
+  dns?: NetworkDNSLookup[];
+  tlsServerName?: string;
+  connectionReused: boolean;
+  statusCode?: number;
+  errorType?: string;
+  exitIp?: string;
+  exitIpCheckedAt?: number;
+}
+
+export interface RequestNetworkTrace {
+  peerAddress?: string;
+  gatewayAddress?: string;
+  forwardedFor?: string[];
+  realIp?: string;
+  forwarded?: string[];
+  attempts?: UpstreamNetworkAttempt[];
+}
+
 export interface RequestLog {
   guid: string;
   requestId: string;
@@ -34,6 +66,7 @@ export interface RequestLog {
   firstTokenMs: number;
   connectionReused: boolean;
   connectionTraced: boolean;
+  networkTrace?: RequestNetworkTrace;
   inputTokens: number;
   outputTokens: number;
   cachedInputTokens?: number;
